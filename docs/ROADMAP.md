@@ -6,8 +6,9 @@
 - [x] Four primitive-built vehicle silhouettes and tuning presets.
 - [x] Paint selection, local garage persistence and camera modes.
 - [x] Traffic, pedestrian, collision, repair and sprint prototypes.
-- [x] Police interceptor and basic pursuit prototype.
-- [x] Three-step local story campaign.
+- [x] Police interceptor pursuit with steering, chase acceleration, capture and escape timers.
+- [x] Three-step story campaign with mission failure and retry flow.
+- [x] Waterfront, Market Quarter and Industrial Edge district landmarks.
 - [x] Supabase account service module (email/password, session, password recovery and profile update).
 - [x] Per-player cloud-save service module.
 - [x] Database migration for player profiles and KX wallet/ledger.
