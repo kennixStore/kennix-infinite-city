@@ -602,13 +602,25 @@ function setMissionMarker(x,z){
  missionMarker.setPosition(x,.1,z);
 }
 function startStoryMission(index){
- missionIndex=index;missionElapsed=0;missionComplete=false;missionEscapeTimer=0;policeCloseTimer=0;policeLostTimer=0;policeSpeed=0;
+ missionIndex=index;missionElapsed=0;missionComplete=false;retryMissionButton.hidden=true;missionEscapeTimer=0;policeCloseTimer=0;policeLostTimer=0;policeSpeed=0;
  const mission=storyMissions[index];wantedLevel=mission.wanted;
  setMissionMarker(mission.target[0],mission.target[1]);
  missionStatusLabel.textContent=mission.goal;
  panelTitle.textContent=mission.title;panelCopy.textContent=mission.brief;
  panelNote.textContent="Story campaign prototype • mission progress is saved locally on this device.";
  hideGarage();
+}
+const retryMissionButton=document.createElement("button");
+retryMissionButton.className="secondary-action";
+retryMissionButton.textContent="RETRY MISSION";
+retryMissionButton.hidden=true;
+gameOverlay.querySelector(".panel-actions").appendChild(retryMissionButton);
+retryMissionButton.addEventListener("click",()=>{if(missionIndex>=0)startStoryMission(missionIndex)});
+function failStoryMission(reason){
+ missionComplete=true;wantedLevel=0;policeRoot.enabled=false;policeSpeed=0;
+ if(missionMarker){missionMarker.destroy();missionMarker=null}
+ retryMissionButton.hidden=false;
+ showGarage("MISSION FAILED",reason+" You can retry this mission or return to the city.");
 }
 function completeStoryMission(){
  const mission=storyMissions[missionIndex];missionComplete=true;
@@ -827,9 +839,8 @@ app.on("update", dt => {
     else policeCloseTimer=Math.max(0,policeCloseTimer-dt*.5);
     if(dist>95){policeLostTimer+=dt}else policeLostTimer=0;
     if(policeCloseTimer>2.4){
-     speed=0;wantedLevel=0;policeRoot.enabled=false;policeSpeed=0;
-     missionStatusLabel.textContent="BUSTED • MISSION FAILED";
-     if(missionIndex>=0)missionComplete=true;
+     speed=0;
+     if(missionIndex>=0)failStoryMission("The police caught you.");else{wantedLevel=0;policeRoot.enabled=false;policeSpeed=0;missionStatusLabel.textContent="BUSTED • RESTART THE MISSION"}
     }else if(policeLostTimer>10){
      wantedLevel=0;policeRoot.enabled=false;policeSpeed=0;
      missionStatusLabel.textContent="POLICE ESCAPED";
