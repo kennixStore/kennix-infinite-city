@@ -52,6 +52,9 @@ drop policy if exists "Players manage their own save" on public.player_saves;
 create policy "Players manage their own save" on public.player_saves
 for all to authenticated using (auth.uid() = user_id) with check (auth.uid() = user_id);
 
+grant select, insert, update, delete on public.player_saves to authenticated;
+grant select, update on public.player_profiles to authenticated;
+
 drop policy if exists "Players read their own wallet" on public.kx_wallets;
 create policy "Players read their own wallet" on public.kx_wallets
 for select to authenticated using (auth.uid() = user_id);
@@ -75,6 +78,7 @@ declare
   chosen_name text;
 begin
   chosen_name := coalesce(nullif(trim(new.raw_user_meta_data ->> 'display_name'), ''), 'Driver');
+  if char_length(chosen_name) < 2 then chosen_name := 'Driver'; end if;
   insert into public.player_profiles(user_id, display_name)
   values (new.id, left(chosen_name, 24))
   on conflict (user_id) do nothing;
