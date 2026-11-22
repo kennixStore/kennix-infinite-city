@@ -412,7 +412,7 @@ createTrafficCar(207.45,145,-1,3,9,"x");
 const skinMat = makeMat([0.55, 0.34, 0.22]);
 const clothingMats = [makeMat([0.12, 0.22, 0.48]), makeMat([0.48, 0.12, 0.09]), makeMat([0.12, 0.34, 0.2]), makeMat([0.34, 0.27, 0.16])];
 const pedestrians = [];
-function createPedestrian(x, z, outfit, facing = 0, walkDirection = 1) {
+function createPedestrian(x, z, outfit, facing = 0, walkDirection = 1, axis = "z", min = -72, max = 72) {
   const person = new pc.Entity("Walking pedestrian");
   person.setPosition(x, 0.12, z); person.setEulerAngles(0, facing, 0); app.root.addChild(person);
   block("Pedestrian torso", [0, 0.98, 0], [0.48, 0.78, 0.28], clothingMats[outfit % clothingMats.length], person);
@@ -422,10 +422,18 @@ function createPedestrian(x, z, outfit, facing = 0, walkDirection = 1) {
     legs.push(block("Pedestrian leg", [side * 0.13, 0.43, 0], [0.16, 0.62, 0.18], mats.dark, person));
     arms.push(block("Pedestrian arm", [side * 0.31, 1.02, 0], [0.14, 0.58, 0.16], clothingMats[outfit % clothingMats.length], person));
   }
-  pedestrians.push({ entity: person, legs, arms, phase: outfit * 0.9, direction: walkDirection, minZ: -72, maxZ: 72 });
+  pedestrians.push({ entity: person, legs, arms, phase: outfit * 0.9, direction: walkDirection, axis, min, max });
 }
 createPedestrian(-9.1, -51, 0, 90, 1); createPedestrian(9.1, -35, 1, -90, -1);
 createPedestrian(-9.1, -5, 2, 90, 1); createPedestrian(9.1, 22, 3, -90, -1); createPedestrian(-9.1, 61, 1, 90, -1);
+for(const avenueX of [-120,-60,60,120]){
+ createPedestrian(avenueX-9.1,-185,0,0,1,"z",-245,245);
+ createPedestrian(avenueX+9.1,185,2,180,-1,"z",-245,245);
+}
+for(const streetZ of [-210,-140,140,210]){
+ createPedestrian(-145,streetZ-9.1,1,90,1,"x",-155,155);
+ createPedestrian(145,streetZ+9.1,3,-90,-1,"x",-155,155);
+}
 
 // Traffic signal props at the two main junctions.
 const signalLamps = [];
@@ -916,17 +924,24 @@ app.on("update", dt => {
     pedestrian.legs[1].setLocalEulerAngles(-swing * 55, 0, 0);
     pedestrian.arms[0].setLocalEulerAngles(-swing * 38, 0, 0);
     pedestrian.arms[1].setLocalEulerAngles(swing * 38, 0, 0);
-    position.z += pedestrian.direction * walkRate * dt;
-    if (position.z > pedestrian.maxZ) { position.z = pedestrian.maxZ; pedestrian.direction = -1; }
-    if (position.z < pedestrian.minZ) { position.z = pedestrian.minZ; pedestrian.direction = 1; }
+    if(pedestrian.axis==="z"){
+      position.z+=pedestrian.direction*walkRate*dt;
+      if(position.z>pedestrian.max){position.z=pedestrian.max;pedestrian.direction=-1}
+      if(position.z<pedestrian.min){position.z=pedestrian.min;pedestrian.direction=1}
+    }else{
+      position.x+=pedestrian.direction*walkRate*dt;
+      if(position.x>pedestrian.max){position.x=pedestrian.max;pedestrian.direction=-1}
+      if(position.x<pedestrian.min){position.x=pedestrian.min;pedestrian.direction=1}
+    }
     pedestrian.entity.setPosition(position);
   }
   signalTimer += dt;
+  // Coordinated 16-second signal cycle: north/south, then east/west.
   const trafficPhase = Math.floor(signalTimer / 8) % 2;
-  const greenDirection = trafficPhase === 0 ? 1 : -1;
+  const greenAxis = trafficPhase === 0 ? "z" : "x";
   for (const lamps of signalLamps) {
-    lamps.green.render.material = greenDirection === 1 ? signalGreen : signalRed;
-    lamps.red.render.material = greenDirection === -1 ? signalGreen : signalRed;
+    lamps.green.render.material = greenAxis === "z" ? signalGreen : signalRed;
+    lamps.red.render.material = greenAxis === "z" ? signalRed : signalGreen;
   }
 
   // Move NPC traffic and recycle vehicles at the ends of the test district.
@@ -948,11 +963,16 @@ app.on("update", dt => {
     const playerInLane = npc.axis === "z" ? Math.abs(p.x-npcPos.x)<1.55 : Math.abs(p.z-npcPos.z)<1.55;
     if(playerInLane&&playerGap>0&&playerGap<13)targetSpeed=Math.min(targetSpeed,npc.cruiseSpeed*clamp((playerGap-4)/9,0,1));
 
-    // Traffic obeys the alternating signal phase at the main avenue intersections.
+    // Stop at red lights on every junction along each traffic axis.
     if(npc.axis==="z"){
-      for(const junctionZ of [-43,39]){
+      for(const junctionZ of districtRoads){
         const distanceToJunction=(junctionZ-npcPos.z)*npc.direction;
-        if(distanceToJunction>0&&distanceToJunction<10&&npc.direction!==greenDirection){targetSpeed=0;break}
+        if(distanceToJunction>0&&distanceToJunction<13&&greenAxis!=="z"){targetSpeed=0;break}
+      }
+    }else{
+      for(const junctionX of [-120,-60,60,120]){
+        const distanceToJunction=(junctionX-npcPos.x)*npc.direction;
+        if(distanceToJunction>0&&distanceToJunction<13&&greenAxis!=="x"){targetSpeed=0;break}
       }
     }
     const wasMovingFaster = targetSpeed < npc.currentSpeed - 0.7;
