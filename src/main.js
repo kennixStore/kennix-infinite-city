@@ -587,7 +587,7 @@ const sirenBlue=makeMat([.01,.12,.9]);sirenBlue.emissive=new pc.Color(.01,.1,.9)
 const sirenL=block("Police red light",[ -.38,1.42,-.1],[.42,.16,.25],sirenRed,policeRoot);
 const sirenR=block("Police blue light",[ .38,1.42,-.1],[.42,.16,.25],sirenBlue,policeRoot);
 policeRoot.enabled=false;
-let wantedLevel=0,policeSpawnTimer=0,policeSirenTimer=0,missionIndex=-1,missionElapsed=0,missionComplete=false;
+let wantedLevel=0,policeSpawnTimer=0,policeSirenTimer=0,policeHeading=0,policeSpeed=0,policeCloseTimer=0,policeLostTimer=0,missionEscapeTimer=0,missionIndex=-1,missionElapsed=0,missionComplete=false;
 const storyMissions=[
  {title:"FIRST NIGHT",brief:"A contact needs a quick driver. Reach the waterfront marker.",target:[0,-125],wanted:0,goal:"Reach the waterfront"},
  {title:"HEAT CHECK",brief:"The street run drew police attention. Escape the patrol and reach the Market Quarter.",target:[60,-140],wanted:1,goal:"Lose the police and reach Market Quarter"},
@@ -602,7 +602,7 @@ function setMissionMarker(x,z){
  missionMarker.setPosition(x,.1,z);
 }
 function startStoryMission(index){
- missionIndex=index;missionElapsed=0;missionComplete=false;
+ missionIndex=index;missionElapsed=0;missionComplete=false;missionEscapeTimer=0;policeCloseTimer=0;policeLostTimer=0;policeSpeed=0;
  const mission=storyMissions[index];wantedLevel=mission.wanted;
  setMissionMarker(mission.target[0],mission.target[1]);
  missionStatusLabel.textContent=mission.goal;
@@ -805,22 +805,48 @@ app.on("update", dt => {
   if(wantedLevel>0){
    policeSpawnTimer+=dt;
    if(!policeRoot.enabled&&policeSpawnTimer>1.2){
-    policeRoot.enabled=true;policeRoot.setPosition(p.x+((Math.random()>.5)?-12:12),.08,p.z+30);
+    const backX=-Math.sin(heading*Math.PI/180),backZ=Math.cos(heading*Math.PI/180);
+    policeRoot.enabled=true;
+    policeRoot.setPosition(clamp(p.x+backX*34,-155,155),.08,clamp(p.z+backZ*34,-250,250));
+    policeHeading=heading;policeSpeed=0;policeCloseTimer=0;policeLostTimer=0;
    }
    if(policeRoot.enabled){
     const pp=policeRoot.getPosition(),dx=p.x-pp.x,dz=p.z-pp.z,dist=Math.hypot(dx,dz);
-    const step=(wantedLevel===1?7.5:10.5)*dt;
-    if(dist>2){pp.x+=dx/dist*step;pp.z+=dz/dist*step;policeRoot.setPosition(pp);policeRoot.lookAt(p.x,.4,p.z)}
-    if(dist<3.5){speed*=Math.exp(-1.1*dt);wantedLevel=0;policeRoot.enabled=false;missionStatusLabel.textContent="BUSTED • RESTART THE MISSION"}
+    const desiredHeading=Math.atan2(dx,-dz)*180/Math.PI;
+    const angleDelta=((desiredHeading-policeHeading+540)%360)-180;
+    const turnRate=(wantedLevel>=2?105:82)*dt;
+    policeHeading+=clamp(angleDelta,-turnRate,turnRate);
+    const maxPoliceSpeed=wantedLevel>=2?30:24;
+    policeSpeed=Math.min(maxPoliceSpeed,policeSpeed+(wantedLevel>=2?11:8)*dt);
+    const policeRad=policeHeading*Math.PI/180;
+    pp.x+=Math.sin(policeRad)*policeSpeed*dt;
+    pp.z-=Math.cos(policeRad)*policeSpeed*dt;
+    pp.x=clamp(pp.x,-158,158);pp.z=clamp(pp.z,-258,258);
+    policeRoot.setPosition(pp);policeRoot.setEulerAngles(0,policeHeading,0);
+    if(dist<4.2){policeCloseTimer+=dt;speed*=Math.exp(-.45*dt)}
+    else policeCloseTimer=Math.max(0,policeCloseTimer-dt*.5);
+    if(dist>95){policeLostTimer+=dt}else policeLostTimer=0;
+    if(policeCloseTimer>2.4){
+     speed=0;wantedLevel=0;policeRoot.enabled=false;policeSpeed=0;
+     missionStatusLabel.textContent="BUSTED • MISSION FAILED";
+     if(missionIndex>=0)missionComplete=true;
+    }else if(policeLostTimer>10){
+     wantedLevel=0;policeRoot.enabled=false;policeSpeed=0;
+     missionStatusLabel.textContent="POLICE ESCAPED";
+    }
    }
-  }else{policeRoot.enabled=false;policeSpawnTimer=0}
+  }else{policeRoot.enabled=false;policeSpawnTimer=0;policeSpeed=0}
   wantedLabel.textContent=wantedLevel?"POLICE HEAT  "+"★".repeat(wantedLevel)+"☆".repeat(3-wantedLevel):"";
   if(missionIndex>=0&&!missionComplete){
    missionElapsed+=dt;
    const mission=storyMissions[missionIndex],distance=Math.hypot(p.x-mission.target[0],p.z-mission.target[1]);
    missionTitleLabel.textContent=mission.title+" • "+mission.goal;
+   if(mission.wanted>0&&wantedLevel>0&&policeRoot.enabled){
+    const policeDistance=Math.hypot(p.x-policeRoot.getPosition().x,p.z-policeRoot.getPosition().z);
+    if(policeDistance>95)missionEscapeTimer+=dt;else missionEscapeTimer=0;
+    if(missionEscapeTimer>=10){wantedLevel=0;policeRoot.enabled=false;missionStatusLabel.textContent="POLICE ESCAPED • REACH THE MARKER"}
+   }
    if(distance<9&&wantedLevel===0)completeStoryMission();
-   if(missionIndex===1&&missionElapsed>75&&wantedLevel>0){wantedLevel=0;policeRoot.enabled=false}
   }
 
 
