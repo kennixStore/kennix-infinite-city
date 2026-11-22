@@ -10,7 +10,7 @@ const app = new pc.Application(canvas, {
 
 app.setCanvasFillMode(pc.FILLMODE_FILL_WINDOW);
 app.setCanvasResolution(pc.RESOLUTION_AUTO);
-app.scene.ambientLight = new pc.Color(0.58, 0.62, 0.7);
+app.scene.ambientLight = new pc.Color(0.43, 0.48, 0.58);
 app.scene.toneMapping = pc.TONEMAP_ACES;
 app.scene.gammaCorrection = pc.GAMMA_SRGB;
 
@@ -64,6 +64,24 @@ for (let z = -74; z <= 74; z += 11) {
 for (const x of [-4.9, 4.9]) {
   block("Lane divider", [x, 0.05, 0], [0.09, 0.025, 160], mats.white);
 }
+ 
+// Junction markings, pedestrian crossings and roadside signs.
+for (const junctionZ of [-43, 39]) {
+  block("Junction stop line", [0, 0.065, junctionZ], [10.2, 0.035, 0.28], mats.white);
+  for (let stripe = -5; stripe <= 5; stripe++) {
+    block("Pedestrian crossing", [stripe * 0.88, 0.07, junctionZ - 1.15], [0.58, 0.035, 2.1], mats.white);
+  }
+  for (const side of [-1, 1]) {
+    block("Roadside sign post", [side * 6.9, 1.65, junctionZ - 4.1], [0.12, 3.3, 0.12], mats.metal);
+    block("Roadside sign", [side * 6.9, 3.05, junctionZ - 4.1], [0.9, 0.8, 0.12], mats.body);
+    block("Sign face", [side * 6.9, 3.05, junctionZ - 4.02], [0.68, 0.56, 0.035], mats.paint);
+  }
+}
+for (const side of [-1, 1]) {
+  for (let z = -70; z <= 70; z += 14) {
+    block("Road drain", [side * 7.28, 0.255, z], [0.28, 0.025, 1.2], mats.dark);
+  }
+}
 
 // Buildings with road-facing windows, entrances and rooftop details.
 const facades = [
@@ -108,8 +126,8 @@ for (const side of [-1, 1]) {
 const sun = new pc.Entity("Afternoon sun");
 sun.addComponent("light", {
   type: "directional",
-  color: new pc.Color(1, 0.9, 0.76),
-  intensity: 1.35,
+  color: new pc.Color(1, 0.78, 0.58),
+  intensity: 1.15,
   castShadows: true,
   shadowResolution: 1024
 });
@@ -123,6 +141,16 @@ app.root.addChild(car);
 block("Car chassis", [0, 0.53, 0], [2.05, 0.58, 4.25], mats.body, car);
 block("Front hood", [0, 0.82, -1.25], [1.92, 0.16, 1.35], mats.body, car);
 block("Cabin", [0, 1.04, -0.22], [1.62, 0.68, 1.95], mats.glass, car);
+block("Rear window", [0, 1.18, 0.78], [1.42, 0.42, 0.08], mats.glass, car);
+block("Front grille", [0, 0.58, -2.17], [0.82, 0.22, 0.07], mats.metal, car);
+block("Front splitter", [0, 0.28, -2.17], [2.08, 0.1, 0.32], mats.dark, car);
+block("Rear diffuser", [0, 0.28, 2.12], [1.8, 0.12, 0.3], mats.dark, car);
+for (const side of [-1, 1]) {
+  block("Side skirt", [side * 1.02, 0.34, 0], [0.12, 0.18, 2.8], mats.metal, car);
+  block("Side mirror", [side * 0.91, 1.04, -0.78], [0.28, 0.18, 0.32], mats.body, car);
+}
+block("Rear spoiler", [0, 1.28, 1.75], [2.0, 0.09, 0.32], mats.metal, car);
+
 block("Front bumper", [0, 0.37, -2.13], [1.95, 0.2, 0.18], mats.trim, car);
 block("Rear bumper", [0, 0.37, 2.13], [1.95, 0.2, 0.18], mats.trim, car);
 for (const x of [-0.68, 0.68]) {
@@ -140,7 +168,7 @@ for (const x of [-1.04, 1.04]) {
 
 const camera = new pc.Entity("Chase camera");
 camera.addComponent("camera", {
-  clearColor: new pc.Color(0.43, 0.62, 0.8),
+  clearColor: new pc.Color(0.23, 0.34, 0.49),
   fov: 62,
   nearClip: 0.1,
   farClip: 300
