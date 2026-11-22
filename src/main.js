@@ -212,6 +212,38 @@ for(let row=0;row<6;row++){
   }
   block("Rooftop plant room",[x,h+.8,z],[w*.35,1.6,5],mats.metal);
   block("Rooftop service unit",[x+w*.28,h/2+.55,z+5.2],[2.6,1.1,2.1],mats.dark);
+
+  // Selective architectural features break up the repeated block silhouettes.
+  const detailIndex=row*6+col;
+  if(detailIndex%3!==1){
+   const face=detailIndex%2===0?1:-1;
+   const faceZ=z+face*11.72;
+   const balconyY=Math.min(h-2.1,6.1+(detailIndex%2)*2.8);
+   block("Projecting balcony slab",[x-w*.18,balconyY,faceZ+face*.58],[w*.42,.18,1.25],mats.concrete);
+   block("Balcony front rail",[x-w*.18,balconyY+.55,faceZ+face*1.18],[w*.42,.9,.09],mats.metal);
+   for(const railX of [x-w*.18-w*.21,x-w*.18+w*.21]){
+    block("Balcony side rail",[railX,balconyY+.55,faceZ+face*.58],[.09,.9,1.15],mats.metal);
+   }
+  }
+  if(detailIndex%4===0){
+   const signFace=detailIndex%2===0?1:-1;
+   const signZ=z+signFace*11.82;
+   const signMat=detailIndex%8===0?marketFabric:mats.paint;
+   block("Vertical illuminated shop sign",[x+w*.34,3.1,signZ+signFace*.2],[1.05,3.5,.22],signMat);
+   block("Shop sign lettering panel",[x+w*.34,3.1,signZ+signFace*.34],[.72,2.75,.06],mats.windowLit);
+  }
+  if(detailIndex%5===0){
+   block("Roof antenna mast",[x-w*.3,h+2.5,z],[.12,5,.12],mats.metal);
+   block("Roof antenna crossbar",[x-w*.3,h+3.7,z],[1.1,.1,.1],mats.metal);
+  }
+  if(detailIndex%2===0){
+   const awningFace=detailIndex%4===0?-1:1;
+   const awningZ=z+awningFace*11.95;
+   block("Storefront canopy",[x,3.05,awningZ+awningFace*.62],[w*.76,.18,1.3],detailIndex%4===0?marketFabric:industrialPaint);
+   for(let stripe=-2;stripe<=2;stripe++){
+    block("Canopy valance detail",[x+stripe*w*.13,2.88,awningZ+awningFace*1.22],[.12,.24,.06],mats.windowLit);
+   }
+  }
  }
 }
 // District landmarks give the first city map recognisable destinations.
