@@ -372,7 +372,7 @@ const vehicleCatalog = [
 const savedGarage=(()=>{try{return JSON.parse(localStorage.getItem("kxic-garage")||"{}")}catch{return {}}})();
 let selectedVehicle=vehicleCatalog.find(v=>v.id===savedGarage.vehicle)||vehicleCatalog[0];
 let selectedPaint=Array.isArray(savedGarage.paint)?savedGarage.paint:selectedVehicle.paint;
-let cameraMode="chase",gamePaused=true,damage=0,raceActive=false,raceStart=0,raceCheckpoint=0,bestRace=Number(localStorage.getItem("kxic-best-race")||0),drivenDistance=0;
+let cameraMode="chase",gamePaused=true,damage=0,raceActive=false,raceStart=0,raceCheckpoint=0,bestRace=Number(localStorage.getItem("kxic-best-race")||0),drivenDistance=Number(localStorage.getItem("kxic-distance")||0),playerXP=Number(localStorage.getItem("kxic-xp")||0),playerLevel=Math.max(1,Math.floor(playerXP/1000)+1);
 const garagePaints=[{name:"Midnight",rgb:[.035,.07,.12]},{name:"Crimson",rgb:[.52,.045,.035]},{name:"Ocean",rgb:[.035,.22,.42]},{name:"Silver",rgb:[.48,.5,.52]},{name:"Gold",rgb:[.55,.34,.08]}];
 function saveGarage(){localStorage.setItem("kxic-garage",JSON.stringify({vehicle:selectedVehicle.id,paint:selectedPaint}))}
 
@@ -532,9 +532,9 @@ onlinePanel.querySelector("#password-update").addEventListener("click",e=>runOnl
 onlinePanel.querySelector("#account-logout").addEventListener("click",e=>runOnline(e.currentTarget,async()=>{await signOutPlayer();await refreshAccount()}));
 onlinePanel.querySelector("#wallet-refresh").addEventListener("click",e=>runOnline(e.currentTarget,refreshWallet));
 onlinePanel.querySelector("#transfer-kx").addEventListener("click",e=>runOnline(e.currentTarget,async()=>{const recipient=onlinePanel.querySelector("#transfer-recipient").value.trim();const amount=Number(onlinePanel.querySelector("#transfer-amount").value);const key=globalThis.crypto?.randomUUID?.()||("kx-"+Date.now()+"-"+Math.random().toString(36).slice(2));const result=await transferKX(recipient,amount,key);onlineStatus.textContent="Transfer: "+result.status;await refreshWallet()}));
-function cloudProgress(){return {level:1,xp:0,selected_vehicle:selectedVehicle.id,paint:"#"+selectedPaint.map(v=>Math.round(v*255).toString(16).padStart(2,"0")).join(""),campaign_step:Number(localStorage.getItem("kxic-story-progress")||0)}}
+function cloudProgress(){return {level:playerLevel,xp:playerXP,distance_m:drivenDistance,best_race_seconds:bestRace,selected_vehicle:selectedVehicle.id,paint:"#"+selectedPaint.map(v=>Math.round(v*255).toString(16).padStart(2,"0")).join(""),campaign_step:Number(localStorage.getItem("kxic-story-progress")||0)}}
 onlinePanel.querySelector("#cloud-save").addEventListener("click",e=>runOnline(e.currentTarget,async()=>{await savePlayerProgress(cloudProgress());onlineStatus.textContent="Progress saved to your account."}));
-onlinePanel.querySelector("#cloud-load").addEventListener("click",e=>runOnline(e.currentTarget,async()=>{const progress=await loadPlayerProgress();if(!progress){onlineStatus.textContent="No cloud save found.";return}const chosen=vehicleCatalog.find(v=>v.id===progress.selected_vehicle);if(chosen)selectedVehicle=chosen;const match=/^#([0-9a-f]{6})$/i.exec(progress.paint||"");if(match){const hex=match[1];setPlayerPaint([0,2,4].map(i=>parseInt(hex.slice(i,i+2),16)/255))}localStorage.setItem("kxic-story-progress",String(progress.campaign_step||0));refreshGarage();onlineStatus.textContent="Cloud progress loaded."}));
+onlinePanel.querySelector("#cloud-load").addEventListener("click",e=>runOnline(e.currentTarget,async()=>{const progress=await loadPlayerProgress();if(!progress){onlineStatus.textContent="No cloud save found.";return}const chosen=vehicleCatalog.find(v=>v.id===progress.selected_vehicle);if(chosen)selectedVehicle=chosen;const match=/^#([0-9a-f]{6})$/i.exec(progress.paint||"");if(match){const hex=match[1];setPlayerPaint([0,2,4].map(i=>parseInt(hex.slice(i,i+2),16)/255))}localStorage.setItem("kxic-story-progress",String(progress.campaign_step||0));playerXP=Number(progress.xp)||0;playerLevel=Math.max(1,Number(progress.level)||Math.floor(playerXP/1000)+1);drivenDistance=Number(progress.distance_m)||0;bestRace=Number(progress.best_race_seconds)||bestRace;localStorage.setItem("kxic-xp",String(playerXP));localStorage.setItem("kxic-distance",String(drivenDistance));refreshGarage();onlineStatus.textContent="Cloud progress loaded."}));
 
 let cityRoom=null;
 const remoteDrivers=new Map();
@@ -615,7 +615,8 @@ function completeStoryMission(){
  if(missionMarker){missionMarker.destroy();missionMarker=null}
  wantedLevel=0;policeRoot.enabled=false;
  showGarage("MISSION COMPLETE",mission.title+" completed. Your campaign progress is saved on this device.");
- try{localStorage.setItem("kxic-story-progress",String(Math.max(Number(localStorage.getItem("kxic-story-progress")||0),missionIndex+1)))}catch{}
+ try{localStorage.setItem("kxic-story-progress",String(Math.max(Number(localStorage.getItem("kxic-story-progress")||0),missionIndex+1)));playerXP+=500+missionIndex*250;playerLevel=Math.max(1,Math.floor(playerXP/1000)+1);localStorage.setItem("kxic-xp",String(playerXP));}catch{}
+ if(backendConfigured)getPlayerSession().then(session=>{if(session?.user)return savePlayerProgress(cloudProgress())}).catch(error=>console.warn("Cloud auto-save:",error.message));
 }
 const campaignButton=document.createElement("button");campaignButton.className="secondary-action";campaignButton.textContent="STORY CAMPAIGN";
 gameOverlay.querySelector(".panel-actions").appendChild(campaignButton);
@@ -831,7 +832,7 @@ app.on("update", dt => {
    }
   }
 
-  drivenDistance+=Math.abs(speed)*dt;
+  drivenDistance+=Math.abs(speed)*dt;localStorage.setItem("kxic-distance",String(Math.floor(drivenDistance)));
   missionStatusLabel.textContent=drivenDistance<500?`CITY DRIVE • ${Math.min(500,Math.floor(drivenDistance))} / 500 M`:"CITY DRIVE • COMPLETE";
   if(raceActive){const target=raceRoute[raceCheckpoint];if(target!==undefined&&Math.abs(p.z-target)<2.4&&Math.abs(p.x)<5.8){raceGates[raceCheckpoint].enabled=false;raceCheckpoint++;if(raceCheckpoint<raceRoute.length)raceGates[raceCheckpoint].enabled=true;else{raceActive=false;const elapsed=(performance.now()-raceStart)/1000;if(!bestRace||elapsed<bestRace){bestRace=elapsed;localStorage.setItem("kxic-best-race",String(bestRace))}showGarage("SPRINT COMPLETE",`Time: ${elapsed.toFixed(2)}s • Best: ${bestRace.toFixed(2)}s`)}}}
   raceStatusLabel.textContent=raceActive?`STREET SPRINT • CHECKPOINT ${raceCheckpoint+1}/3 • ${((performance.now()-raceStart)/1000).toFixed(1)}s`:"";
