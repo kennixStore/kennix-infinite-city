@@ -249,6 +249,32 @@ createTrafficCar(2.55, -25, -1, 1, 8.5);
 createTrafficCar(-2.55, 11, 1, 2, 9);
 createTrafficCar(2.55, 62, -1, 3, 11);
 
+// Pedestrian figures on the sidewalks (visual prototype, not animated AI yet).
+const skinMat = makeMat([0.55, 0.34, 0.22]);
+const clothingMats = [
+  makeMat([0.12, 0.22, 0.48]),
+  makeMat([0.48, 0.12, 0.09]),
+  makeMat([0.12, 0.34, 0.2]),
+  makeMat([0.34, 0.27, 0.16])
+];
+function createPedestrian(x, z, outfit, facing = 0) {
+  const person = new pc.Entity("Sidewalk pedestrian");
+  person.setPosition(x, 0.12, z);
+  person.setEulerAngles(0, facing, 0);
+  app.root.addChild(person);
+  block("Pedestrian torso", [0, 0.98, 0], [0.48, 0.78, 0.28], clothingMats[outfit % clothingMats.length], person);
+  block("Pedestrian head", [0, 1.58, -0.015], [0.34, 0.36, 0.34], skinMat, person, "sphere");
+  for (const side of [-1, 1]) {
+    block("Pedestrian leg", [side * 0.13, 0.43, 0], [0.16, 0.62, 0.18], mats.dark, person);
+    block("Pedestrian arm", [side * 0.31, 1.02, 0], [0.14, 0.58, 0.16], clothingMats[outfit % clothingMats.length], person);
+  }
+}
+createPedestrian(-9.1, -51, 0, 90);
+createPedestrian(9.1, -35, 1, -90);
+createPedestrian(-9.1, -5, 2, 90);
+createPedestrian(9.1, 22, 3, -90);
+createPedestrian(-9.1, 61, 1, 90);
+
 const camera = new pc.Entity("Chase camera");
 camera.addComponent("camera", {
   clearColor: new pc.Color(0.23, 0.34, 0.49),
@@ -349,6 +375,7 @@ app.on("update", dt => {
   frontWheels.forEach(wheel => wheel.setLocalEulerAngles(0, steeringAngle * 0.55, 90));
   rearWheels.forEach(wheel => wheel.rotateLocal(0, 0, speed * dt * 85));
 
+  // Keep pedestrians visual-only for this milestone; no unsafe or misleading collision claims.
   // Move NPC traffic and recycle vehicles at the ends of the test district.
   for (const npc of traffic) {
     const npcPos = npc.entity.getPosition();
