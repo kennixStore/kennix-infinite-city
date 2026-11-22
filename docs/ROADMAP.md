@@ -8,15 +8,18 @@
 - [x] Traffic, pedestrian, collision, repair and sprint prototypes.
 - [x] Police interceptor and basic pursuit prototype.
 - [x] Three-step local story campaign.
-- [x] Supabase account service module (email/password, session).
+- [x] Supabase account service module (email/password, session, password recovery and profile update).
 - [x] Per-player cloud-save service module.
 - [x] Database migration for player profiles and KX wallet/ledger.
+- [x] In-game account UI for registration, sign-in, password reset/update and display-name changes.
+- [x] In-game cloud save/load and KX balance/transfer controls.
+- [x] Casual online room presence and remote vehicle snapshot prototype.
 - [x] Authenticated transactional KX transfer RPC with row locks and idempotency.
 - [x] GitHub Actions syntax and production-build checks restored.
 
 ## Still required
 - [ ] Apply migration in Supabase and configure build environment variables.
-- [ ] Connect account, profile, wallet and cloud-save UI to the game.
+- [ ] Deploy Supabase schema, configure credentials, and test account, profile, wallet and cloud-save UI end-to-end.
 - [ ] Add verified server-side mission reward functions and anti-abuse limits.
 - [ ] Add email verification, password reset and account deletion flows.
 - [ ] Build authoritative multiplayer server, matchmaking and race validation.
