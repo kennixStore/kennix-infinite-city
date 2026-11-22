@@ -629,7 +629,7 @@ const wantedLabel=document.createElement("div");wantedLabel.className="wanted-la
 const missionTitleLabel=document.createElement("div");missionTitleLabel.className="mission-title-label";document.querySelector("#game-stage").appendChild(missionTitleLabel);
 
 const raceStatusLabel=document.createElement("div");raceStatusLabel.className="race-status";raceStatusLabel.id="race-status";document.querySelector("#game-stage").appendChild(raceStatusLabel);
-const missionStatusLabel=document.createElement("div");missionStatusLabel.className="mission-status";missionStatusLabel.textContent="CITY DRIVE • 0 / 500 M";document.querySelector("#game-stage").appendChild(missionStatusLabel);
+const missionStatusLabel=document.createElement("div");missionStatusLabel.className="mission-status";missionStatusLabel.textContent=`LEVEL ${playerLevel} • ${playerXP} XP • CITY DRIVE ${Math.min(500,Math.floor(drivenDistance))}/500 M`;document.querySelector("#game-stage").appendChild(missionStatusLabel);
 setPlayerPaint(selectedPaint);refreshGarage();showGarage();
 
 controls.querySelectorAll("button").forEach(button => {
@@ -833,7 +833,7 @@ app.on("update", dt => {
   }
 
   drivenDistance+=Math.abs(speed)*dt;const distanceBucket=Math.floor(drivenDistance/10);if(distanceBucket!==lastDistanceSave){lastDistanceSave=distanceBucket;try{localStorage.setItem("kxic-distance",String(Math.floor(drivenDistance)))}catch{}}
-  missionStatusLabel.textContent=drivenDistance<500?`CITY DRIVE • ${Math.min(500,Math.floor(drivenDistance))} / 500 M`:"CITY DRIVE • COMPLETE";
+  missionStatusLabel.textContent=`LEVEL ${playerLevel} • ${playerXP} XP • `+(drivenDistance<500?`CITY DRIVE ${Math.min(500,Math.floor(drivenDistance))}/500 M`:"CITY DRIVE COMPLETE");
   if(raceActive){const target=raceRoute[raceCheckpoint];if(target!==undefined&&Math.abs(p.z-target)<2.4&&Math.abs(p.x)<5.8){raceGates[raceCheckpoint].enabled=false;raceCheckpoint++;if(raceCheckpoint<raceRoute.length)raceGates[raceCheckpoint].enabled=true;else{raceActive=false;const elapsed=(performance.now()-raceStart)/1000;if(!bestRace||elapsed<bestRace){bestRace=elapsed;localStorage.setItem("kxic-best-race",String(bestRace))}showGarage("SPRINT COMPLETE",`Time: ${elapsed.toFixed(2)}s • Best: ${bestRace.toFixed(2)}s`)}}}
   raceStatusLabel.textContent=raceActive?`STREET SPRINT • CHECKPOINT ${raceCheckpoint+1}/3 • ${((performance.now()-raceStart)/1000).toFixed(1)}s`:"";
   // Smooth follow camera to reduce sudden movement on mobile.
