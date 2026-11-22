@@ -540,7 +540,8 @@ app.root.addChild(camera);
 
 const keys = new Set();
 const held = new Set();
-window.addEventListener("keydown",e=>{if(e.key==="Escape"){if(gamePaused)hideGarage();else showGarage("PAUSED","Take a break or return to the garage.")}keys.add(e.key.toLowerCase())});
+window.addEventListener("keydown",e=>{if(e.key==="Escape"){if(gamePaused)hideGarage();else showGarage("PAUSED","Take a break or return to the garage.")}if(e.key.toLowerCase()==="h")setHorn(true);keys.add(e.key.toLowerCase())});
+window.addEventListener("keyup",e=>{if(e.key.toLowerCase()==="h")setHorn(false)});
 window.addEventListener("keyup", e => keys.delete(e.key.toLowerCase()));
 window.addEventListener("blur", () => { keys.clear(); held.clear(); });
 
@@ -575,10 +576,42 @@ gameOverlay.querySelector("#start-drive").addEventListener("click",()=>{raceActi
 gameOverlay.querySelector("#start-race").addEventListener("click",()=>{raceActive=true;raceCheckpoint=0;raceStart=performance.now();raceGates.forEach((g,i)=>g.enabled=i===0);const q=car.getPosition();q.x=0;q.z=19;car.setPosition(q);speed=0;lateralSpeed=0;hideGarage()});
 gameOverlay.querySelector("#repair-car").addEventListener("click",()=>{damage=0;try{localStorage.setItem("kxic-damage","0")}catch{}speed=0;lateralSpeed=0;refreshVehicleDamage();refreshGarage()});
 
-const utilityBar=document.createElement("div");utilityBar.className="utility-bar";utilityBar.innerHTML='<button id="garage-open">GARAGE</button><button id="camera-toggle">CAMERA: CHASE</button><button id="pause-toggle">PAUSE</button>';document.querySelector("#game-stage").appendChild(utilityBar);
+const utilityBar=document.createElement("div");utilityBar.className="utility-bar";utilityBar.innerHTML='<button id="garage-open">GARAGE</button><button id="camera-toggle">CAMERA: CHASE</button><button id="audio-toggle">SOUND: OFF</button><button id="horn-button">HORN</button><button id="pause-toggle">PAUSE</button>';document.querySelector("#game-stage").appendChild(utilityBar);
 utilityBar.querySelector("#garage-open").addEventListener("click",()=>showGarage("CITY GARAGE","Select a vehicle, choose paint and repair damage."));
 utilityBar.querySelector("#pause-toggle").addEventListener("click",()=>gamePaused?hideGarage():showGarage("PAUSED","Take a break or return to the garage."));
 utilityBar.querySelector("#camera-toggle").addEventListener("click",e=>{cameraMode=cameraMode==="chase"?"cockpit":"chase";e.currentTarget.textContent="CAMERA: "+cameraMode.toUpperCase()});
+
+let audioContext=null,engineOscillator=null,engineGain=null,engineFilter=null,hornOscillator=null,hornGain=null,audioEnabled=false;
+function initialiseVehicleAudio(){
+ const AudioEngine=window.AudioContext||window.webkitAudioContext;
+ if(!AudioEngine)throw new Error("This browser does not support game audio.");
+ if(!audioContext){
+  audioContext=new AudioEngine();
+  engineOscillator=audioContext.createOscillator();engineOscillator.type="sawtooth";
+  engineFilter=audioContext.createBiquadFilter();engineFilter.type="lowpass";engineFilter.frequency.value=520;
+  engineGain=audioContext.createGain();engineGain.gain.value=0;
+  engineOscillator.connect(engineFilter);engineFilter.connect(engineGain);engineGain.connect(audioContext.destination);engineOscillator.start();
+  hornOscillator=audioContext.createOscillator();hornOscillator.type="square";
+  hornGain=audioContext.createGain();hornGain.gain.value=0;
+  hornOscillator.connect(hornGain);hornGain.connect(audioContext.destination);hornOscillator.frequency.value=440;hornOscillator.start();
+ }
+ if(audioContext.state==="suspended")audioContext.resume();
+ audioEnabled=true;
+ utilityBar.querySelector("#audio-toggle").textContent="SOUND: ON";
+}
+function setHorn(active){
+ if(!audioEnabled||!hornGain||!audioContext)return;
+ hornGain.gain.setTargetAtTime(active?.035:0,audioContext.currentTime,.035);
+}
+utilityBar.querySelector("#audio-toggle").addEventListener("click",()=>{
+ try{
+  if(audioEnabled){audioEnabled=false;engineGain.gain.setTargetAtTime(0,audioContext.currentTime,.08);setHorn(false);utilityBar.querySelector("#audio-toggle").textContent="SOUND: OFF"}
+  else initialiseVehicleAudio();
+ }catch(error){onlineStatus.textContent=error.message}
+});
+utilityBar.querySelector("#horn-button").addEventListener("pointerdown",e=>{e.preventDefault();try{if(!audioEnabled)initialiseVehicleAudio();setHorn(true)}catch(error){onlineStatus.textContent=error.message}});
+for(const eventName of ["pointerup","pointercancel","pointerleave"])utilityBar.querySelector("#horn-button").addEventListener(eventName,()=>setHorn(false));
+
 const accountButton=document.createElement("button");
 accountButton.textContent="ACCOUNT / KX";
 utilityBar.appendChild(accountButton);
@@ -822,6 +855,12 @@ app.on("update", dt => {
    skidMarkTimer+=dt;
    if(skidMarkTimer>=.13){skidMarkTimer=0;addSkidMarks(p,forwardX,forwardZ,rightX,rightZ)}
   }else skidMarkTimer=0;
+  if(audioEnabled&&audioContext&&engineOscillator){
+   const throttleLoad=forward?1:reverse?.62:.28;
+   engineOscillator.frequency.setTargetAtTime(58+Math.abs(speed)*5.2+(forward?selectedVehicle.acceleration*1.1:0),audioContext.currentTime,.08);
+   engineFilter.frequency.setTargetAtTime(260+Math.abs(speed)*24,audioContext.currentTime,.1);
+   engineGain.gain.setTargetAtTime((gamePaused?0:.018+Math.abs(speed)/Math.max(1,selectedVehicle.maxSpeed)*.035)*throttleLoad,audioContext.currentTime,.1);
+  }
   const braking = reverse && speed > 0.8;
   brakeGlow.light.intensity = braking ? 2.8 : 0;
   brakeLamps.forEach(lamp => {
