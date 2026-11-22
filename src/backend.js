@@ -32,6 +32,34 @@ export async function signInPlayer(email, password) {
   return data;
 }
 
+export async function requestPasswordReset(email) {
+  const { error } = await requireBackend().auth.resetPasswordForEmail(email, {
+    redirectTo: window.location.origin
+  });
+  if (error) throw error;
+}
+
+export async function updatePlayerPassword(password) {
+  if (String(password).length < 8) throw new Error("Use at least 8 characters.");
+  const { error } = await requireBackend().auth.updateUser({ password });
+  if (error) throw error;
+}
+
+export async function updatePlayerDisplayName(displayName) {
+  const db = requireBackend();
+  const name = String(displayName || "").trim();
+  if (name.length < 2 || name.length > 24) throw new Error("Driver name must be 2–24 characters.");
+  const { data, error: authError } = await db.auth.getUser();
+  if (authError) throw authError;
+  if (!data.user) throw new Error("Sign in first.");
+  const { error: profileError } = await db.from("player_profiles")
+    .update({ display_name: name, updated_at: new Date().toISOString() })
+    .eq("user_id", data.user.id);
+  if (profileError) throw profileError;
+  const { error: metadataError } = await db.auth.updateUser({ data: { display_name: name } });
+  if (metadataError) throw metadataError;
+}
+
 export async function signOutPlayer() {
   const { error } = await requireBackend().auth.signOut();
   if (error) throw error;
