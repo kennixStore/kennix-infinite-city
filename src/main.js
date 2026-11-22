@@ -219,6 +219,36 @@ for (const x of [-1.04, 1.04]) {
   }
 }
 
+// Lightweight ambient traffic: simple NPC cars circulate along the avenue.
+const trafficPaints = [
+  makeMat([0.62, 0.08, 0.045], 0.35, 0.3),
+  makeMat([0.12, 0.32, 0.42], 0.45, 0.28),
+  makeMat([0.58, 0.58, 0.55], 0.35, 0.32),
+  makeMat([0.12, 0.14, 0.17], 0.55, 0.25)
+];
+const traffic = [];
+function createTrafficCar(laneX, startZ, direction, paintIndex, cruiseSpeed) {
+  const npc = new pc.Entity("NPC traffic vehicle");
+  npc.setPosition(laneX, 0.08, startZ);
+  app.root.addChild(npc);
+  const paint = trafficPaints[paintIndex % trafficPaints.length];
+  block("Traffic body", [0, 0.48, 0], [1.72, 0.48, 3.45], paint, npc);
+  block("Traffic cabin", [0, 0.83, 0.18], [1.38, 0.46, 1.62], mats.glass, npc);
+  for (const side of [-1, 1]) {
+    block("Traffic headlight", [side * 0.55, 0.52, -1.74], [0.26, 0.12, 0.06], mats.headlight, npc);
+    block("Traffic tail light", [side * 0.55, 0.52, 1.74], [0.26, 0.12, 0.06], mats.red, npc);
+    for (const end of [-1, 1]) {
+      const tyre = block("Traffic tyre", [side * 0.87, 0.25, end * 1.05], [0.22, 0.46, 0.58], mats.trim, npc, "cylinder");
+      tyre.setLocalEulerAngles(0, 0, 90);
+    }
+  }
+  traffic.push({ entity: npc, direction, cruiseSpeed, hitCooldown: 0 });
+}
+createTrafficCar(-2.55, -57, 1, 0, 10);
+createTrafficCar(2.55, -25, -1, 1, 8.5);
+createTrafficCar(-2.55, 11, 1, 2, 9);
+createTrafficCar(2.55, 62, -1, 3, 11);
+
 const camera = new pc.Entity("Chase camera");
 camera.addComponent("camera", {
   clearColor: new pc.Color(0.23, 0.34, 0.49),
@@ -318,6 +348,25 @@ app.on("update", dt => {
 
   frontWheels.forEach(wheel => wheel.setLocalEulerAngles(0, steeringAngle * 0.55, 90));
   rearWheels.forEach(wheel => wheel.rotateLocal(0, 0, speed * dt * 85));
+
+  // Move NPC traffic and recycle vehicles at the ends of the test district.
+  for (const npc of traffic) {
+    const npcPos = npc.entity.getPosition();
+    npcPos.z += npc.direction * npc.cruiseSpeed * dt;
+    if (npcPos.z < -82) npcPos.z = 82;
+    if (npcPos.z > 82) npcPos.z = -82;
+    npc.entity.setPosition(npcPos);
+    npc.hitCooldown = Math.max(0, npc.hitCooldown - dt);
+
+    // Basic low-cost contact response; full rigid-body collisions come later.
+    const dx = npcPos.x - p.x;
+    const dz = npcPos.z - p.z;
+    if (npc.hitCooldown === 0 && Math.abs(dx) < 1.65 && Math.abs(dz) < 3.05) {
+      speed *= 0.38;
+      heading += dx >= 0 ? -5 : 5;
+      npc.hitCooldown = 1.1;
+    }
+  }
 
   // Smooth follow camera to reduce sudden movement on mobile.
   const camTarget = new pc.Vec3(p.x, p.y + 5.4, p.z + 10.8);
