@@ -601,7 +601,7 @@ function initialiseVehicleAudio(){
 }
 function setHorn(active){
  if(!audioEnabled||!hornGain||!audioContext)return;
- hornGain.gain.setTargetAtTime(active?.035:0,audioContext.currentTime,.035);
+ hornGain.gain.setTargetAtTime(active ? 0.035 : 0,audioContext.currentTime,.035);
 }
 utilityBar.querySelector("#audio-toggle").addEventListener("click",()=>{
  try{
@@ -856,7 +856,7 @@ app.on("update", dt => {
    if(skidMarkTimer>=.13){skidMarkTimer=0;addSkidMarks(p,forwardX,forwardZ,rightX,rightZ)}
   }else skidMarkTimer=0;
   if(audioEnabled&&audioContext&&engineOscillator){
-   const throttleLoad=forward?1:reverse?.62:.28;
+   const throttleLoad=forward?1:reverse ? 0.62 : 0.28;
    engineOscillator.frequency.setTargetAtTime(58+Math.abs(speed)*5.2+(forward?selectedVehicle.acceleration*1.1:0),audioContext.currentTime,.08);
    engineFilter.frequency.setTargetAtTime(260+Math.abs(speed)*24,audioContext.currentTime,.1);
    engineGain.gain.setTargetAtTime((gamePaused?0:.018+Math.abs(speed)/Math.max(1,selectedVehicle.maxSpeed)*.035)*throttleLoad,audioContext.currentTime,.1);
