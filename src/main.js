@@ -244,7 +244,7 @@ app.on("update", dt => {
   // Steering response increases with speed, but remains controllable at low speed.
   const speedFactor = 0.18 + Math.min(Math.abs(speed) / 24, 1) * 0.82;
   const grip = handbrakeActive ? 1.35 : 1;
-  heading += steeringAngle * 0.95 * speedFactor * grip * dt * Math.sign(speed || 1);
+  heading -= steeringAngle * 0.95 * speedFactor * grip * dt * Math.sign(speed || 1);
 
   const radians = heading * Math.PI / 180;
   const p = car.getPosition();
