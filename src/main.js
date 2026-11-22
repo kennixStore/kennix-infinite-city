@@ -52,17 +52,17 @@ function block(name, pos, size, mat, parent = app.root, shape = "box") {
 }
 
 // Compact first-district driving test area.
-block("City ground", [0, -0.42, 0], [150, 0.6, 180], mats.ground);
-block("Main avenue", [0, -0.04, 0], [15, 0.16, 160], mats.asphalt);
+block("City ground", [0, -0.42, 0], [340, 0.6, 540], mats.ground);
+block("Main avenue", [0, -0.04, 0], [15, 0.16, 520], mats.asphalt);
 for (const x of [-8.7, 8.7]) {
-  block("Sidewalk", [x, 0.02, 0], [2.4, 0.22, 160], mats.concrete);
-  block("Curb", [Math.sign(x) * 7.55, 0.13, 0], [0.22, 0.25, 160], mats.curb);
+  block("Sidewalk", [x, 0.02, 0], [2.4, 0.22, 520], mats.concrete);
+  block("Curb", [Math.sign(x) * 7.55, 0.13, 0], [0.22, 0.25, 520], mats.curb);
 }
-for (let z = -74; z <= 74; z += 11) {
+for (let z = -250; z <= 250; z += 11) {
   block("Centre lane dash", [0, 0.055, z], [0.16, 0.035, 5.2], mats.paint);
 }
 for (const x of [-4.9, 4.9]) {
-  block("Lane divider", [x, 0.05, 0], [0.09, 0.025, 160], mats.white);
+  block("Lane divider", [x, 0.05, 0], [0.09, 0.025, 520], mats.white);
 }
  
 // Junction markings, pedestrian crossings and roadside signs.
@@ -93,6 +93,44 @@ for (const junctionZ of [-43, 39]) {
   for (let x = -52; x <= 52; x += 8) {
     block("Cross street centre dash", [x, 0.055, junctionZ], [3.8, 0.03, 0.14], mats.paint);
   }
+}
+
+
+// Extended NOVA CITY grid: Downtown, Market Quarter, Waterfront and Industrial Edge.
+const districtRoads = [-210,-140,-70,0,70,140,210];
+for (const z of districtRoads) {
+  if (z === 0 || z === -70 || z === 70) continue;
+  block("City cross avenue", [0,-0.035,z], [320,0.15,15], mats.asphalt);
+  for (let x=-150;x<=150;x+=12) block("Cross avenue lane dash",[x,0.055,z],[6,0.03,0.14],mats.paint);
+}
+for (const x of [-120,-60,60,120]) {
+  block("City north south avenue",[x,-0.035,0],[15,0.15,520],mats.asphalt);
+  for(let z=-250;z<=250;z+=12) block("City avenue lane dash",[x,0.055,z],[0.14,0.03,6],mats.paint);
+}
+const districtPalettes=[
+  makeMat([0.22,0.27,0.33]),makeMat([0.34,0.29,0.23]),
+  makeMat([0.16,0.25,0.29]),makeMat([0.31,0.33,0.34])
+];
+for(let row=0;row<6;row++){
+ for(let col=0;col<5;col++){
+  const x=-150+col*60+30, z=-235+row*78+34;
+  if(Math.abs(x)<22) continue;
+  const h=10+((row*7+col*11)%5)*5, w=22+((row+col)%3)*5;
+  const b=block("NOVA CITY district block",[x,h/2,z],[w,h,23],districtPalettes[(row+col)%4]);
+  for(let floor=1;floor<Math.floor(h/3.2);floor++){
+   for(let bay=0;bay<3;bay++){
+    const wx=x-w/2-0.06+(bay+0.5)*w/3;
+    block("District tower window",[wx,floor*3,z-11.58],[2,1.45,.08],(floor+bay+row)%4===0?mats.windowLit:mats.glass,b);
+   }
+  }
+  block("Rooftop plant room",[x,h+0.8,z],[w*.35,1.6,5],mats.metal,b);
+ }
+}
+for(let i=0;i<24;i++){
+ const z=-225+i*19;
+ const side=i%2?1:-1;
+ block("NOVA boulevard lamp",[side*9,4,z],[.14,8,.14],mats.metal);
+ block("Boulevard lamp head",[side*8.3,7.8,z],[1.2,.18,.25],mats.windowLit);
 }
 
 // A few parked vehicles give the first district a sense of scale and life.
@@ -335,11 +373,79 @@ let selectedPaint=Array.isArray(savedGarage.paint)?savedGarage.paint:selectedVeh
 let cameraMode="chase",gamePaused=true,damage=0,raceActive=false,raceStart=0,raceCheckpoint=0,bestRace=Number(localStorage.getItem("kxic-best-race")||0),drivenDistance=0;
 const garagePaints=[{name:"Midnight",rgb:[.035,.07,.12]},{name:"Crimson",rgb:[.52,.045,.035]},{name:"Ocean",rgb:[.035,.22,.42]},{name:"Silver",rgb:[.48,.5,.52]},{name:"Gold",rgb:[.55,.34,.08]}];
 function saveGarage(){localStorage.setItem("kxic-garage",JSON.stringify({vehicle:selectedVehicle.id,paint:selectedPaint}))}
+
+const vehicleModels = {};
+let activeVehicleWheels = [];
+for(const child of [...car.children]){
+ if(child.name!=="Headlight beam" && child.name!=="Brake light glow") child.enabled=false;
+}
+function buildVehicleModel(vehicle){
+ const root=new pc.Entity(vehicle.id+" detailed vehicle model");car.addChild(root);
+ const bodyMat=makeMat(vehicle.paint,.78,.2), trimMat=makeMat([.018,.022,.028],.45,.25);
+ const glassMat=makeMat([.025,.095,.14],.5,.12), chromeMat=makeMat([.38,.42,.46],.85,.18);
+ const lampMat=makeMat([.9,.78,.48],.1,.15);lampMat.emissive=new pc.Color(.55,.38,.12);lampMat.update();
+ const wheelList=[],paintParts=[];
+ const kind=vehicle.id;
+ const width=kind==="suv"?2.25:kind==="muscle"?2.18:kind==="hyper"?2.02:2.08;
+ const length=kind==="suv"?4.65:kind==="muscle"?4.55:kind==="hyper"?4.35:4.25;
+ const height=kind==="suv"?1.05:kind==="muscle"?.68:.55;
+ const body=block("Vehicle sculpted body",[0,.48,0],[width,height,length],bodyMat,root);paintParts.push(body);
+ const hood=block("Sculpted bonnet",[0,.48+height*.53,-length*.29],[width*.91,.16,length*.34],bodyMat,root);paintParts.push(hood);
+ const cabinHeight=kind==="suv"?1.05:kind==="muscle"?.58:.72;
+ const cabinZ=kind==="suv"?.02:kind==="muscle"?.12:-.05;
+ const cabin=block("Vehicle glass cabin",[0,.9,cabinZ],[width*(kind==="suv"?.82:.76),cabinHeight,length*.42],glassMat,root);
+ if(kind==="suv") block("SUV roof",[0,1.48,.05],[width*.82,.13,length*.4],bodyMat,root);
+ if(kind==="muscle") {
+  block("Bonnet power bulge",[0,.73,-1.12],[.72,.22,1.05],trimMat,root);
+  block("Rear spoiler wing",[0,1.02,1.82],[2.05,.12,.34],chromeMat,root);
+ }
+ if(kind==="hyper"){
+  block("Hypercar front splitter",[0,.22,-2.2],[2.2,.12,.48],trimMat,root);
+  block("Rear aero wing",[0,1.02,1.9],[2.25,.09,.3],chromeMat,root);
+  for(const side of [-1,1]) block("Hyper side intake",[side*1.02,.56,.25],[.09,.25,.82],trimMat,root);
+ }
+ if(kind==="suv"){
+  for(const side of [-1,1]) block("Roof rail",[side*.86,1.57,.05],[.08,.12,1.75],chromeMat,root);
+  block("SUV rear spare detail",[0,.9,2.22],[.85,.72,.16],trimMat,root);
+ }
+ for(const side of [-1,1]){
+  block("Wheel arch trim front",[side*width*.48,.42,-1.28],[.12,.72,1.05],trimMat,root);
+  block("Wheel arch trim rear",[side*width*.48,.42,1.28],[.12,.72,1.05],trimMat,root);
+  block("Side sill",[side*width*.49,.27,0],[.12,.16,2.6],chromeMat,root);
+  block("Wing mirror",[side*width*.49,.95,-.68],[.28,.16,.3],bodyMat,root);
+  for(const z of [-1.42,1.42]){
+   const tyre=block("Performance tyre",[side*width*.49,.28,z],[.7,.34,.72],trimMat,root,"cylinder");
+   tyre.setLocalEulerAngles(0,0,90);wheelList.push(tyre);
+   block("Alloy wheel hub",[side*width*.49,.28,z-.012],[.37,.35,.08],chromeMat,root,"cylinder").setLocalEulerAngles(0,0,90);
+  }
+  block("LED headlamp",[side*.65,.59,-length*.5-.02],[.48,.18,.07],lampMat,root);
+  block("Rear LED lamp",[side*.65,.59,length*.5+.02],[.48,.16,.07],mats.red,root);
+ }
+ block("Front grille",[0,.39,-length*.5-.035],[.9,.24,.08],chromeMat,root);
+ block("Lower air intake",[0,.25,-length*.5-.06],[1.35,.1,.08],trimMat,root);
+ if(kind==="sport") block("Sport rear deck",[0,.84,1.35],[1.6,.12,.5],bodyMat,root);
+ const brakeLamps=[];
+ for(const side of [-1,1]){
+  const lamp=block("Vehicle brake LED",[side*.64,.6,length*.5+.06],[.42,.16,.08],brakeLampMaterial,root);
+  brakeLamps.push(lamp);
+ }
+ root.enabled=false;
+ return {root,wheels:wheelList,paintParts,brakeLamps,bodyMat};
+}
+for(const v of vehicleCatalog) vehicleModels[v.id]=buildVehicleModel(v);
 function setPlayerPaint(rgb){
- selectedPaint=rgb; const paint=makeMat(rgb,.72,.2);
- for(const name of ["Car chassis","Front hood"]){const part=car.findByName(name);if(part?.render)part.render.material=paint}
+ selectedPaint=rgb;
+ const model=vehicleModels[selectedVehicle.id];
+ const paint=makeMat(rgb,.78,.2);
+ model.paintParts.forEach(part=>part.render.material=paint);
+ selectedVehicle.paint=rgb;
  saveGarage();
 }
+function activateVehicleModel(){
+ for(const [id,model] of Object.entries(vehicleModels)) model.root.enabled=id===selectedVehicle.id;
+ activeVehicleWheels=vehicleModels[selectedVehicle.id].wheels;
+}
+
 
 const camera = new pc.Entity("Chase camera");
 camera.addComponent("camera", {
@@ -374,6 +480,7 @@ gameOverlay.innerHTML=`<div class="game-panel"><div class="panel-kicker">KENNIX 
 document.querySelector("#game-stage").appendChild(gameOverlay);
 const panelTitle=gameOverlay.querySelector("#panel-title"),panelCopy=gameOverlay.querySelector("#panel-copy"),garageList=gameOverlay.querySelector("#garage-list"),vehicleStats=gameOverlay.querySelector("#vehicle-stats"),panelNote=gameOverlay.querySelector("#panel-note");
 function refreshGarage(){
+ activateVehicleModel();
  garageList.innerHTML=vehicleCatalog.map(v=>`<button class="vehicle-option ${v.id===selectedVehicle.id?"selected":""}" data-vehicle="${v.id}"><strong>${v.name}</strong><span>${v.className}</span><small>AVAILABLE</small></button>`).join("");
  vehicleStats.textContent=`TOP SPEED ${Math.round(selectedVehicle.maxSpeed*3.6)} KM/H • ACCELERATION ${selectedVehicle.acceleration.toFixed(1)} • HANDLING ${Math.round(selectedVehicle.handling*100)}%`;
  gameOverlay.querySelector("#repair-car").textContent=damage?`REPAIR VEHICLE • ${damage}% DAMAGE`:"VEHICLE IN GOOD CONDITION";
@@ -389,6 +496,60 @@ const utilityBar=document.createElement("div");utilityBar.className="utility-bar
 utilityBar.querySelector("#garage-open").addEventListener("click",()=>showGarage("CITY GARAGE","Select a vehicle, choose paint and repair damage."));
 utilityBar.querySelector("#pause-toggle").addEventListener("click",()=>gamePaused?hideGarage():showGarage("PAUSED","Take a break or return to the garage."));
 utilityBar.querySelector("#camera-toggle").addEventListener("click",e=>{cameraMode=cameraMode==="chase"?"cockpit":"chase";e.currentTarget.textContent="CAMERA: "+cameraMode.toUpperCase()});
+
+const policeRoot=new pc.Entity("NOVA City Police interceptor");app.root.addChild(policeRoot);
+const policePaint=makeMat([.018,.035,.075],.65,.22);
+block("Police interceptor body",[0,.52,0],[2.05,.62,4.3],policePaint,policeRoot);
+block("Police interceptor cabin",[0,1.02,-.1],[1.55,.68,1.9],mats.glass,policeRoot);
+for(const side of [-1,1]){
+ block("Police door badge",[side*1.04,.58,0],[.035,.32,.72],mats.white,policeRoot);
+ for(const z of [-1.35,1.35]) block("Police wheel",[side*1.02,.27,z],[.62,.3,.65],mats.dark,policeRoot,"cylinder").setLocalEulerAngles(0,0,90);
+}
+const sirenRed=makeMat([.8,.015,.01]);sirenRed.emissive=new pc.Color(.8,.01,.005);sirenRed.update();
+const sirenBlue=makeMat([.01,.12,.9]);sirenBlue.emissive=new pc.Color(.01,.1,.9);sirenBlue.update();
+const sirenL=block("Police red light",[ -.38,1.42,-.1],[.42,.16,.25],sirenRed,policeRoot);
+const sirenR=block("Police blue light",[ .38,1.42,-.1],[.42,.16,.25],sirenBlue,policeRoot);
+policeRoot.enabled=false;
+let wantedLevel=0,policeSpawnTimer=0,policeSirenTimer=0,missionIndex=-1,missionElapsed=0,missionComplete=false;
+const storyMissions=[
+ {title:"FIRST NIGHT",brief:"A contact needs a quick driver. Reach the waterfront marker.",target:[0,-125],wanted:0,goal:"Reach the waterfront"},
+ {title:"HEAT CHECK",brief:"The street run drew police attention. Escape the patrol and reach the Market Quarter.",target:[60,-140],wanted:1,goal:"Lose the police and reach Market Quarter"},
+ {title:"BLACKOUT RUN",brief:"The city grid is failing. Cross the city and reach the Industrial Edge.",target:[-120,210],wanted:2,goal:"Reach the Industrial Edge"}
+];
+let missionMarker=null;
+function setMissionMarker(x,z){
+ if(missionMarker)missionMarker.destroy();
+ missionMarker=new pc.Entity("Story mission destination");app.root.addChild(missionMarker);
+ block("Mission marker ring",[0,.16,0],[3.5,.12,3.5],mats.paint,missionMarker,"cylinder");
+ block("Mission marker beacon",[0,2.3,0],[.18,4.6,.18],mats.paint,missionMarker);
+ missionMarker.setPosition(x,.1,z);
+}
+function startStoryMission(index){
+ missionIndex=index;missionElapsed=0;missionComplete=false;
+ const mission=storyMissions[index];wantedLevel=mission.wanted;
+ setMissionMarker(mission.target[0],mission.target[1]);
+ missionStatusLabel.textContent=mission.goal;
+ panelTitle.textContent=mission.title;panelCopy.textContent=mission.brief;
+ panelNote.textContent="Story campaign prototype • mission progress is saved locally on this device.";
+ hideGarage();
+}
+function completeStoryMission(){
+ const mission=storyMissions[missionIndex];missionComplete=true;
+ if(missionMarker){missionMarker.destroy();missionMarker=null}
+ wantedLevel=0;policeRoot.enabled=false;
+ showGarage("MISSION COMPLETE",mission.title+" completed. Your campaign progress is saved on this device.");
+ try{localStorage.setItem("kxic-story-progress",String(Math.max(Number(localStorage.getItem("kxic-story-progress")||0),missionIndex+1)))}catch{}
+}
+const campaignButton=document.createElement("button");campaignButton.className="secondary-action";campaignButton.textContent="STORY CAMPAIGN";
+gameOverlay.querySelector(".panel-actions").appendChild(campaignButton);
+campaignButton.addEventListener("click",()=>{
+ const saved=Number(localStorage.getItem("kxic-story-progress")||0);
+ const next=Math.min(saved,storyMissions.length-1);
+ startStoryMission(next);
+});
+const wantedLabel=document.createElement("div");wantedLabel.className="wanted-label";wantedLabel.textContent="";document.querySelector("#game-stage").appendChild(wantedLabel);
+const missionTitleLabel=document.createElement("div");missionTitleLabel.className="mission-title-label";document.querySelector("#game-stage").appendChild(missionTitleLabel);
+
 const raceStatusLabel=document.createElement("div");raceStatusLabel.className="race-status";raceStatusLabel.id="race-status";document.querySelector("#game-stage").appendChild(raceStatusLabel);
 const missionStatusLabel=document.createElement("div");missionStatusLabel.className="mission-status";missionStatusLabel.textContent="CITY DRIVE • 0 / 500 M";document.querySelector("#game-stage").appendChild(missionStatusLabel);
 setPlayerPaint(selectedPaint);refreshGarage();showGarage();
@@ -466,19 +627,14 @@ app.on("update", dt => {
   const nextZ = p.z + (forwardZ * speed + rightZ * lateralSpeed) * dt;
 
   // Road-edge contact reduces speed and sideways momentum instead of allowing clipping.
-  const roadEdge = 5.75;
-  if (nextX < -roadEdge || nextX > roadEdge) {
-    speed *= -0.12;
-    lateralSpeed *= -0.28;
-    p.x = clamp(nextX, -roadEdge, roadEdge);
-  } else {
-    p.x = nextX;
-  }
-  if (nextZ < -75 || nextZ > 75) {
-    speed *= -0.12;
-    p.z = clamp(nextZ, -75, 75);
-  } else {
-    p.z = nextZ;
+  p.x=clamp(nextX,-158,158);
+  p.z=clamp(nextZ,-258,258);
+  const onMainAvenue=Math.abs(p.x)<7.8;
+  const onCrossStreet=districtRoads.some(z=>Math.abs(p.z-z)<7.8);
+  const onSideAvenue=[-120,-60,60,120].some(x=>Math.abs(p.x-x)<7.8);
+  if(!(onMainAvenue||onCrossStreet||onSideAvenue)){
+    speed*=Math.exp(-1.7*dt);
+    lateralSpeed*=Math.exp(-3.2*dt);
   }
   car.setPosition(p);
   car.setEulerAngles(0, heading, clamp(-steeringAngle * speedRatio * 0.035, -3, 3));
@@ -488,8 +644,10 @@ app.on("update", dt => {
     lamp.render.material = braking ? brakeLampMaterial : mats.red;
   });
 
-  frontWheels.forEach(wheel => wheel.setLocalEulerAngles(0, steeringAngle * 0.55, 90));
-  rearWheels.forEach(wheel => wheel.rotateLocal(0, 0, speed * dt * 85));
+  activeVehicleWheels.forEach((wheel,index)=>{
+    if(index<2) wheel.setLocalEulerAngles(0,steeringAngle*.55,90);
+    else wheel.rotateLocal(0,0,speed*dt*85);
+  });
 
   // Keep pedestrians visual-only for this milestone; no unsafe or misleading collision claims.
   // Sidewalk pedestrians walk with alternating arm and leg swings.
@@ -560,6 +718,31 @@ app.on("update", dt => {
       npc.currentSpeed *= 0.25;
       npc.hitCooldown = 1.1;
     }
+  }
+
+
+  policeSirenTimer+=dt;
+  sirenL.render.material=Math.floor(policeSirenTimer*5)%2===0?sirenRed:sirenBlue;
+  sirenR.render.material=Math.floor(policeSirenTimer*5)%2===0?sirenBlue:sirenRed;
+  if(wantedLevel>0){
+   policeSpawnTimer+=dt;
+   if(!policeRoot.enabled&&policeSpawnTimer>1.2){
+    policeRoot.enabled=true;policeRoot.setPosition(p.x+((Math.random()>.5)?-12:12),.08,p.z+30);
+   }
+   if(policeRoot.enabled){
+    const pp=policeRoot.getPosition(),dx=p.x-pp.x,dz=p.z-pp.z,dist=Math.hypot(dx,dz);
+    const step=(wantedLevel===1?7.5:10.5)*dt;
+    if(dist>2){pp.x+=dx/dist*step;pp.z+=dz/dist*step;policeRoot.setPosition(pp);policeRoot.lookAt(p.x,.4,p.z)}
+    if(dist<3.5){speed*=Math.exp(-1.1*dt);wantedLevel=0;policeRoot.enabled=false;missionStatusLabel.textContent="BUSTED • RESTART THE MISSION"}
+   }
+  }else{policeRoot.enabled=false;policeSpawnTimer=0}
+  wantedLabel.textContent=wantedLevel?"POLICE HEAT  "+"★".repeat(wantedLevel)+"☆".repeat(3-wantedLevel):"";
+  if(missionIndex>=0&&!missionComplete){
+   missionElapsed+=dt;
+   const mission=storyMissions[missionIndex],distance=Math.hypot(p.x-mission.target[0],p.z-mission.target[1]);
+   missionTitleLabel.textContent=mission.title+" • "+mission.goal;
+   if(distance<9&&wantedLevel===0)completeStoryMission();
+   if(missionIndex===1&&missionElapsed>75&&wantedLevel>0){wantedLevel=0;policeRoot.enabled=false}
   }
 
   drivenDistance+=Math.abs(speed)*dt;

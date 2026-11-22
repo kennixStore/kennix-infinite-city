@@ -1,36 +1,26 @@
 # KENNIX: INFINITE CITY
 
-An original browser-first 3D driving and open-world game project built with PlayCanvas Engine and Vite.
+An original browser-first 3D open-world driving and action game prototype built with PlayCanvas Engine and Vite.
 
-## Current status — first-release candidate
+## New gameplay batch
 
-The codebase includes a procedural first-district city, player driving, touch and keyboard controls, chase and close cockpit-style camera views, headlights and brake lights, prototype traffic, animated sidewalk pedestrians, a garage interface, four vehicle tuning profiles, paint selection, local browser saving, basic collision damage and repair, a 500 m driving objective and a three-checkpoint street sprint.
+- Expanded NOVA CITY grid with multiple connected road corridors and procedural district blocks.
+- Four different procedural vehicle silhouettes and tuning profiles (sport, muscle, SUV and hypercar), with selectable paint and locally saved garage choices.
+- Police interceptor prototype with a wanted level and direct pursuit behaviour.
+- Three-step story campaign prototype with destination markers, mission objectives and local campaign progress.
+- Existing touch/keyboard driving, chase/cockpit-style camera, traffic, pedestrians, lighting, collision response, sprint and driving-distance objective.
 
-## Important limitations
+## Honest production status
 
-This is a **first-release candidate**, not a finished commercial open-world game. The code still needs successful CI, public deployment, browser runtime checks and Android device testing. The four selectable vehicle profiles currently share one temporary procedural 3D chassis; unique authored vehicle models and true cockpit interiors are not yet included. Vehicle handling and collision are lightweight arcade approximations, not professional rigid-body simulation.
+The vehicles are procedural low-poly models assembled from engine primitives. They are distinct silhouettes, but are not final artist-authored production meshes with detailed UV textures, interiors, rigging or damage deformation. The city is a larger procedural grid, not a fully hand-authored, streamed open world. Police pursuit and story missions are early offline prototypes, not a complete campaign or sophisticated police simulation.
 
-Not yet implemented: a large seamless world, multiple finished cities, full campaign/story missions, advanced pedestrian navigation, robust traffic turning, police pursuits, secure KX economy, player accounts, cloud saves, multiplayer, online transfers, anti-cheat, finished audio, dynamic weather, property ownership or monetisation.
+The project does **not** yet have secure online player accounts, an authoritative KX wallet/ledger, cloud saves or real-time multiplayer. Those require a deployed backend, credentials, server-side validation, security rules, moderation and device/network testing. A local browser balance would not be secure, so no fake "secure KX" wallet is presented.
 
-Vehicle and paint selection are saved locally in the current browser only. The KX economy and online purchases are not active.
-
-## Development
+## Build
 
 ```sh
 npm install
-npm run dev
 npm run build
 ```
 
-GitHub Actions runs the production build on pushes and pull requests to `main`.
-
-## Repository map
-
-- `src/main.js` — scene, driving, traffic, pedestrians, garage and sprint.
-- `src/style.css` — responsive HUD, garage and touch interface.
-- `index.html` — browser entry point.
-- `docs/GAME_DESIGN.md` — creative direction.
-- `docs/TECHNICAL_PLAN.md` — architecture.
-- `docs/ROADMAP.md` — verified and planned work.
-
-This repository is separate from the KENNIX Store project. The creator is currently working from an Android phone; keep instructions phone-friendly.
+The GitHub Actions workflow checks JavaScript syntax and runs the Vite production build.

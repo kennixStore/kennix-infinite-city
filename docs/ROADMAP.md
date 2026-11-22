@@ -1,58 +1,29 @@
 # Development Roadmap
 
-## First playable release candidate — implemented in code, awaiting verification
-- [x] PlayCanvas/Vite browser foundation.
-- [x] Procedural first-district roads, buildings, street furniture and skyline.
-- [x] Player vehicle with touch and keyboard driving controls.
-- [x] Chase and close cockpit-style camera views.
-- [x] Headlight and brake-light effects.
-- [x] Four selectable vehicle tuning profiles and paint colours.
-- [x] Garage and local browser persistence for vehicle/paint selection.
-- [x] Prototype traffic with simple following and signal stopping.
-- [x] Sidewalk pedestrians with basic walk cycles.
-- [x] Basic collision response and damage/repair loop.
-- [x] 500 m local driving objective.
-- [x] Three-checkpoint street sprint and local best-time record.
-- [x] GitHub Actions production-build workflow.
+## Offline gameplay prototype — code added, runtime verification pending
+- [x] Browser 3D engine and responsive touch/keyboard controls.
+- [x] Procedural first district and expanded multi-road NOVA CITY grid.
+- [x] Four distinct procedural vehicle silhouettes and handling presets.
+- [x] Paint selection and local garage persistence.
+- [x] Traffic and animated pedestrian prototypes.
+- [x] Headlights, brake lamps, chase and close cockpit-style camera.
+- [x] Basic collision damage and repair.
+- [x] Street Sprint checkpoint race and 500 m driving objective.
+- [x] Police interceptor, wanted stars and basic pursuit.
+- [x] Three-step offline story campaign with destination markers and local progress.
+- [x] CI syntax and production build checks.
 
-## Required before public playable launch
-- [ ] Confirm latest GitHub Actions build succeeds.
-- [ ] Deploy to a public HTTPS URL.
-- [ ] Test loading and play on creator's Android phone.
-- [ ] Verify controls, garage, camera, race and local saving in-browser.
-- [ ] Fix runtime errors, layout problems and performance issues.
-- [ ] Test a desktop browser and a lower-powered mobile browser.
+## Still required for a real public release
+- [ ] Browser runtime testing and Android device testing.
+- [ ] Replace primitive-built vehicles with artist-authored meshes, materials, textures and interiors.
+- [ ] Add proper physics, collision shapes, suspension, vehicle damage meshes and audio.
+- [ ] Improve the city with authored landmarks, interiors, district activities and streaming/LOD.
+- [ ] Build robust police navigation, road pursuit, search, backup and arrest systems.
+- [ ] Expand story campaign with authored scenes, characters, dialogue, cutscenes and mission variety.
+- [ ] Add server-backed authentication, profiles and cloud saves.
+- [ ] Implement secure server-authoritative KX ledger and inventory.
+- [ ] Implement multiplayer networking, matchmaking, server validation and anti-cheat.
+- [ ] Add moderation, reporting, blocking, privacy policy and terms.
+- [ ] Performance, security, load and compatibility testing before launch.
 
-## Production milestones still outstanding
-
-### Vehicles and driving
-- [ ] Original authored 3D vehicle models for each class.
-- [ ] True cockpit interiors, suspension and tyre simulation.
-- [ ] Robust collision physics, damage meshes and engine/audio systems.
-
-### City and world
-- [ ] Expand the compact district into a connected streamed city.
-- [ ] Add original district art, shops, garages and services.
-- [ ] Improve traffic turning, yielding and pedestrian navigation.
-- [ ] Police AI, wanted system, weather and day/night cycle.
-
-### Gameplay and progression
-- [ ] Approved story and side-mission framework.
-- [ ] More race types, missions, rewards and achievements.
-- [ ] Player character creation, clothing and properties.
-- [ ] Secure KX economy and progression.
-
-### Online services
-- [ ] Accounts and cloud saves.
-- [ ] Server-authoritative KX ledger and transfers.
-- [ ] Multiplayer rooms and races.
-- [ ] Anti-cheat, reporting, blocking and moderation.
-- [ ] Security, load and operating-cost testing.
-
-### Launch operations
-- [ ] Privacy policy and terms.
-- [ ] Hosting, monitoring and analytics.
-- [ ] Device-tier graphics settings and profiling.
-- [ ] Closed testing and staged release.
-
-A checked item means code has been added, not that it has passed runtime testing. Mark features verified only after browser and target-device testing.
+A checked item means code was added. It is not a claim of runtime verification or production readiness.
