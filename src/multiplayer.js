@@ -39,17 +39,29 @@ export async function joinCityRoom(roomCode, onPlayersChanged, onSnapshot = () =
   if (authError) throw authError;
   if (!auth.user) throw new Error("Sign in before joining an online room.");
 
-  const { error } = await channel.subscribe(async status => {
-    if (status === "SUBSCRIBED") {
-      const name = String(auth.user.user_metadata?.display_name || "Driver").slice(0, 24);
-      await channel.track({
-        user_id: auth.user.id,
-        display_name: name,
-        online_at: new Date().toISOString()
-      });
-    }
+  await new Promise((resolve, reject) => {
+    const timeout = setTimeout(() => reject(new Error("Online room connection timed out.")), 12000);
+    channel.subscribe(async status => {
+      if (status === "SUBSCRIBED") {
+        clearTimeout(timeout);
+        try {
+          const name = String(auth.user.user_metadata?.display_name || "Driver").slice(0, 24);
+          const tracked = await channel.track({
+            user_id: auth.user.id,
+            display_name: name,
+            online_at: new Date().toISOString()
+          });
+          if (tracked !== "ok") throw new Error("Could not publish player presence.");
+          resolve();
+        } catch (error) {
+          reject(error);
+        }
+      } else if (status === "CHANNEL_ERROR" || status === "TIMED_OUT" || status === "CLOSED") {
+        clearTimeout(timeout);
+        reject(new Error("Could not connect to the online room: " + status));
+      }
+    });
   });
-  if (error) throw error;
 
   let lastSent = 0;
   return {
