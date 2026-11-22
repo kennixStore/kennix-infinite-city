@@ -25,6 +25,8 @@
 
 - [x] NPC predictive following with speed-dependent safety gaps, player-car awareness, and perpendicular-traffic junction occupancy checks (prototype; real-time collision tuning still needs in-game testing).
 
+- [x] Marked zebra crossings with pedestrians who wait for the safe signal phase, check approaching traffic, pause for nearby player vehicles, and trigger NPC traffic yielding while crossing (prototype; Android runtime validation pending).
+
 ## Still required
 - [ ] Apply migration in Supabase and configure build environment variables.
 - [ ] Deploy Supabase schema, configure credentials, and test account, profile, wallet and cloud-save UI end-to-end.

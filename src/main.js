@@ -449,7 +449,9 @@ function createPedestrian(x, z, outfit, facing = 0, walkDirection = 1, axis = "z
     legs.push(block("Pedestrian leg", [side * 0.13, 0.43, 0], [0.16, 0.62, 0.18], mats.dark, person));
     arms.push(block("Pedestrian arm", [side * 0.31, 1.02, 0], [0.14, 0.58, 0.16], clothingMats[outfit % clothingMats.length], person));
   }
-  pedestrians.push({ entity: person, legs, arms, phase: outfit * 0.9, direction: walkDirection, axis, min, max });
+  const pedestrian={entity:person,legs,arms,phase:outfit*.9,direction:walkDirection,axis,min,max};
+  pedestrians.push(pedestrian);
+  return pedestrian;
 }
 createPedestrian(-9.1, -51, 0, 90, 1); createPedestrian(9.1, -35, 1, -90, -1);
 createPedestrian(-9.1, -5, 2, 90, 1); createPedestrian(9.1, 22, 3, -90, -1); createPedestrian(-9.1, 61, 1, 90, -1);
@@ -461,6 +463,23 @@ for(const streetZ of [-210,-140,140,210]){
  createPedestrian(-145,streetZ-9.1,1,90,1,"x",-155,155);
  createPedestrian(145,streetZ+9.1,3,-90,-1,"x",-155,155);
 }
+
+// Marked pedestrian crossings and two crossing routes across north-south avenues.
+const pedestrianCrossings=[{x:-120,z:35},{x:60,z:-105}];
+for(const crossing of pedestrianCrossings){
+ for(let stripe=-4;stripe<=4;stripe++){
+  block("Pedestrian zebra crossing",[crossing.x,0.085,crossing.z+stripe*.9],[14,.035,.48],mats.white);
+ }
+}
+function createCrossingPedestrian(crossing,outfit,direction){
+ const startX=crossing.x+(direction>0?-10:10);
+ const endX=crossing.x+(direction>0?10:-10);
+ const person=createPedestrian(startX,crossing.z,outfit,direction>0?90:-90,direction,"x",Math.min(startX,endX),Math.max(startX,endX));
+ person.crossing={centerX:crossing.x,centerZ:crossing.z,startX,endX,waiting:true,waitTimer:0};
+}
+createCrossingPedestrian(pedestrianCrossings[0],1,1);
+createCrossingPedestrian(pedestrianCrossings[0],2,-1);
+createCrossingPedestrian(pedestrianCrossings[1],3,1);
 
 // Traffic signal props at the two main junctions.
 const signalLamps = [];
@@ -952,26 +971,56 @@ app.on("update", dt => {
     else wheel.rotateLocal(0,0,speed*dt*85);
   });
 
-  // Keep pedestrians visual-only for this milestone; no unsafe or misleading collision claims.
-  // Sidewalk pedestrians walk with alternating arm and leg swings.
+  // Pedestrians use marked crossings, wait for a safe signal phase and pause for approaching traffic.
+  const pedestrianSignalSafe=(Math.floor(signalTimer/8)%2)===1; // north-south vehicle signals are red.
   for (const pedestrian of pedestrians) {
     const position = pedestrian.entity.getPosition();
     const nearPlayer = Math.abs(position.x - p.x) < 5.2 && Math.abs(position.z - p.z) < 8.5 && Math.abs(speed) > 3;
-    const walkRate = nearPlayer ? 0 : 0.48;
-    pedestrian.phase += dt * (nearPlayer ? 1.2 : 5.2);
-    const swing = Math.sin(pedestrian.phase) * (nearPlayer ? 0.08 : 0.42);
-    pedestrian.legs[0].setLocalEulerAngles(swing * 55, 0, 0);
-    pedestrian.legs[1].setLocalEulerAngles(-swing * 55, 0, 0);
-    pedestrian.arms[0].setLocalEulerAngles(-swing * 38, 0, 0);
-    pedestrian.arms[1].setLocalEulerAngles(swing * 38, 0, 0);
+    let walkRate=nearPlayer?0:0.48;
+    if(pedestrian.crossing){
+      const crossing=pedestrian.crossing;
+      const crossingTraffic=traffic.some(npc=>{
+        if(npc.axis!=="z")return false;
+        const q=npc.entity.getPosition();
+        return Math.abs(q.x-crossing.centerX)<3.5&&Math.abs(q.z-crossing.centerZ)<20;
+      });
+      if(crossing.waiting){
+        walkRate=0;
+        crossing.waitTimer+=dt;
+        if(pedestrianSignalSafe&&!crossingTraffic&&!nearPlayer&&crossing.waitTimer>1.2){
+          crossing.waiting=false;
+          crossing.waitTimer=0;
+          pedestrian.direction=position.x<=crossing.centerX?1:-1;
+          pedestrian.entity.setEulerAngles(0,pedestrian.direction>0?90:-90,0);
+        }
+      }else{
+        walkRate=1.05;
+        const destination=pedestrian.direction>0?crossing.endX:crossing.startX;
+        if((pedestrian.direction>0&&position.x>=destination)||(pedestrian.direction<0&&position.x<=destination)){
+          position.x=destination;
+          crossing.waiting=true;
+          crossing.waitTimer=0;
+        }else if(nearPlayer||crossingTraffic){
+          walkRate=0;
+        }
+      }
+    }
+    pedestrian.phase+=dt*(walkRate===0?1.2:5.2);
+    const swing=Math.sin(pedestrian.phase)*(walkRate===0?.08:.42);
+    pedestrian.legs[0].setLocalEulerAngles(swing*55,0,0);
+    pedestrian.legs[1].setLocalEulerAngles(-swing*55,0,0);
+    pedestrian.arms[0].setLocalEulerAngles(-swing*38,0,0);
+    pedestrian.arms[1].setLocalEulerAngles(swing*38,0,0);
     if(pedestrian.axis==="z"){
       position.z+=pedestrian.direction*walkRate*dt;
       if(position.z>pedestrian.max){position.z=pedestrian.max;pedestrian.direction=-1}
       if(position.z<pedestrian.min){position.z=pedestrian.min;pedestrian.direction=1}
-    }else{
+    }else if(!pedestrian.crossing||!pedestrian.crossing.waiting){
       position.x+=pedestrian.direction*walkRate*dt;
-      if(position.x>pedestrian.max){position.x=pedestrian.max;pedestrian.direction=-1}
-      if(position.x<pedestrian.min){position.x=pedestrian.min;pedestrian.direction=1}
+      if(!pedestrian.crossing){
+        if(position.x>pedestrian.max){position.x=pedestrian.max;pedestrian.direction=-1}
+        if(position.x<pedestrian.min){position.x=pedestrian.min;pedestrian.direction=1}
+      }
     }
     pedestrian.entity.setPosition(position);
   }
@@ -1044,6 +1093,14 @@ app.on("update", dt => {
       }
     }
 
+    // Yield to pedestrians who are actively using a marked crossing.
+    if(npc.axis==="z"){
+      for(const crossing of pedestrianCrossings){
+        const distanceToCrossing=(crossing.z-npcPos.z)*npc.direction;
+        const pedestrianOnCrossing=pedestrians.some(person=>person.crossing&&!person.crossing.waiting&&Math.abs(person.entity.getPosition().x-crossing.x)<10.5&&Math.abs(person.entity.getPosition().z-crossing.z)<1.2);
+        if(pedestrianOnCrossing&&distanceToCrossing>-3&&distanceToCrossing<24){targetSpeed=0;break}
+      }
+    }
     // Stop at red lights on every junction along each traffic axis.
     if(npc.axis==="z"){
       for(const junctionZ of districtRoads){
