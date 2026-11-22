@@ -78,3 +78,15 @@ footer span { color: #d8ad5b; text-align: right; }
 .wanted-label,.mission-title-label{position:absolute;z-index:3;top:134px;left:50%;transform:translateX(-50%);padding:7px 12px;border:1px solid #d8ad5b88;border-radius:8px;background:#070b11df;color:#f5f7fa;font:11px monospace;white-space:nowrap;pointer-events:none}
 .wanted-label{top:170px;color:#ff6960;letter-spacing:.12em;font-weight:900}.mission-title-label{top:206px;color:#d8ad5b;font-size:9px;max-width:90%;overflow:hidden;text-overflow:ellipsis}
 @media(max-width:600px){.wanted-label{top:110px}.mission-title-label{top:146px;font-size:8px}.mission-status{top:82px}}
+
+.online-panel .online-label{display:grid;gap:6px;margin:10px 0;color:#d8ad5b;font-size:9px;letter-spacing:.12em;font-weight:800}
+.online-panel input{width:100%;min-height:42px;padding:10px 12px;border:1px solid #43505e;border-radius:8px;background:#0c131d;color:#f5f7fa;font:14px Arial;letter-spacing:normal}
+.online-panel input:focus{outline:2px solid #d8ad5b;outline-offset:1px}
+.online-panel button{min-height:40px;margin:4px;padding:9px 12px;border:1px solid #58616b;border-radius:8px;background:#172230;color:#fff;font-size:10px;font-weight:800}
+.online-panel button:disabled{opacity:.55}
+.online-panel .wallet-card{display:grid;gap:8px;margin:12px 0;padding:15px;border:1px solid #d8ad5b66;border-radius:10px;background:#171a1d}
+.online-panel .wallet-card small{color:#d8ad5b;font-size:9px;letter-spacing:.2em}
+.online-panel .wallet-card strong{font:800 27px monospace}
+.online-panel #online-note{display:block;margin:14px 0;color:#aab4c1;font-size:10px;line-height:1.5}
+.utility-bar{flex-wrap:wrap;max-width:min(95%,650px)}
+@media(max-width:600px){.utility-bar{left:8px;right:8px;justify-content:flex-end}.online-panel .game-panel{max-height:90svh}}
