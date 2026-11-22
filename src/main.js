@@ -44,6 +44,52 @@ const mats = {
   headlight: makeMat([0.85, 0.83, 0.62])
 };
 
+ 
+// Procedural, tileable surface maps add material detail without large external downloads.
+function createSurfaceTexture(kind) {
+  const canvas=document.createElement("canvas");canvas.width=256;canvas.height=256;
+  const ctx=canvas.getContext("2d");
+  const base=kind==="asphalt"?"#292e34":kind==="concrete"?"#777a78":kind==="ground"?"#343d35":"#77736d";
+  ctx.fillStyle=base;ctx.fillRect(0,0,256,256);
+  let seed=kind==="asphalt"?173:kind==="concrete"?419:kind==="ground"?733:991;
+  const rand=()=>{seed=(seed*1664525+1013904223)>>>0;return seed/4294967296;};
+  for(let i=0;i<2600;i++){
+    const v=Math.floor(rand()*34),a=.035+rand()*.11;
+    ctx.fillStyle=kind==="asphalt"?`rgba(${v+35},${v+38},${v+42},${a})`:`rgba(${v+100},${v+100},${v+100},${a})`;
+    const x=rand()*256,y=rand()*256,size=.4+rand()*2.2;
+    ctx.fillRect(x,y,size,size);
+  }
+  if(kind==="asphalt"){
+    ctx.strokeStyle="rgba(9,12,15,.28)";ctx.lineWidth=1;
+    for(let i=0;i<12;i++){let x=rand()*256,y=rand()*256;ctx.beginPath();ctx.moveTo(x,y);ctx.lineTo(x+(rand()-.5)*28,y+(rand()-.5)*20);ctx.stroke();}
+    ctx.fillStyle="rgba(8,11,14,.12)";
+    for(let i=0;i<9;i++){ctx.beginPath();ctx.ellipse(rand()*256,rand()*256,4+rand()*12,2+rand()*5,rand()*3,0,Math.PI*2);ctx.fill();}
+  }else if(kind==="concrete"){
+    ctx.strokeStyle="rgba(35,39,40,.16)";ctx.lineWidth=1;
+    for(let y=32;y<256;y+=64){ctx.beginPath();ctx.moveTo(0,y);ctx.lineTo(256,y);ctx.stroke();}
+  }else if(kind==="facade"){
+    ctx.strokeStyle="rgba(25,30,34,.22)";ctx.lineWidth=2;
+    for(let x=32;x<256;x+=64){ctx.beginPath();ctx.moveTo(x,0);ctx.lineTo(x,256);ctx.stroke();}
+    ctx.strokeStyle="rgba(220,215,200,.12)";ctx.lineWidth=1;
+    for(let y=42;y<256;y+=64){ctx.beginPath();ctx.moveTo(0,y);ctx.lineTo(256,y);ctx.stroke();}
+  }
+  const texture=new pc.Texture(app.graphicsDevice,{width:256,height:256,format:pc.PIXELFORMAT_R8_G8_B8_A8,mipmaps:true});
+  texture.name="KENNIX "+kind+" surface";texture.addressU=pc.ADDRESS_REPEAT;texture.addressV=pc.ADDRESS_REPEAT;texture.setSource(canvas);
+  return texture;
+}
+const surfaceMaps={
+  asphalt:createSurfaceTexture("asphalt"),
+  concrete:createSurfaceTexture("concrete"),
+  ground:createSurfaceTexture("ground"),
+  facade:createSurfaceTexture("facade")
+};
+function applySurface(material,texture,tilesX=1,tilesY=1){
+  material.diffuseMap=texture;material.diffuseMapTiling=new pc.Vec2(tilesX,tilesY);material.update();
+}
+applySurface(mats.asphalt,surfaceMaps.asphalt,2,72);
+applySurface(mats.concrete,surfaceMaps.concrete,2,64);
+applySurface(mats.ground,surfaceMaps.ground,22,36);
+
 function block(name, pos, size, mat, parent = app.root, shape = "box") {
   const e = new pc.Entity(name);
   e.addComponent("render", { type: shape, material: mat });
@@ -129,6 +175,7 @@ const districtPalettes=[
   makeMat([0.22,0.27,0.33]),makeMat([0.34,0.29,0.23]),
   makeMat([0.16,0.25,0.29]),makeMat([0.31,0.33,0.34])
 ];
+for(const material of districtPalettes)applySurface(material,surfaceMaps.facade,2,2);
 // Buildings sit within the blocks, leaving the avenue grid clear for driving.
 for(let row=0;row<6;row++){
  for(let col=0;col<6;col++){
@@ -308,6 +355,7 @@ const facades = [
   makeMat([0.18, 0.23, 0.29]),
   makeMat([0.39, 0.4, 0.39])
 ];
+for(const material of facades)applySurface(material,surfaceMaps.facade,2,2);
 for (let i = 0; i < 14; i++) {
   const side = i % 2 === 0 ? -1 : 1;
   const row = Math.floor(i / 2);
@@ -635,6 +683,7 @@ for(const child of [...car.children]){
 function buildVehicleModel(vehicle){
  const root=new pc.Entity(vehicle.id+" detailed vehicle model");car.addChild(root);
  const bodyMat=makeMat(vehicle.paint,.78,.2), trimMat=makeMat([.018,.022,.028],.45,.25);
+ bodyMat.clearCoat=.72;bodyMat.clearCoatGloss=.88;bodyMat.useMetalness=true;bodyMat.update();
  const glassMat=makeMat([.025,.095,.14],.5,.12), chromeMat=makeMat([.38,.42,.46],.85,.18);
  const lampMat=makeMat([.9,.78,.48],.1,.15);lampMat.emissive=new pc.Color(.55,.38,.12);lampMat.update();
  const wheelList=[],paintParts=[];
