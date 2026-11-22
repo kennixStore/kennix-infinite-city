@@ -410,7 +410,12 @@ function createTrafficCar(laneX, startZ, direction, paintIndex, cruiseSpeed, axi
       tyre.setLocalEulerAngles(0, 0, 90);
     }
   }
-  traffic.push({ entity: npc, direction, cruiseSpeed, currentSpeed: cruiseSpeed, hitCooldown: 0, brakeLamps, braking: false, axis });
+  const travelStart=startZ;
+  const junctions=axis==="z"?districtRoads:[-120,-60,60,120];
+  const upcoming=junctions.filter(value=>(value-travelStart)*direction>8).sort((a,b)=>Math.abs(a-travelStart)-Math.abs(b-travelStart));
+  const plannedTurn=upcoming.length&&Math.random()<0.42?upcoming[0]:null;
+  traffic.push({entity:npc,direction,cruiseSpeed,currentSpeed:cruiseSpeed,hitCooldown:0,brakeLamps,braking:false,axis,turnAt:plannedTurn,turnDirection:Math.random()<0.5?1:-1,turns:0});
+  npc.setEulerAngles(0,axis==="z"?(direction>0?180:0):(direction>0?90:-90),0);
 }
 createTrafficCar(-2.55, -57, 1, 0, 10);
 createTrafficCar(2.55, -25, -1, 1, 8.5);
@@ -1013,30 +1018,32 @@ app.on("update", dt => {
     npc.brakeLamps.forEach(lamp => { lamp.render.material = wasMovingFaster ? trafficBrakeMaterial : mats.red; });
     const response = targetSpeed < npc.currentSpeed ? 4.8 : 2.1;
     npc.currentSpeed += (targetSpeed - npc.currentSpeed) * Math.min(1, dt * response);
+    const previousTravel=npc.axis==="z"?npcPos.z:npcPos.x;
     if(npc.axis==="z"){
       npcPos.z+=npc.direction*npc.currentSpeed*dt;
       if(npcPos.z<-258)npcPos.z=258;
       if(npcPos.z>258)npcPos.z=-258;
-      // A subset of NPCs turn onto cross avenues at real grid junctions.
-      if((npc.turns||0)<2 && Math.random()<0.012){
-        const junction=districtRoads.reduce((best,z)=>Math.abs(z-npcPos.z)<Math.abs(best-npcPos.z)?z:best,districtRoads[0]);
-        if(Math.abs(junction-npcPos.z)<Math.max(1.2,npc.currentSpeed*dt+0.35)){
-          npcPos.z=junction+(npc.direction>0?-2.55:2.55);
-          npc.axis="x";npc.direction=Math.random()<0.5?1:-1;npc.turns=(npc.turns||0)+1;
-          npc.entity.setEulerAngles(0,npc.direction>0?90:-90,0);
-        }
+      // Turn only at the preselected junction, after crossing its stop line on green.
+      const crossedTurn=npc.turnAt!==null&&npc.turnAt!==undefined&&((npc.direction>0&&previousTravel<npc.turnAt&&npcPos.z>=npc.turnAt)||(npc.direction<0&&previousTravel>npc.turnAt&&npcPos.z<=npc.turnAt));
+      if(crossedTurn&&greenAxis==="z"&&(npc.turns||0)<1){
+        const nextDirection=npc.turnDirection;
+        npcPos.z=npc.turnAt;
+        npcPos.x=npcPos.x; // preserve the intersection approach lane until the turn is applied.
+        npc.axis="x";npc.direction=nextDirection;npc.turns=1;npc.turnAt=null;
+        npcPos.z+=nextDirection>0?-2.55:2.55;
+        npc.entity.setEulerAngles(0,nextDirection>0?90:-90,0);
       }
     }else{
       npcPos.x+=npc.direction*npc.currentSpeed*dt;
       if(npcPos.x<-158)npcPos.x=158;
       if(npcPos.x>158)npcPos.x=-158;
-      if((npc.turns||0)<2 && Math.random()<0.012){
-        const junction=[-120,-60,60,120].reduce((best,x)=>Math.abs(x-npcPos.x)<Math.abs(best-npcPos.x)?x:best,-120);
-        if(Math.abs(junction-npcPos.x)<Math.max(1.2,npc.currentSpeed*dt+0.35)){
-          npcPos.x=junction+(npc.direction>0?-2.55:2.55);
-          npc.axis="z";npc.direction=Math.random()<0.5?1:-1;npc.turns=(npc.turns||0)+1;
-          npc.entity.setEulerAngles(0,npc.direction>0?0:180,0);
-        }
+      const crossedTurn=npc.turnAt!==null&&npc.turnAt!==undefined&&((npc.direction>0&&previousTravel<npc.turnAt&&npcPos.x>=npc.turnAt)||(npc.direction<0&&previousTravel>npc.turnAt&&npcPos.x<=npc.turnAt));
+      if(crossedTurn&&greenAxis==="x"&&(npc.turns||0)<1){
+        const nextDirection=npc.turnDirection;
+        npcPos.x=npc.turnAt;
+        npc.axis="z";npc.direction=nextDirection;npc.turns=1;npc.turnAt=null;
+        npcPos.x+=nextDirection>0?-2.55:2.55;
+        npc.entity.setEulerAngles(0,nextDirection>0?180:0,0);
       }
     }
     npc.entity.setPosition(npcPos);
