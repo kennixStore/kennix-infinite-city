@@ -1012,6 +1012,135 @@ utilityBar.querySelector("#garage-open").addEventListener("click",()=>showGarage
 utilityBar.querySelector("#pause-toggle").addEventListener("click",()=>gamePaused?hideGarage():showGarage("PAUSED","Take a break or return to the garage."));
 utilityBar.querySelector("#camera-toggle").addEventListener("click",e=>{cameraMode=cameraMode==="chase"?"cockpit":"chase";e.currentTarget.textContent="CAMERA: "+cameraMode.toUpperCase()});
 
+// Live open-world minimap with tap-to-set waypoint navigation.
+const mapLandmarks = [
+  { id: "centre", name: "NOVA CENTRE", x: 0, z: 0 },
+  { id: "market", name: "MARKET QUARTER", x: 90, z: -125 },
+  { id: "waterfront", name: "WATERFRONT", x: 55, z: -225 },
+  { id: "industrial", name: "INDUSTRIAL EDGE", x: -135, z: 215 }
+];
+let navigationTarget = null;
+const miniMapPanel = document.createElement("section");
+miniMapPanel.className = "minimap-panel";
+miniMapPanel.innerHTML = `
+  <div class="minimap-heading"><strong>NOVA CITY</strong><button id="map-clear" type="button" aria-label="Clear waypoint">×</button></div>
+  <canvas id="city-minimap" width="240" height="240" aria-label="Interactive city minimap. Tap to set a waypoint."></canvas>
+  <div class="minimap-readout"><span id="map-position">NOVA CITY • FREE DRIVE</span><span id="map-distance">TAP MAP TO NAVIGATE</span></div>
+  <select id="map-destination" aria-label="Choose a city destination">
+    <option value="">QUICK DESTINATIONS</option>
+    <option value="centre">NOVA CENTRE</option>
+    <option value="market">MARKET QUARTER</option>
+    <option value="waterfront">WATERFRONT</option>
+    <option value="industrial">INDUSTRIAL EDGE</option>
+  </select>`;
+document.querySelector("#game-stage").appendChild(miniMapPanel);
+const miniMapCanvas = miniMapPanel.querySelector("#city-minimap");
+const miniMapContext = miniMapCanvas.getContext("2d");
+const mapPositionLabel = miniMapPanel.querySelector("#map-position");
+const mapDistanceLabel = miniMapPanel.querySelector("#map-distance");
+const mapScale = 0.72;
+const mapRoadXs = [-120, -60, 0, 60, 120];
+const mapRoadZs = [-210, -140, -43, 39, 140, 210];
+const nearestRoad = (values, value) => values.reduce((best, item) => Math.abs(item-value)<Math.abs(best-value)?item:best, values[0]);
+function setNavigationTarget(target) {
+  navigationTarget = target ? { x: clamp(target.x, -158, 158), z: clamp(target.z, -258, 258), name: target.name || "CUSTOM WAYPOINT" } : null;
+  mapDistanceLabel.textContent = navigationTarget ? navigationTarget.name + " • ROUTE SET" : "TAP MAP TO NAVIGATE";
+}
+miniMapCanvas.addEventListener("pointerdown", event => {
+  const rect = miniMapCanvas.getBoundingClientRect();
+  const localX = (event.clientX - rect.left) / rect.width * miniMapCanvas.width;
+  const localY = (event.clientY - rect.top) / rect.height * miniMapCanvas.height;
+  const playerPosition = car.getPosition();
+  setNavigationTarget({
+    x: playerPosition.x + (localX - miniMapCanvas.width/2) / mapScale,
+    z: playerPosition.z + (localY - miniMapCanvas.height/2) / mapScale,
+    name: "CUSTOM WAYPOINT"
+  });
+  miniMapPanel.querySelector("#map-destination").value = "";
+});
+miniMapPanel.querySelector("#map-clear").addEventListener("click", () => {
+  setNavigationTarget(null);
+  miniMapPanel.querySelector("#map-destination").value = "";
+});
+miniMapPanel.querySelector("#map-destination").addEventListener("change", event => {
+  const place = mapLandmarks.find(item => item.id === event.target.value);
+  if (place) setNavigationTarget(place);
+});
+function drawMiniMap() {
+  const ctx = miniMapContext, width = miniMapCanvas.width, height = miniMapCanvas.height;
+  const playerPosition = car.getPosition();
+  const cx = width/2, cy = height/2, radius = width/2-5;
+  ctx.clearRect(0,0,width,height);
+  ctx.save();
+  ctx.beginPath();ctx.arc(cx,cy,radius,0,Math.PI*2);ctx.clip();
+  ctx.fillStyle = "#101b24";ctx.fillRect(0,0,width,height);
+  const point = (x,z) => [cx+(x-playerPosition.x)*mapScale, cy+(z-playerPosition.z)*mapScale];
+
+  // Waterfront water, city blocks and the connected road grid.
+  const water = point(70,-252);
+  ctx.fillStyle = "#164b60";
+  ctx.fillRect(water[0]-95*mapScale,water[1]-19*mapScale,190*mapScale,38*mapScale);
+  ctx.strokeStyle = "#71818a";ctx.lineCap = "round";
+  for(const x of mapRoadXs){
+    const a=point(x,-270),b=point(x,270);
+    ctx.lineWidth=15*mapScale;ctx.beginPath();ctx.moveTo(a[0],a[1]);ctx.lineTo(b[0],b[1]);ctx.stroke();
+    ctx.strokeStyle="#394954";ctx.lineWidth=1.2;ctx.beginPath();ctx.moveTo(a[0],a[1]);ctx.lineTo(b[0],b[1]);ctx.stroke();
+    ctx.strokeStyle="#71818a";
+  }
+  for(const z of mapRoadZs){
+    const a=point(-170,z),b=point(170,z);
+    ctx.lineWidth=15*mapScale;ctx.beginPath();ctx.moveTo(a[0],a[1]);ctx.lineTo(b[0],b[1]);ctx.stroke();
+    ctx.strokeStyle="#394954";ctx.lineWidth=1.2;ctx.beginPath();ctx.moveTo(a[0],a[1]);ctx.lineTo(b[0],b[1]);ctx.stroke();
+    ctx.strokeStyle="#71818a";
+  }
+
+  // Named landmarks are visible when they are inside the current map window.
+  for(const place of mapLandmarks){
+    const q=point(place.x,place.z);
+    if(Math.hypot(q[0]-cx,q[1]-cy)<radius-8){
+      ctx.fillStyle="#d7b36f";ctx.beginPath();ctx.arc(q[0],q[1],3.6,0,Math.PI*2);ctx.fill();
+    }
+  }
+
+  if(navigationTarget){
+    const startX=nearestRoad(mapRoadXs,playerPosition.x);
+    const startZ=nearestRoad(mapRoadZs,playerPosition.z);
+    const targetX=nearestRoad(mapRoadXs,navigationTarget.x);
+    const targetZ=nearestRoad(mapRoadZs,navigationTarget.z);
+    const route=[
+      [playerPosition.x,playerPosition.z],
+      [startX,playerPosition.z],
+      [startX,startZ],
+      [targetX,startZ],
+      [targetX,targetZ],
+      [navigationTarget.x,targetZ],
+      [navigationTarget.x,navigationTarget.z]
+    ];
+    ctx.strokeStyle="#f3c66f";ctx.lineWidth=3;ctx.setLineDash([5,4]);
+    ctx.beginPath();
+    route.forEach((pos,index)=>{const q=point(pos[0],pos[1]);if(index===0)ctx.moveTo(q[0],q[1]);else ctx.lineTo(q[0],q[1]);});
+    ctx.stroke();ctx.setLineDash([]);
+    const targetPoint=point(navigationTarget.x,navigationTarget.z);
+    ctx.fillStyle="#ffd27b";ctx.beginPath();ctx.arc(targetPoint[0],targetPoint[1],5.5,0,Math.PI*2);ctx.fill();
+    ctx.strokeStyle="#fff1cf";ctx.lineWidth=1.5;ctx.stroke();
+    const routeDistance=route.slice(1).reduce((total,pos,index)=>total+Math.hypot(pos[0]-route[index][0],pos[1]-route[index][1]),0);
+    mapDistanceLabel.textContent=navigationTarget.name+" • "+(routeDistance<1000?Math.round(routeDistance)+" M":(routeDistance/1000).toFixed(1)+" KM");
+  }else{
+    mapDistanceLabel.textContent="TAP MAP TO NAVIGATE";
+  }
+
+  // The player arrow points toward the top of the map when facing north.
+  ctx.translate(cx,cy);ctx.rotate(heading*Math.PI/180);
+  ctx.fillStyle="#63d5ff";ctx.strokeStyle="#07121a";ctx.lineWidth=2;
+  ctx.beginPath();ctx.moveTo(0,-10);ctx.lineTo(7,8);ctx.lineTo(0,5);ctx.lineTo(-7,8);ctx.closePath();ctx.fill();ctx.stroke();
+  ctx.restore();
+  ctx.strokeStyle="rgba(225,195,137,.8)";ctx.lineWidth=2;
+  ctx.beginPath();ctx.arc(cx,cy,radius,0,Math.PI*2);ctx.stroke();
+  mapPositionLabel.textContent="NOVA CITY • "+Math.round(playerPosition.x)+", "+Math.round(playerPosition.z);
+}
+let miniMapElapsed = 0;
+
+
 let audioContext=null,engineOscillator=null,engineGain=null,engineFilter=null,hornOscillator=null,hornGain=null,audioEnabled=false;
 function initialiseVehicleAudio(){
  const AudioEngine=window.AudioContext||window.webkitAudioContext;
@@ -1573,6 +1702,14 @@ app.on("update", dt => {
 
   if (speedValue) speedValue.textContent = Math.round(Math.abs(speed) * 3.6).toString().padStart(3, "0");
   if (gearValue) gearValue.textContent = speed > 0.6 ? "D" : speed < -0.6 ? "R" : "N";
+});
+
+app.on("update", dt => {
+  miniMapElapsed += dt;
+  if(miniMapElapsed >= 0.12) {
+    miniMapElapsed = 0;
+    drawMiniMap();
+  }
 });
 
 app.start();
