@@ -823,6 +823,7 @@ function saveGarage(){localStorage.setItem("kxic-garage",JSON.stringify({vehicle
 
 const vehicleModels = {};
 let activeVehicleWheels = [];
+let wheelSpinAngle = 0;
 for(const child of [...car.children]){
  if(child.name!=="Headlight beam" && child.name!=="Brake light glow") child.enabled=false;
 }
@@ -1472,9 +1473,12 @@ app.on("update", dt => {
     lamp.render.material = braking ? brakeLampMaterial : mats.red;
   });
 
+  // Keep all four tyres rotating with road speed. Front wheels also steer,
+  // while rear wheels remain aligned with the chassis.
+  wheelSpinAngle += speed * dt * 85;
   activeVehicleWheels.forEach((wheel,index)=>{
-    if(index<2) wheel.setLocalEulerAngles(0,steeringAngle*.55,90);
-    else wheel.rotateLocal(0,0,speed*dt*85);
+    const steer=index<2 ? steeringAngle*.55 : 0;
+    wheel.setLocalEulerAngles(wheelSpinAngle,steer,90);
   });
 
   // Pedestrians use marked crossings, wait for a safe signal phase and pause for approaching traffic.
