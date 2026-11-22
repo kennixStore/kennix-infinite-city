@@ -426,7 +426,7 @@ const vehicleCatalog = [
 const savedGarage=(()=>{try{return JSON.parse(localStorage.getItem("kxic-garage")||"{}")}catch{return {}}})();
 let selectedVehicle=vehicleCatalog.find(v=>v.id===savedGarage.vehicle)||vehicleCatalog[0];
 let selectedPaint=Array.isArray(savedGarage.paint)?savedGarage.paint:selectedVehicle.paint;
-let cameraMode="chase",gamePaused=true,damage=0,raceActive=false,raceStart=0,raceCheckpoint=0,bestRace=Number(localStorage.getItem("kxic-best-race")||0),drivenDistance=Number(localStorage.getItem("kxic-distance")||0),playerXP=Number(localStorage.getItem("kxic-xp")||0),playerLevel=Math.max(1,Math.floor(playerXP/1000)+1);let lastDistanceSave=Math.floor(drivenDistance/10);
+let cameraMode="chase",gamePaused=true,damage=clamp(Number(localStorage.getItem("kxic-damage")||0),0,100),raceActive=false,raceStart=0,raceCheckpoint=0,bestRace=Number(localStorage.getItem("kxic-best-race")||0),drivenDistance=Number(localStorage.getItem("kxic-distance")||0),playerXP=Number(localStorage.getItem("kxic-xp")||0),playerLevel=Math.max(1,Math.floor(playerXP/1000)+1);let lastDistanceSave=Math.floor(drivenDistance/10);
 const garagePaints=[{name:"Midnight",rgb:[.035,.07,.12]},{name:"Crimson",rgb:[.52,.045,.035]},{name:"Ocean",rgb:[.035,.22,.42]},{name:"Silver",rgb:[.48,.5,.52]},{name:"Gold",rgb:[.55,.34,.08]}];
 function saveGarage(){localStorage.setItem("kxic-garage",JSON.stringify({vehicle:selectedVehicle.id,paint:selectedPaint}))}
 
@@ -573,7 +573,7 @@ garageList.addEventListener("click",e=>{const b=e.target.closest("[data-vehicle]
 gameOverlay.querySelector(".paint-list").addEventListener("click",e=>{const b=e.target.closest("[data-paint]");if(!b)return;setPlayerPaint(garagePaints[Number(b.dataset.paint)].rgb);gameOverlay.querySelectorAll(".paint-swatch").forEach(x=>x.classList.toggle("selected",x===b))});
 gameOverlay.querySelector("#start-drive").addEventListener("click",()=>{raceActive=false;raceGates.forEach(g=>g.enabled=false);hideGarage()});
 gameOverlay.querySelector("#start-race").addEventListener("click",()=>{raceActive=true;raceCheckpoint=0;raceStart=performance.now();raceGates.forEach((g,i)=>g.enabled=i===0);const q=car.getPosition();q.x=0;q.z=19;car.setPosition(q);speed=0;lateralSpeed=0;hideGarage()});
-gameOverlay.querySelector("#repair-car").addEventListener("click",()=>{damage=0;speed=0;lateralSpeed=0;refreshVehicleDamage();refreshGarage()});
+gameOverlay.querySelector("#repair-car").addEventListener("click",()=>{damage=0;try{localStorage.setItem("kxic-damage","0")}catch{}speed=0;lateralSpeed=0;refreshVehicleDamage();refreshGarage()});
 
 const utilityBar=document.createElement("div");utilityBar.className="utility-bar";utilityBar.innerHTML='<button id="garage-open">GARAGE</button><button id="camera-toggle">CAMERA: CHASE</button><button id="pause-toggle">PAUSE</button>';document.querySelector("#game-stage").appendChild(utilityBar);
 utilityBar.querySelector("#garage-open").addEventListener("click",()=>showGarage("CITY GARAGE","Select a vehicle, choose paint and repair damage."));
@@ -612,9 +612,9 @@ onlinePanel.querySelector("#password-update").addEventListener("click",e=>runOnl
 onlinePanel.querySelector("#account-logout").addEventListener("click",e=>runOnline(e.currentTarget,async()=>{await signOutPlayer();await refreshAccount()}));
 onlinePanel.querySelector("#wallet-refresh").addEventListener("click",e=>runOnline(e.currentTarget,refreshWallet));
 onlinePanel.querySelector("#transfer-kx").addEventListener("click",e=>runOnline(e.currentTarget,async()=>{const recipient=onlinePanel.querySelector("#transfer-recipient").value.trim();const amount=Number(onlinePanel.querySelector("#transfer-amount").value);const key=globalThis.crypto?.randomUUID?.()||("kx-"+Date.now()+"-"+Math.random().toString(36).slice(2));const result=await transferKX(recipient,amount,key);onlineStatus.textContent="Transfer: "+result.status;await refreshWallet()}));
-function cloudProgress(){return {level:playerLevel,xp:playerXP,distance_m:drivenDistance,best_race_seconds:bestRace,selected_vehicle:selectedVehicle.id,paint:"#"+selectedPaint.map(v=>Math.round(v*255).toString(16).padStart(2,"0")).join(""),campaign_step:Number(localStorage.getItem("kxic-story-progress")||0)}}
+function cloudProgress(){return {level:playerLevel,xp:playerXP,distance_m:drivenDistance,best_race_seconds:bestRace,vehicle_damage:damage,selected_vehicle:selectedVehicle.id,paint:"#"+selectedPaint.map(v=>Math.round(v*255).toString(16).padStart(2,"0")).join(""),campaign_step:Number(localStorage.getItem("kxic-story-progress")||0)}}
 onlinePanel.querySelector("#cloud-save").addEventListener("click",e=>runOnline(e.currentTarget,async()=>{await savePlayerProgress(cloudProgress());onlineStatus.textContent="Progress saved to your account."}));
-onlinePanel.querySelector("#cloud-load").addEventListener("click",e=>runOnline(e.currentTarget,async()=>{const progress=await loadPlayerProgress();if(!progress){onlineStatus.textContent="No cloud save found.";return}const chosen=vehicleCatalog.find(v=>v.id===progress.selected_vehicle);if(chosen)selectedVehicle=chosen;const match=/^#([0-9a-f]{6})$/i.exec(progress.paint||"");if(match){const hex=match[1];setPlayerPaint([0,2,4].map(i=>parseInt(hex.slice(i,i+2),16)/255))}localStorage.setItem("kxic-story-progress",String(progress.campaign_step||0));playerXP=Number(progress.xp)||0;playerLevel=Math.max(1,Number(progress.level)||Math.floor(playerXP/1000)+1);drivenDistance=Number(progress.distance_m)||0;bestRace=Number(progress.best_race_seconds)||bestRace;localStorage.setItem("kxic-xp",String(playerXP));localStorage.setItem("kxic-distance",String(drivenDistance));refreshGarage();onlineStatus.textContent="Cloud progress loaded."}));
+onlinePanel.querySelector("#cloud-load").addEventListener("click",e=>runOnline(e.currentTarget,async()=>{const progress=await loadPlayerProgress();if(!progress){onlineStatus.textContent="No cloud save found.";return}const chosen=vehicleCatalog.find(v=>v.id===progress.selected_vehicle);if(chosen)selectedVehicle=chosen;const match=/^#([0-9a-f]{6})$/i.exec(progress.paint||"");if(match){const hex=match[1];setPlayerPaint([0,2,4].map(i=>parseInt(hex.slice(i,i+2),16)/255))}localStorage.setItem("kxic-story-progress",String(progress.campaign_step||0));playerXP=Number(progress.xp)||0;playerLevel=Math.max(1,Number(progress.level)||Math.floor(playerXP/1000)+1);drivenDistance=Number(progress.distance_m)||0;bestRace=Number(progress.best_race_seconds)||bestRace;damage=clamp(Number(progress.vehicle_damage)||0,0,100);localStorage.setItem("kxic-damage",String(damage));refreshVehicleDamage();localStorage.setItem("kxic-xp",String(playerXP));localStorage.setItem("kxic-distance",String(drivenDistance));refreshGarage();onlineStatus.textContent="Cloud progress loaded."}));
 
 let cityRoom=null;
 const remoteDrivers=new Map();
@@ -882,7 +882,7 @@ app.on("update", dt => {
     const dz = npcPos.z - p.z;
     if (npc.hitCooldown === 0 && Math.abs(dx) < 1.65 && Math.abs(dz) < 3.05) {
       speed *= 0.32;
-      damage=Math.min(100,damage+8);refreshVehicleDamage();refreshGarage();
+      damage=Math.min(100,damage+8);try{localStorage.setItem("kxic-damage",String(damage))}catch{}refreshVehicleDamage();refreshGarage();
       lateralSpeed += dx >= 0 ? -1.8 : 1.8;
       heading += dx >= 0 ? -4 : 4;
       npc.currentSpeed *= 0.25;
