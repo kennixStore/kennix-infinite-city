@@ -79,6 +79,8 @@ export async function savePlayerProgress(progress) {
   const safeProgress = {
     level: Math.max(1, Math.min(1000, Number(progress.level) || 1)),
     xp: Math.max(0, Math.min(100000000, Number(progress.xp) || 0)),
+    distance_m: Math.max(0, Math.min(1000000000, Number(progress.distance_m) || 0)),
+    best_race_seconds: Math.max(0, Math.min(86400, Number(progress.best_race_seconds) || 0)),
     selected_vehicle: String(progress.selected_vehicle || "kx-sport").slice(0, 32),
     paint: String(progress.paint || "#17436b").slice(0, 16),
     campaign_step: Math.max(0, Math.min(100, Number(progress.campaign_step) || 0))
