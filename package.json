@@ -7,7 +7,7 @@
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview",
-    "check": "node --check src/main.js && node --check src/backend.js"
+    "check": "node --check src/main.js && node --check src/backend.js && node --check src/multiplayer.js"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.57.0",
