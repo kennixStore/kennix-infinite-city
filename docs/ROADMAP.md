@@ -27,6 +27,8 @@
 
 - [x] Marked zebra crossings with pedestrians who wait for the safe signal phase, check approaching traffic, pause for nearby player vehicles, and trigger NPC traffic yielding while crossing (prototype; Android runtime validation pending).
 
+- [x] City streetlight props and an accelerated day/night lighting cycle with ambient/sky transitions and automatic lamp glow at night (prototype; performance and visual tuning pending Android testing).
+
 ## Still required
 - [ ] Apply migration in Supabase and configure build environment variables.
 - [ ] Deploy Supabase schema, configure credentials, and test account, profile, wallet and cloud-save UI end-to-end.

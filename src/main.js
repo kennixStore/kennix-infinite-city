@@ -481,6 +481,52 @@ createCrossingPedestrian(pedestrianCrossings[0],1,1);
 createCrossingPedestrian(pedestrianCrossings[0],2,-1);
 createCrossingPedestrian(pedestrianCrossings[1],3,1);
 
+// City lighting: warm street lamps and a gradual day/night cycle.
+const streetLights=[];
+const streetLampMaterial=makeMat([.12,.14,.18],.5,.32);
+const lampGlowMaterial=makeMat([1,.76,.38],.25,.18);
+const lampGlowLights=[];
+function buildStreetLight(x,z,side=1){
+ const pole=new pc.Entity("NOVA streetlight");app.root.addChild(pole);pole.setPosition(x,0,z);
+ block("Streetlight pole",[0,3.25,0],[.16,6.5,.16],streetLampMaterial,pole);
+ block("Streetlight arm",[side*.85,6.25,0],[1.8,.14,.14],streetLampMaterial,pole);
+ const bulb=block("Streetlight bulb",[side*1.65,6.12,0],[.38,.16,.38],lampGlowMaterial,pole,"sphere");
+ const glow=new pc.Entity("Streetlight illumination");glow.addComponent("light",{type:"omni",color:new pc.Color(1,.72,.42),intensity:0,range:17,falloffMode:1});glow.setPosition(x+side*1.65,5.9,z);app.root.addChild(glow);
+ streetLights.push({bulb,glow});
+}
+for(const z of [-220,-170,-120,-70,-20,30,80,130,180,230]){
+ buildStreetLight(-8.8,z,1);buildStreetLight(8.8,z,-1);
+}
+for(const x of [-140,-80,-20,40,100,160,220]){
+ buildStreetLight(x,-8.8,1);buildStreetLight(x,8.8,-1);
+}
+const nightAmbient=new pc.Color(.035,.055,.12);
+const dayAmbient=new pc.Color(.48,.52,.62);
+const daySky=new pc.Color(.43,.63,.86);
+const nightSky=new pc.Color(.012,.022,.065);
+let worldTime=0.32; // start in late morning; one full cycle lasts about four real minutes.
+const cycleDuration=240;
+const cycleLabel=document.createElement("div");cycleLabel.className="cycle-status";cycleLabel.textContent="11:40 • DAY";document.querySelector("#game-stage").appendChild(cycleLabel);
+const skyDome=new pc.Entity("NOVA sky dome");
+skyDome.addComponent("render",{type:"sphere"});
+skyDome.setLocalScale(900,900,900);app.root.addChild(skyDome);
+const skyMaterial=new pc.StandardMaterial();skyMaterial.diffuse=new pc.Color(.43,.63,.86);skyMaterial.emissive=new pc.Color(.43,.63,.86);skyMaterial.emissiveIntensity=.35;skyMaterial.cull="FRONT";skyMaterial.update();skyDome.render.meshInstances[0].material=skyMaterial;
+function updateWorldLighting(dt){
+ worldTime=(worldTime+dt/cycleDuration)%1;
+ const daylight=clamp((Math.sin((worldTime-.25)*Math.PI*2)+.18)/1.18,0,1);
+ const night=1-daylight;
+ const blend=(a,b,t)=>new pc.Color(a.r+(b.r-a.r)*t,a.g+(b.g-a.g)*t,a.b+(b.b-a.b)*t);
+ app.scene.ambientLight=blend(nightAmbient,dayAmbient,daylight);
+ skyMaterial.emissive=blend(nightSky,daySky,daylight);skyMaterial.diffuse=skyMaterial.emissive;skyMaterial.update();
+ if(typeof sun!=="undefined"&&sun.light)sun.light.intensity=.12+daylight*1.05;
+ for(const item of streetLights){
+  item.glow.light.intensity=night*.9;
+  item.bulb.render.material=night>.15?lampGlowMaterial:streetLampMaterial;
+ }
+ const totalMinutes=Math.floor(worldTime*24*60),hours=Math.floor(totalMinutes/60),minutes=totalMinutes%60;
+ cycleLabel.textContent=String(hours).padStart(2,"0")+":"+String(minutes).padStart(2,"0")+(daylight>.45?" • DAY":" • NIGHT");
+}
+
 // Traffic signal props at the two main junctions.
 const signalLamps = [];
 const signalRed = makeMat([0.62, 0.025, 0.018]); const signalGreen = makeMat([0.025, 0.48, 0.12]);
@@ -1024,6 +1070,7 @@ app.on("update", dt => {
     }
     pedestrian.entity.setPosition(position);
   }
+  updateWorldLighting(dt);
   signalTimer += dt;
   // Coordinated 16-second signal cycle: north/south, then east/west.
   const trafficPhase = Math.floor(signalTimer / 8) % 2;
