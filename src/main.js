@@ -199,6 +199,8 @@ const districtPalettes=[
   makeMat([0.16,0.25,0.29]),makeMat([0.31,0.33,0.34])
 ];
 for(const material of districtPalettes)applySurface(material,surfaceMaps.facade,2,2);
+const marketFabric=makeMat([0.68,0.28,0.09]);
+const industrialPaint=makeMat([0.34,0.37,0.39],.45,.4);
 // Buildings sit within the blocks, leaving the avenue grid clear for driving.
 for(let row=0;row<6;row++){
  for(let col=0;col<6;col++){
@@ -272,8 +274,6 @@ for(let row=0;row<6;row++){
 // District landmarks give the first city map recognisable destinations.
 const waterMat=makeMat([0.035,0.19,0.28],.35,.28);
 const dockWood=makeMat([0.27,0.19,0.12]);
-const marketFabric=makeMat([0.68,0.28,0.09]);
-const industrialPaint=makeMat([0.34,0.37,0.39],.45,.4);
 
 // Waterfront: water basin, pier, mooring posts and container stacks.
 block("NOVA waterfront basin",[70,-.24,-252],[190,.12,38],waterMat);
