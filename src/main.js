@@ -129,19 +129,42 @@ const districtPalettes=[
   makeMat([0.22,0.27,0.33]),makeMat([0.34,0.29,0.23]),
   makeMat([0.16,0.25,0.29]),makeMat([0.31,0.33,0.34])
 ];
+// Buildings sit within the blocks, leaving the avenue grid clear for driving.
 for(let row=0;row<6;row++){
- for(let col=0;col<5;col++){
-  const x=-150+col*60+30, z=-235+row*78+34;
+ for(let col=0;col<6;col++){
+  const x=-180+col*60+30, z=-210+35+row*70;
   if(Math.abs(x)<22) continue;
-  const h=10+((row*7+col*11)%5)*5, w=22+((row+col)%3)*5;
-  const b=block("NOVA CITY district block",[x,h/2,z],[w,h,23],districtPalettes[(row+col)%4]);
-  for(let floor=1;floor<Math.floor(h/3.2);floor++){
-   for(let bay=0;bay<3;bay++){
-    const wx=x-w/2-0.06+(bay+0.5)*w/3;
-    block("District tower window",[wx,floor*3,z-11.58],[2,1.45,.08],(floor+bay+row)%4===0?mats.windowLit:mats.glass,b);
+  const h=12+((row*7+col*11)%5)*5, w=22+((row+col)%3)*5;
+  block("NOVA CITY district block",[x,h/2,z],[w,h,23],districtPalettes[(row+col)%4]);
+  // Fully positioned facade pieces are separate world entities, so building scale
+  // never stretches the detail meshes or creates doubled coordinates.
+  for(const face of [-1,1]){
+   const faceZ=z+face*11.58;
+   for(let floor=1;floor<Math.floor(h/3.2);floor++){
+    const y=floor*3;
+    for(let bay=0;bay<3;bay++){
+     const wx=x-w/2-0.06+(bay+0.5)*w/3;
+     const glass=(floor+bay+row)%5===0?mats.windowLit:mats.glass;
+     block("District tower window frame",[wx,y,faceZ],[2.18,1.62,.09],mats.dark);
+     block("District tower window",[wx,y,faceZ+face*.055],[1.94,1.38,.06],glass);
+    }
+    block("Facade floor band",[x,y-1.0,faceZ],[w+.25,.09,.22],mats.metal);
    }
+   block("Ground floor shopfront",[x,1.55,faceZ],[w*.72,2.4,.16],mats.glass);
+   block("Shop fascia",[x,2.95,faceZ+face*.12],[w*.78,.28,.32],mats.paint);
   }
-  block("Rooftop plant room",[x,h+0.8,z],[w*.35,1.6,5],mats.metal,b);
+  for(const side of [-1,1]){
+   const faceX=x+side*(w/2+.06);
+   for(let floor=1;floor<Math.floor(h/3.2);floor++){
+    for(let bay=0;bay<3;bay++){
+     const wz=z-7+bay*7;
+     block("Side elevation window",[faceX,floor*3,wz],[.09,1.38,1.9],mats.glass);
+    }
+   }
+   block("Building corner pier",[x+side*(w/2-.18),h/2,z],[.34,h,.34],mats.metal);
+  }
+  block("Rooftop plant room",[x,h+.8,z],[w*.35,1.6,5],mats.metal);
+  block("Rooftop service unit",[x+w*.28,h/2+.55,z+5.2],[2.6,1.1,2.1],mats.dark);
  }
 }
 // District landmarks give the first city map recognisable destinations.
@@ -231,6 +254,38 @@ parkedCar(-11.2, -29, 0, 90);
 parkedCar(11.2, -17, 1, -90);
 parkedCar(-11.2, 8, 2, 90);
 parkedCar(11.2, 57, 0, -90);
+
+// Street furniture adds a human scale to the first playable boulevard.
+const streetPropMetal=makeMat([.16,.2,.23],.55,.35);
+const benchWood=makeMat([.32,.2,.11],.05,.72);
+function buildBusStop(x,z,side){
+ const stop=new pc.Entity("NOVA CITY bus shelter");app.root.addChild(stop);stop.setPosition(x,0,z);
+ block("Bus shelter platform",[0,.08,0],[3.8,.16,2.1],mats.concrete,stop);
+ for(const sx of [-1.65,1.65]){
+  block("Shelter upright",[sx,1.35,0],[.1,2.7,.1],streetPropMetal,stop);
+  block("Shelter glass panel",[sx*.78,1.28,.02],[.06,2.25,1.7],mats.glass,stop);
+ }
+ block("Shelter roof",[0,2.72,0],[4,.16,2.2],streetPropMetal,stop);
+ block("Shelter route sign",[0,2.05,-.94],[1.25,.55,.08],mats.paint,stop);
+ block("Bus stop bench",[0,.62,.48],[2.25,.12,.48],benchWood,stop);
+ for(const sx of [-.9,.9])block("Bench leg",[sx,.34,.48],[.08,.56,.08],streetPropMetal,stop);
+ block("Bus stop pole",[side*1.9,1.55,-.85],[.09,3.1,.09],streetPropMetal,stop);
+ block("Bus stop sign",[side*1.9,2.75,-.85],[.58,.7,.08],mats.paint,stop);
+}
+buildBusStop(-11.2,-55,-1);buildBusStop(11.2,52,1);
+function buildStreetBench(x,z,rotation=0){
+ const bench=new pc.Entity("NOVA CITY public bench");app.root.addChild(bench);bench.setPosition(x,.0,z);bench.setEulerAngles(0,rotation,0);
+ block("Bench seat",[0,.62,0],[1.9,.12,.52],benchWood,bench);
+ block("Bench back",[0,1.02,.22],[1.9,.62,.12],benchWood,bench);
+ for(const sx of [-.72,.72])block("Bench support",[sx,.32,0],[.09,.64,.42],streetPropMetal,bench);
+}
+buildStreetBench(78,-107,0);buildStreetBench(102,-107,0);
+for(const z of [-92,-72,-52,42,62,82]){
+ for(const side of [-1,1]){
+  block("Boulevard planter",[side*11.3,.28,z],[1.2,.56,1.3],mats.dark);
+  block("Planter foliage",[side*11.3,.83,z],[1.05,.72,1.05],mats.tree,app.root,"sphere");
+ }
+}
 
 // Distant skyline silhouettes make the district feel larger than the test road.
 const skylineMats = [
