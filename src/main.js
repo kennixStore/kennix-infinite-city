@@ -832,6 +832,9 @@ function buildVehicleModel(vehicle){
  bodyMat.clearCoat=.72;bodyMat.clearCoatGloss=.88;bodyMat.useMetalness=true;bodyMat.update();
  const glassMat=makeMat([.025,.095,.14],.5,.12), chromeMat=makeMat([.38,.42,.46],.85,.18);
  const lampMat=makeMat([.9,.78,.48],.1,.15);lampMat.emissive=new pc.Color(.55,.38,.12);lampMat.update();
+ const amberMat=makeMat([.95,.31,.035],.08,.22);amberMat.emissive=new pc.Color(.32,.055,.004);amberMat.update();
+ const plateMat=makeMat([.72,.75,.74],.12,.55);
+ const reverseMat=makeMat([.82,.86,.88],.08,.2);reverseMat.emissive=new pc.Color(.12,.14,.15);reverseMat.update();
  const wheelList=[],paintParts=[];
  const kind=vehicle.id;
  const width=kind==="suv"?2.25:kind==="muscle"?2.18:kind==="hyper"?2.02:2.08;
@@ -899,6 +902,8 @@ function buildVehicleModel(vehicle){
   block("LED headlamp",[side*.65,.59,-length*.5-.02],[.48,.18,.07],lampMat,root);
   block("Rear LED lamp",[side*.65,.59,length*.5+.02],[.48,.16,.07],mats.red,root);
   block("Rear reflector",[side*.65,.38,length*.5+.04],[.28,.07,.05],lampMat,root);
+  block("Front amber side marker",[side*width*.505,.49,-.62],[.045,.09,.25],amberMat,root);
+  block("Rear amber side marker",[side*width*.505,.49,.72],[.045,.09,.22],amberMat,root);
  }
  // Four wheel assemblies with visible machined rims, brake discs and five spokes.
  for(const z of [-1.42,1.42]){
@@ -924,6 +929,13 @@ function buildVehicleModel(vehicle){
   block("Front grille horizontal slat",[0,.41+slat*.035,-length*.5-.13],[.78,.018,.025],mats.metal,root);
  }
  block("Lower air intake",[0,.25,-length*.5-.07],[1.45,.12,.08],trimMat,root);
+ for(const side of [-1,1]){
+  block("Front fog lamp bezel",[side*.78,.3,-length*.5-.085],[.34,.16,.07],trimMat,root);
+  block("Front fog lamp lens",[side*.78,.3,-length*.5-.13],[.22,.085,.025],lampMat,root);
+ }
+ block("Front registration plate",[0,.32,-length*.5-.145],[.62,.16,.025],plateMat,root);
+ block("Rear registration plate",[0,.34,length*.5+.085],[.62,.16,.025],plateMat,root);
+ block("Rear reverse light",[0,.43,length*.5+.075],[.28,.09,.025],reverseMat,root);
  block("Front splitter",[0,.18,-length*.5-.12],[width*1.02,.08,.42],trimMat,root);
  block("Rear diffuser",[0,.19,length*.5+.06],[width*.78,.12,.38],trimMat,root);
  for(const exhaustSide of [-1,1]){
