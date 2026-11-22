@@ -1,6 +1,7 @@
 import * as pc from "playcanvas";
 import "./style.css";
 import { backendConfigured, createPlayerAccount, signInPlayer, signOutPlayer, getPlayerSession, savePlayerProgress, loadPlayerProgress, getKXBalance, transferKX } from "./backend.js";
+import { joinCityRoom } from "./multiplayer.js";
 
 const canvas = document.querySelector("#application");
 const app = new pc.Application(canvas, {
@@ -503,7 +504,7 @@ accountButton.textContent="ACCOUNT / KX";
 utilityBar.appendChild(accountButton);
 const onlinePanel=document.createElement("section");
 onlinePanel.className="game-overlay hidden";
-onlinePanel.innerHTML='<div class="game-panel"><div class="panel-kicker">KENNIX ONLINE</div><h1>DRIVER ACCOUNT</h1><p id="online-status">Create an account or sign in.</p><div id="account-form"><label class="online-label">DRIVER NAME<input id="account-name" maxlength="24"></label><label class="online-label">EMAIL<input id="account-email" type="email"></label><label class="online-label">PASSWORD<input id="account-password" type="password" minlength="8"></label><div class="panel-actions"><button id="account-create" class="primary-action">CREATE ACCOUNT</button><button id="account-login">SIGN IN</button></div></div><div id="account-tools" hidden><h2 id="kx-balance">KX —</h2><button id="wallet-refresh">REFRESH WALLET</button><label class="online-label">RECIPIENT USER ID<input id="transfer-recipient"></label><label class="online-label">AMOUNT<input id="transfer-amount" type="number" min="1" max="100000"></label><button id="transfer-kx">TRANSFER KX</button><button id="cloud-save">SAVE TO CLOUD</button><button id="cloud-load">LOAD CLOUD SAVE</button><button id="account-logout">SIGN OUT</button></div><small id="online-note">Requires the Supabase migration and hosting environment variables. Never share your password.</small><button id="online-close">CLOSE</button></div>';
+onlinePanel.innerHTML='<div class="game-panel"><div class="panel-kicker">KENNIX ONLINE</div><h1>DRIVER ACCOUNT</h1><p id="online-status">Create an account or sign in.</p><div id="account-form"><label class="online-label">DRIVER NAME<input id="account-name" maxlength="24"></label><label class="online-label">EMAIL<input id="account-email" type="email"></label><label class="online-label">PASSWORD<input id="account-password" type="password" minlength="8"></label><div class="panel-actions"><button id="account-create" class="primary-action">CREATE ACCOUNT</button><button id="account-login">SIGN IN</button></div></div><div id="account-tools" hidden><h2 id="kx-balance">KX —</h2><button id="wallet-refresh">REFRESH WALLET</button><label class="online-label">RECIPIENT USER ID<input id="transfer-recipient"></label><label class="online-label">AMOUNT<input id="transfer-amount" type="number" min="1" max="100000"></label><button id="transfer-kx">TRANSFER KX</button><button id="cloud-save">SAVE TO CLOUD</button><button id="cloud-load">LOAD CLOUD SAVE</button><label class="online-label">PRIVATE ROOM CODE<input id="room-code" maxlength="32" value="nova-city"></label><button id="room-join">JOIN ONLINE CITY</button><button id="room-leave">LEAVE ONLINE CITY</button><button id="account-logout">SIGN OUT</button></div><small id="online-note">Requires the Supabase migration and hosting environment variables. Never share your password.</small><button id="online-close">CLOSE</button></div>';
 document.querySelector("#game-stage").appendChild(onlinePanel);
 const onlineStatus=onlinePanel.querySelector("#online-status");
 const accountForm=onlinePanel.querySelector("#account-form");
@@ -529,6 +530,41 @@ onlinePanel.querySelector("#transfer-kx").addEventListener("click",e=>runOnline(
 function cloudProgress(){return {level:1,xp:0,selected_vehicle:selectedVehicle.id,paint:"#"+selectedPaint.map(v=>Math.round(v*255).toString(16).padStart(2,"0")).join(""),campaign_step:Number(localStorage.getItem("kxic-story-progress")||0)}}
 onlinePanel.querySelector("#cloud-save").addEventListener("click",e=>runOnline(e.currentTarget,async()=>{await savePlayerProgress(cloudProgress());onlineStatus.textContent="Progress saved to your account."}));
 onlinePanel.querySelector("#cloud-load").addEventListener("click",e=>runOnline(e.currentTarget,async()=>{const progress=await loadPlayerProgress();if(!progress){onlineStatus.textContent="No cloud save found.";return}const chosen=vehicleCatalog.find(v=>v.id===progress.selected_vehicle);if(chosen)selectedVehicle=chosen;const match=/^#([0-9a-f]{6})$/i.exec(progress.paint||"");if(match){const hex=match[1];setPlayerPaint([0,2,4].map(i=>parseInt(hex.slice(i,i+2),16)/255))}localStorage.setItem("kxic-story-progress",String(progress.campaign_step||0));refreshGarage();onlineStatus.textContent="Cloud progress loaded."}));
+
+let cityRoom=null;
+const remoteDrivers=new Map();
+let roomSnapshotTimer=0;
+async function leaveOnlineRoom(){
+ if(cityRoom){await cityRoom.leave();cityRoom=null}
+ for(const entity of remoteDrivers.values())entity.destroy();
+ remoteDrivers.clear();
+ onlineStatus.textContent="You left the online city room.";
+}
+onlinePanel.querySelector("#room-join").addEventListener("click",e=>runOnline(e.currentTarget,async()=>{
+ if(cityRoom)await leaveOnlineRoom();
+ const code=onlinePanel.querySelector("#room-code").value.trim()||"nova-city";
+ cityRoom=await joinCityRoom(code,players=>{
+  const ownId=activePlayerSession?.user?.id;
+  const present=new Set(players.filter(x=>x.userId!==ownId).map(x=>x.userId));
+  for(const [id,entity] of remoteDrivers){if(!present.has(id)){entity.destroy();remoteDrivers.delete(id)}}
+  onlineStatus.textContent="Online room "+code.toUpperCase()+" • "+present.size+" other driver(s) present.";
+ },snapshot=>{
+  if(snapshot.userId===activePlayerSession?.user?.id)return;
+  let entity=remoteDrivers.get(snapshot.userId);
+  if(!entity){
+   entity=new pc.Entity("Online driver vehicle");
+   app.root.addChild(entity);
+   block("Online vehicle body",[0,.5,0],[1.9,.55,4],makeMat([.12,.28,.48],.65,.25),entity);
+   block("Online vehicle cabin",[0,.9,.1],[1.4,.55,1.8],mats.glass,entity);
+   remoteDrivers.set(snapshot.userId,entity);
+  }
+  entity.setPosition(snapshot.x,.08,snapshot.z);
+  entity.setEulerAngles(0,snapshot.heading,0);
+ });
+ onlineStatus.textContent="Connected to room "+cityRoom.room.toUpperCase()+". Keep this screen open or close it to drive online.";
+}));
+onlinePanel.querySelector("#room-leave").addEventListener("click",e=>runOnline(e.currentTarget,leaveOnlineRoom));
+
 onlinePanel.querySelector("#online-close").addEventListener("click",()=>{onlinePanel.classList.add("hidden");if(gameOverlay.classList.contains("hidden"))gamePaused=false});
 
 
@@ -779,6 +815,15 @@ app.on("update", dt => {
    missionTitleLabel.textContent=mission.title+" • "+mission.goal;
    if(distance<9&&wantedLevel===0)completeStoryMission();
    if(missionIndex===1&&missionElapsed>75&&wantedLevel>0){wantedLevel=0;policeRoot.enabled=false}
+  }
+
+
+  if(cityRoom){
+   roomSnapshotTimer+=dt;
+   if(roomSnapshotTimer>=.1){
+    roomSnapshotTimer=0;
+    cityRoom.sendSnapshot({x:p.x,z:p.z,heading,vehicle:selectedVehicle.id}).catch(error=>{onlineStatus.textContent=error.message});
+   }
   }
 
   drivenDistance+=Math.abs(speed)*dt;
