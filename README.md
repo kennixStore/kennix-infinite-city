@@ -11,8 +11,9 @@ An original browser-first 3D open-world driving and action game prototype built 
 - Street sprint and distance objective.
 
 ## Online backend foundation added
-- Supabase email/password account service module.
-- Per-player cloud-save data service.
+- Supabase email/password registration, sign-in, password recovery and profile updates.
+- In-game account interface, KX balance/transfer controls and per-player cloud save/load.
+- Campaign XP, levels, driving distance and best sprint time can be saved to a player cloud record.
 - Server-owned KX wallets and transaction ledger schema.
 - Database-side welcome balance and authenticated, row-locked KX transfer RPC.
 - Row-level security prevents direct client writes to wallet balances and transactions.
