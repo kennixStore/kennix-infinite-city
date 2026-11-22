@@ -169,6 +169,13 @@ for (const junctionZ of [-43, 39]) {
 
 // Extended NOVA CITY grid: Downtown, Market Quarter, Waterfront and Industrial Edge.
 const districtRoads = [-210,-140,-70,0,70,140,210];
+// Player road contact follows the asphalt that is actually built. The two
+// original downtown cross streets are shorter than the later district avenues.
+const playerCrossRoads = [
+  { z: -210, halfWidth: 160 }, { z: -140, halfWidth: 160 },
+  { z: -43, halfWidth: 59 }, { z: 39, halfWidth: 59 },
+  { z: 140, halfWidth: 160 }, { z: 210, halfWidth: 160 }
+];
 for (const z of districtRoads) {
   if (z === 0 || z === -70 || z === 70) continue;
   block("City cross avenue", [0,-0.035,z], [320,0.15,15], mats.asphalt);
@@ -1040,7 +1047,7 @@ const mapPositionLabel = miniMapPanel.querySelector("#map-position");
 const mapDistanceLabel = miniMapPanel.querySelector("#map-distance");
 const mapScale = 0.72;
 const mapRoadXs = [-120, -60, 0, 60, 120];
-const mapRoadZs = [-210, -140, -70, 0, 70, 140, 210];
+const mapRoadZs = [-210, -140, -43, 39, 140, 210];
 const nearestRoad = (values, value) => values.reduce((best, item) => Math.abs(item-value)<Math.abs(best-value)?item:best, values[0]);
 function setNavigationTarget(target) {
   navigationTarget = target ? { x: clamp(target.x, -158, 158), z: clamp(target.z, -258, 258), name: target.name || "CUSTOM WAYPOINT" } : null;
@@ -1411,7 +1418,7 @@ app.on("update", dt => {
   p.x=clamp(nextX,-158,158);
   p.z=clamp(nextZ,-258,258);
   const onMainAvenue=Math.abs(p.x)<7.8;
-  const onCrossStreet=districtRoads.some(z=>Math.abs(p.z-z)<7.8);
+  const onCrossStreet=playerCrossRoads.some(road=>Math.abs(p.z-road.z)<7.8&&Math.abs(p.x)<road.halfWidth);
   const onSideAvenue=[-120,-60,60,120].some(x=>Math.abs(p.x-x)<7.8);
   if(!(onMainAvenue||onCrossStreet||onSideAvenue)){
     speed*=Math.exp(-1.7*dt);
@@ -1696,8 +1703,16 @@ app.on("update", dt => {
   if(raceActive){const target=raceRoute[raceCheckpoint];if(target!==undefined&&Math.abs(p.z-target)<2.4&&Math.abs(p.x)<5.8){raceGates[raceCheckpoint].enabled=false;raceCheckpoint++;if(raceCheckpoint<raceRoute.length)raceGates[raceCheckpoint].enabled=true;else{raceActive=false;const elapsed=(performance.now()-raceStart)/1000;if(!bestRace||elapsed<bestRace){bestRace=elapsed;localStorage.setItem("kxic-best-race",String(bestRace))}showGarage("SPRINT COMPLETE",`Time: ${elapsed.toFixed(2)}s • Best: ${bestRace.toFixed(2)}s`)}}}
   raceStatusLabel.textContent=raceActive?`STREET SPRINT • CHECKPOINT ${raceCheckpoint+1}/3 • ${((performance.now()-raceStart)/1000).toFixed(1)}s`:"";
   // Smooth follow camera to reduce sudden movement on mobile.
-  const camTarget=cameraMode==="cockpit"?new pc.Vec3(p.x+Math.sin(heading*Math.PI/180)*.55,p.y+1.48,p.z-Math.cos(heading*Math.PI/180)*.25):new pc.Vec3(p.x-Math.sin(heading*Math.PI/180)*13.2,p.y+6.4,p.z+Math.cos(heading*Math.PI/180)*13.2);
+  // Speed-sensitive chase framing opens the view at high speed without
+  // making low-speed city driving feel distant or difficult to control.
+  const chaseDistance=13.2+speedRatio*2.8;
+  const chaseHeight=6.4+speedRatio*.9;
+  const camTarget=cameraMode==="cockpit"
+    ?new pc.Vec3(p.x+Math.sin(heading*Math.PI/180)*.55,p.y+1.48,p.z-Math.cos(heading*Math.PI/180)*.25)
+    :new pc.Vec3(p.x-Math.sin(heading*Math.PI/180)*chaseDistance,p.y+chaseHeight,p.z+Math.cos(heading*Math.PI/180)*chaseDistance);
   const camPos=camera.getPosition();camPos.lerp(camPos,camTarget,1-Math.pow(.001,dt));camera.setPosition(camPos);
+  const targetFov=cameraMode==="cockpit"?76:68+speedRatio*5;
+  camera.camera.fov+=(targetFov-camera.camera.fov)*Math.min(1,dt*2.8);
   camera.lookAt(p.x+Math.sin(heading*Math.PI/180)*(cameraMode==="cockpit"?12:-3.2),p.y+(cameraMode==="cockpit"?1.35:.7),p.z-Math.cos(heading*Math.PI/180)*(cameraMode==="cockpit"?12:-4.0));
 
   if (speedValue) speedValue.textContent = Math.round(Math.abs(speed) * 3.6).toString().padStart(3, "0");
