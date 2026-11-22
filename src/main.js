@@ -242,7 +242,7 @@ function createTrafficCar(laneX, startZ, direction, paintIndex, cruiseSpeed) {
       tyre.setLocalEulerAngles(0, 0, 90);
     }
   }
-  traffic.push({ entity: npc, direction, cruiseSpeed, hitCooldown: 0 });
+  traffic.push({ entity: npc, direction, cruiseSpeed, currentSpeed: cruiseSpeed, hitCooldown: 0 });
 }
 createTrafficCar(-2.55, -57, 1, 0, 10);
 createTrafficCar(2.55, -25, -1, 1, 8.5);
@@ -322,9 +322,11 @@ controls.querySelectorAll("button").forEach(button => {
 });
 
 let speed = 0;                 // metres per second; forward is negative Z
+let lateralSpeed = 0;          // sideways slip, damped by tyre grip
 let heading = 0;
 let steeringAngle = 0;
 let handbrakeActive = false;
+let signalTimer = 0;
 const clamp = (v, min, max) => Math.max(min, Math.min(max, v));
 const speedValue = document.querySelector("#speed-value");
 const gearValue = document.querySelector("#gear-value");
@@ -342,40 +344,58 @@ app.on("update", dt => {
   const right = isDown("d", "arrowright", "right");
   handbrakeActive = isDown(" ", "handbrake");
 
-  // Arcade vehicle response with separate acceleration, braking and coasting.
-  if (forward) speed += (speed < 0 ? 39 : 17) * dt;
-  else if (reverse) speed -= (speed > 0 ? 48 : 11) * dt;
-  else speed *= Math.pow(handbrakeActive ? 0.12 : 0.42, dt);
+  // More grounded arcade handling: throttle, braking, coasting and tyre grip.
+  // The brake input slows the car first, then engages reverse at low speed.
+  if (forward) {
+    speed += (speed < 0 ? 26 : 12.5) * dt;
+  } else if (reverse) {
+    speed -= (speed > 0 ? 25 : 7.5) * dt;
+  } else {
+    speed *= Math.exp(-(handbrakeActive ? 1.7 : 0.72) * dt);
+  }
 
-  if (handbrakeActive && Math.abs(speed) > 1) speed *= Math.pow(0.16, dt);
-  speed = clamp(speed, -10, 38);
+  if (handbrakeActive && Math.abs(speed) > 2) speed *= Math.exp(-1.2 * dt);
+  speed = clamp(speed, -12, 42);
 
   const steerInput = (left ? 1 : 0) - (right ? 1 : 0);
-  const steerLimit = 28;
-  const targetSteering = steerInput * steerLimit;
-  steeringAngle += (targetSteering - steeringAngle) * Math.min(1, dt * 8);
+  const targetSteering = steerInput * 30;
+  steeringAngle += (targetSteering - steeringAngle) * Math.min(1, dt * 7.5);
 
-  // Steering response increases with speed, but remains controllable at low speed.
-  const speedFactor = 0.18 + Math.min(Math.abs(speed) / 24, 1) * 0.82;
-  const grip = handbrakeActive ? 1.35 : 1;
-  heading -= steeringAngle * 0.95 * speedFactor * grip * dt * Math.sign(speed || 1);
+  const speedRatio = clamp(Math.abs(speed) / 24, 0, 1);
+  const directionSign = Math.sign(speed || 1);
+  const gripFactor = handbrakeActive ? 1.25 : 1;
+  heading -= steeringAngle * 0.88 * (0.16 + speedRatio * 0.84) * gripFactor * dt * directionSign;
+
+  // Steering creates a little lateral movement; normal tyres quickly regain grip.
+  lateralSpeed += steerInput * speedRatio * (handbrakeActive ? 5.2 : 1.35) * directionSign * dt;
+  lateralSpeed *= Math.exp(-(handbrakeActive ? 1.15 : 6.2) * dt);
 
   const radians = heading * Math.PI / 180;
+  const forwardX = Math.sin(radians);
+  const forwardZ = -Math.cos(radians);
+  const rightX = Math.cos(radians);
+  const rightZ = Math.sin(radians);
   const p = car.getPosition();
-  const nextX = p.x + Math.sin(radians) * speed * dt;
-  const nextZ = p.z - Math.cos(radians) * speed * dt;
+  const nextX = p.x + (forwardX * speed + rightX * lateralSpeed) * dt;
+  const nextZ = p.z + (forwardZ * speed + rightZ * lateralSpeed) * dt;
 
-  // Keep the test vehicle on the drivable avenue.
+  // Road-edge contact reduces speed and sideways momentum instead of allowing clipping.
   const roadEdge = 5.75;
   if (nextX < -roadEdge || nextX > roadEdge) {
-    speed *= -0.18;
+    speed *= -0.12;
+    lateralSpeed *= -0.28;
     p.x = clamp(nextX, -roadEdge, roadEdge);
   } else {
     p.x = nextX;
   }
-  p.z = clamp(nextZ, -75, 75);
+  if (nextZ < -75 || nextZ > 75) {
+    speed *= -0.12;
+    p.z = clamp(nextZ, -75, 75);
+  } else {
+    p.z = nextZ;
+  }
   car.setPosition(p);
-  car.setEulerAngles(0, heading, 0);
+  car.setEulerAngles(0, heading, clamp(-steeringAngle * speedRatio * 0.035, -3, 3));
 
   frontWheels.forEach(wheel => wheel.setLocalEulerAngles(0, steeringAngle * 0.55, 90));
   rearWheels.forEach(wheel => wheel.rotateLocal(0, 0, speed * dt * 85));
@@ -395,7 +415,8 @@ app.on("update", dt => {
     if (position.z < pedestrian.minZ) { position.z = pedestrian.minZ; pedestrian.direction = 1; }
     pedestrian.entity.setPosition(position);
   }
-  const trafficPhase = Math.floor(app.clock.elapsedTime / 8) % 2;
+  signalTimer += dt;
+  const trafficPhase = Math.floor(signalTimer / 8) % 2;
   const greenDirection = trafficPhase === 0 ? 1 : -1;
   for (const lamps of signalLamps) {
     lamps.green.render.material = greenDirection === 1 ? signalGreen : signalRed;
@@ -406,22 +427,45 @@ app.on("update", dt => {
   for (const npc of traffic) {
     const npcPos = npc.entity.getPosition();
     npc.hitCooldown = Math.max(0, npc.hitCooldown - dt);
-    let trafficStopped = false;
+
+    // Follow the vehicle ahead and avoid driving into the player's car.
+    let targetSpeed = npc.cruiseSpeed;
+    for (const other of traffic) {
+      if (other === npc || other.direction !== npc.direction) continue;
+      const otherPos = other.entity.getPosition();
+      if (Math.abs(otherPos.x - npcPos.x) > 1.1) continue;
+      const gap = (otherPos.z - npcPos.z) * npc.direction;
+      if (gap > 0 && gap < 13) {
+        targetSpeed = Math.min(targetSpeed, npc.cruiseSpeed * clamp((gap - 3.5) / 9.5, 0, 1));
+      }
+    }
+    const playerGap = (p.z - npcPos.z) * npc.direction;
+    if (Math.abs(p.x - npcPos.x) < 1.55 && playerGap > 0 && playerGap < 13) {
+      targetSpeed = Math.min(targetSpeed, npc.cruiseSpeed * clamp((playerGap - 4) / 9, 0, 1));
+    }
+
+    // Red lights bring traffic to a gradual stop before the junction.
     for (const junctionZ of [-43, 39]) {
       const distanceToJunction = (junctionZ - npcPos.z) * npc.direction;
-      if (distanceToJunction > 0 && distanceToJunction < 8 && npc.direction !== greenDirection) { trafficStopped = true; break; }
+      if (distanceToJunction > 0 && distanceToJunction < 10 && npc.direction !== greenDirection) {
+        targetSpeed = 0;
+        break;
+      }
     }
-    if (!trafficStopped) npcPos.z += npc.direction * npc.cruiseSpeed * dt;
+    npc.currentSpeed += (targetSpeed - npc.currentSpeed) * Math.min(1, dt * 2.8);
+    npcPos.z += npc.direction * npc.currentSpeed * dt;
     if (npcPos.z < -82) npcPos.z = 82;
     if (npcPos.z > 82) npcPos.z = -82;
     npc.entity.setPosition(npcPos);
 
-    // Basic low-cost contact response; full rigid-body collisions come later.
+    // Low-cost contact response: slow the player and push the cars apart briefly.
     const dx = npcPos.x - p.x;
     const dz = npcPos.z - p.z;
     if (npc.hitCooldown === 0 && Math.abs(dx) < 1.65 && Math.abs(dz) < 3.05) {
-      speed *= 0.38;
-      heading += dx >= 0 ? -5 : 5;
+      speed *= 0.32;
+      lateralSpeed += dx >= 0 ? -1.8 : 1.8;
+      heading += dx >= 0 ? -4 : 4;
+      npc.currentSpeed *= 0.25;
       npc.hitCooldown = 1.1;
     }
   }
