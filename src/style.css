@@ -42,6 +42,14 @@ body { overflow: hidden; }
   border-radius: 13px; color: white; background: rgba(8,14,22,.72);
   font-weight: 800; touch-action: none; pointer-events: auto;
   box-shadow: 0 3px 14px rgba(0,0,0,.25);
+  transition: transform .08s ease, filter .08s ease, background .08s ease;
+  user-select: none;
+  -webkit-user-select: none;
+}
+.touch-controls button:active, .touch-controls button.is-pressed {
+  transform: translateY(2px) scale(.96);
+  filter: brightness(1.35);
+  background: rgba(216,173,91,.72);
 }
 .steering, .pedals { display: flex; gap: 8px; }
 .pedals button { width: 66px; font-size: 10px; }
