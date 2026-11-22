@@ -354,6 +354,7 @@ const trafficPaints = [
   makeMat([0.12, 0.14, 0.17], 0.55, 0.25)
 ];
 const traffic = [];
+const trafficBrakeMaterial = makeMat([1, 0.035, 0.012], 0.12, 0.22);
 function createTrafficCar(laneX, startZ, direction, paintIndex, cruiseSpeed) {
   const npc = new pc.Entity("NPC traffic vehicle");
   npc.setPosition(laneX, 0.08, startZ);
@@ -361,20 +362,25 @@ function createTrafficCar(laneX, startZ, direction, paintIndex, cruiseSpeed) {
   const paint = trafficPaints[paintIndex % trafficPaints.length];
   block("Traffic body", [0, 0.48, 0], [1.72, 0.48, 3.45], paint, npc);
   block("Traffic cabin", [0, 0.83, 0.18], [1.38, 0.46, 1.62], mats.glass, npc);
+  const brakeLamps = [];
   for (const side of [-1, 1]) {
     block("Traffic headlight", [side * 0.55, 0.52, -1.74], [0.26, 0.12, 0.06], mats.headlight, npc);
-    block("Traffic tail light", [side * 0.55, 0.52, 1.74], [0.26, 0.12, 0.06], mats.red, npc);
+    brakeLamps.push(block("Traffic tail brake light", [side * 0.55, 0.52, 1.74], [0.26, 0.12, 0.06], mats.red, npc));
     for (const end of [-1, 1]) {
       const tyre = block("Traffic tyre", [side * 0.87, 0.25, end * 1.05], [0.22, 0.46, 0.58], mats.trim, npc, "cylinder");
       tyre.setLocalEulerAngles(0, 0, 90);
     }
   }
-  traffic.push({ entity: npc, direction, cruiseSpeed, currentSpeed: cruiseSpeed, hitCooldown: 0 });
+  traffic.push({ entity: npc, direction, cruiseSpeed, currentSpeed: cruiseSpeed, hitCooldown: 0, brakeLamps, braking: false });
 }
 createTrafficCar(-2.55, -57, 1, 0, 10);
 createTrafficCar(2.55, -25, -1, 1, 8.5);
 createTrafficCar(-2.55, 11, 1, 2, 9);
 createTrafficCar(2.55, 62, -1, 3, 11);
+createTrafficCar(-2.55, 45, 1, 1, 8.2);
+createTrafficCar(2.55, 15, -1, 2, 9.4);
+createTrafficCar(-2.55, -76, 1, 3, 10.5);
+createTrafficCar(2.55, 39, -1, 0, 8.8);
 
 // Pedestrian figures with simple looping walk cycles along the sidewalks.
 const skinMat = makeMat([0.55, 0.34, 0.22]);
@@ -875,14 +881,16 @@ app.on("update", dt => {
   // Keep pedestrians visual-only for this milestone; no unsafe or misleading collision claims.
   // Sidewalk pedestrians walk with alternating arm and leg swings.
   for (const pedestrian of pedestrians) {
-    pedestrian.phase += dt * 5.2;
-    const swing = Math.sin(pedestrian.phase) * 0.42;
+    const position = pedestrian.entity.getPosition();
+    const nearPlayer = Math.abs(position.x - p.x) < 5.2 && Math.abs(position.z - p.z) < 8.5 && Math.abs(speed) > 3;
+    const walkRate = nearPlayer ? 0 : 0.48;
+    pedestrian.phase += dt * (nearPlayer ? 1.2 : 5.2);
+    const swing = Math.sin(pedestrian.phase) * (nearPlayer ? 0.08 : 0.42);
     pedestrian.legs[0].setLocalEulerAngles(swing * 55, 0, 0);
     pedestrian.legs[1].setLocalEulerAngles(-swing * 55, 0, 0);
     pedestrian.arms[0].setLocalEulerAngles(-swing * 38, 0, 0);
     pedestrian.arms[1].setLocalEulerAngles(swing * 38, 0, 0);
-    const position = pedestrian.entity.getPosition();
-    position.z += pedestrian.direction * 0.48 * dt;
+    position.z += pedestrian.direction * walkRate * dt;
     if (position.z > pedestrian.maxZ) { position.z = pedestrian.maxZ; pedestrian.direction = -1; }
     if (position.z < pedestrian.minZ) { position.z = pedestrian.minZ; pedestrian.direction = 1; }
     pedestrian.entity.setPosition(position);
@@ -924,7 +932,11 @@ app.on("update", dt => {
         break;
       }
     }
-    npc.currentSpeed += (targetSpeed - npc.currentSpeed) * Math.min(1, dt * 2.8);
+    const wasMovingFaster = targetSpeed < npc.currentSpeed - 0.7;
+    npc.braking = wasMovingFaster;
+    npc.brakeLamps.forEach(lamp => { lamp.render.material = wasMovingFaster ? trafficBrakeMaterial : mats.red; });
+    const response = targetSpeed < npc.currentSpeed ? 4.8 : 2.1;
+    npc.currentSpeed += (targetSpeed - npc.currentSpeed) * Math.min(1, dt * response);
     npcPos.z += npc.direction * npc.currentSpeed * dt;
     if (npcPos.z < -82) npcPos.z = 82;
     if (npcPos.z > 82) npcPos.z = -82;
