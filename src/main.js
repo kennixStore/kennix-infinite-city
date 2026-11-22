@@ -15,6 +15,11 @@ app.setCanvasResolution(pc.RESOLUTION_AUTO);
 app.scene.ambientLight = new pc.Color(0.43, 0.48, 0.58);
 app.scene.toneMapping = pc.TONEMAP_ACES;
 app.scene.gammaCorrection = pc.GAMMA_SRGB;
+// Atmospheric depth helps distant buildings and hills blend into the skyline.
+app.scene.fog = pc.FOG_LINEAR;
+app.scene.fogColor = new pc.Color(0.56, 0.68, 0.78);
+app.scene.fogStart = 155;
+app.scene.fogEnd = 620;
 
 const makeMat = (rgb, metalness = 0, roughness = 0.65) => {
   const m = new pc.StandardMaterial();
@@ -100,7 +105,25 @@ function block(name, pos, size, mat, parent = app.root, shape = "box") {
 }
 
 // Compact first-district driving test area.
-block("City ground", [0, -0.42, 0], [340, 0.6, 540], mats.ground);
+block("City ground", [0, -0.42, 0], [900, 0.6, 900], mats.ground);
+
+// Rolling green ridgelines frame NOVA CITY instead of ending at a flat map edge.
+const ridgeMaterials = [
+  makeMat([0.12, 0.22, 0.18], 0, 0.92),
+  makeMat([0.16, 0.27, 0.21], 0, 0.9),
+  makeMat([0.19, 0.28, 0.25], 0, 0.94)
+];
+function addRidge(name, x, y, z, sx, sy, sz, material, rotation = 0) {
+  const ridge = block(name, [x, y, z], [sx, sy, sz], material, app.root, "sphere");
+  ridge.setEulerAngles(0, rotation, 0);
+  return ridge;
+}
+addRidge("Western green ridge", -295, -20, -135, 220, 105, 310, ridgeMaterials[0], -12);
+addRidge("Western far ridge", -365, -34, 190, 250, 122, 290, ridgeMaterials[1], 8);
+addRidge("Eastern green ridge", 300, -22, -160, 230, 112, 300, ridgeMaterials[1], 14);
+addRidge("Eastern far ridge", 370, -35, 190, 250, 125, 310, ridgeMaterials[0], -10);
+addRidge("Northern hill crest", -20, -38, -420, 360, 135, 210, ridgeMaterials[2], 4);
+addRidge("Southern hill crest", 20, -40, 420, 380, 145, 220, ridgeMaterials[1], -5);
 block("Main avenue", [0, -0.04, 0], [15, 0.16, 520], mats.asphalt);
 for (const x of [-8.7, 8.7]) {
   block("Sidewalk", [x, 0.02, 0], [2.4, 0.22, 520], mats.concrete);
@@ -365,6 +388,55 @@ for(const z of [-92,-72,-52,42,62,82]){
   block("Planter foliage",[side*11.3,.83,z],[1.05,.72,1.05],mats.tree,app.root,"sphere");
  }
 }
+
+// Palm-lined boulevards and leafy street trees add a more natural city scale.
+const palmLeafMaterials = [
+  makeMat([0.035, 0.19, 0.095], 0, 0.86),
+  makeMat([0.055, 0.25, 0.12], 0, 0.88),
+  makeMat([0.12, 0.29, 0.15], 0, 0.9)
+];
+const palmTrunkMaterial = makeMat([0.28, 0.19, 0.11], 0, 0.94);
+function buildPalmTree(x, z, height = 8) {
+  const root = new pc.Entity("NOVA CITY palm tree");
+  root.setPosition(x, 0, z);
+  app.root.addChild(root);
+  block("Palm trunk", [0, height * 0.46, 0], [0.42, height, 0.42], palmTrunkMaterial, root, "cylinder");
+  const crownY = height * 0.91;
+  block("Palm crown", [0, crownY, 0], [1.05, 0.62, 1.05], palmLeafMaterials[1], root, "sphere");
+  for (let blade = 0; blade < 7; blade++) {
+    const angle = blade * (Math.PI * 2 / 7);
+    const leaf = block(
+      "Palm frond",
+      [Math.sin(angle) * 1.25, crownY - 0.25, Math.cos(angle) * 1.25],
+      [0.34, 0.16, 3.6],
+      palmLeafMaterials[blade % palmLeafMaterials.length],
+      root,
+      "sphere"
+    );
+    leaf.setLocalEulerAngles(20, angle * 180 / Math.PI, 0);
+  }
+  return root;
+}
+for (const z of [-215, -145, -75, 75, 145, 215]) {
+  buildPalmTree(-15.2, z, 7.2 + (Math.abs(z) % 3));
+  buildPalmTree(15.2, z + 9, 7.8 + (Math.abs(z) % 2));
+}
+
+// Soft cloud banks sit above the skyline and catch the changing daylight.
+const cloudMaterial = makeMat([0.68, 0.74, 0.78], 0, 0.98);
+function buildCloudBank(x, y, z, scale = 1) {
+  const cloud = new pc.Entity("NOVA CITY distant cloud bank");
+  cloud.setPosition(x, y, z);
+  app.root.addChild(cloud);
+  block("Cloud body", [0, 0, 0], [26 * scale, 5.5 * scale, 10 * scale], cloudMaterial, cloud, "sphere");
+  block("Cloud puff", [-8 * scale, 2 * scale, 1.5 * scale], [13 * scale, 7 * scale, 11 * scale], cloudMaterial, cloud, "sphere");
+  block("Cloud puff", [8 * scale, 1.2 * scale, -1.8 * scale], [16 * scale, 6.5 * scale, 12 * scale], cloudMaterial, cloud, "sphere");
+}
+buildCloudBank(-190, 86, -260, 1.25);
+buildCloudBank(110, 102, -360, 1.0);
+buildCloudBank(260, 92, -80, 1.1);
+buildCloudBank(-260, 96, 130, 1.05);
+buildCloudBank(180, 110, 300, 1.2);
 
 // Distant skyline silhouettes make the district feel larger than the test road.
 const skylineMats = [
@@ -647,22 +719,57 @@ for(const x of [-140,-80,-20,40,100,160,220]){
 }
 const nightAmbient=new pc.Color(.035,.055,.12);
 const dayAmbient=new pc.Color(.48,.52,.62);
-const daySky=new pc.Color(.43,.63,.86);
-const nightSky=new pc.Color(.012,.022,.065);
+const daySky=new pc.Color(.94,.97,1);
+const nightSky=new pc.Color(.035,.05,.12);
+const dayFog=new pc.Color(.56,.68,.78);
+const nightFog=new pc.Color(.025,.04,.085);
 let worldTime=0.32; // start in late morning; one full cycle lasts about four real minutes.
 const cycleDuration=240;
 const cycleLabel=document.createElement("div");cycleLabel.className="cycle-status";cycleLabel.textContent="11:40 • DAY";document.querySelector("#game-stage").appendChild(cycleLabel);
 const skyDome=new pc.Entity("NOVA sky dome");
 skyDome.addComponent("render",{type:"sphere"});
 skyDome.setLocalScale(900,900,900);app.root.addChild(skyDome);
-const skyMaterial=new pc.StandardMaterial();skyMaterial.diffuse=new pc.Color(.43,.63,.86);skyMaterial.emissive=new pc.Color(.43,.63,.86);skyMaterial.emissiveIntensity=.35;skyMaterial.cull=pc.CULLFACE_FRONT;skyMaterial.update();skyDome.render.meshInstances[0].material=skyMaterial;
+// An equirectangular canvas sky gives the dome a blue upper sky and warm horizon.
+const skyCanvas=document.createElement("canvas");
+skyCanvas.width=1024;skyCanvas.height=512;
+const skyContext=skyCanvas.getContext("2d");
+const skyGradient=skyContext.createLinearGradient(0,0,0,512);
+skyGradient.addColorStop(0,"#355b83");
+skyGradient.addColorStop(.34,"#729bb8");
+skyGradient.addColorStop(.64,"#c4d0d0");
+skyGradient.addColorStop(.79,"#f0c18f");
+skyGradient.addColorStop(.9,"#d9b28f");
+skyGradient.addColorStop(1,"#8299a8");
+skyContext.fillStyle=skyGradient;skyContext.fillRect(0,0,1024,512);
+let skySeed=91827;
+const skyRand=()=>{skySeed=(skySeed*1664525+1013904223)>>>0;return skySeed/4294967296;};
+for(let i=0;i<115;i++){
+  const x=skyRand()*1024,y=55+skyRand()*310,w=24+skyRand()*115,h=2+skyRand()*7;
+  skyContext.fillStyle="rgba(255,255,255,"+(.018+skyRand()*.035)+")";
+  skyContext.beginPath();skyContext.ellipse(x,y,w,h,skyRand()*.08,0,Math.PI*2);skyContext.fill();
+}
+const skyTexture=new pc.Texture(app.graphicsDevice,{width:1024,height:512,format:pc.PIXELFORMAT_R8_G8_B8_A8,mipmaps:true});
+skyTexture.name="KENNIX NOVA CITY atmospheric sky";skyTexture.addressU=pc.ADDRESS_REPEAT;skyTexture.addressV=pc.ADDRESS_CLAMP_TO_EDGE;skyTexture.setSource(skyCanvas);
+const skyMaterial=new pc.StandardMaterial();skyMaterial.diffuse=new pc.Color(1,1,1);skyMaterial.emissive=new pc.Color(.94,.97,1);skyMaterial.emissiveMap=skyTexture;skyMaterial.emissiveIntensity=.9;skyMaterial.cull=pc.CULLFACE_FRONT;skyMaterial.update();skyDome.render.meshInstances[0].material=skyMaterial;
+
+// A visible warm sun disk sits low over the distant skyline.
+const sunCoreMaterial=makeMat([1,.72,.34],0,.3);
+sunCoreMaterial.emissive=new pc.Color(1,.58,.22);sunCoreMaterial.emissiveIntensity=1.4;sunCoreMaterial.update();
+const sunHaloMaterial=makeMat([1,.52,.2],0,.7);
+sunHaloMaterial.emissive=new pc.Color(.9,.34,.12);sunHaloMaterial.emissiveIntensity=.55;sunHaloMaterial.update();
+const sunHalo=block("NOVA sunset halo",[-220,126,-350],[34,34,34],sunHaloMaterial,app.root,"sphere");
+const sunVisual=block("NOVA visible sun",[-220,126,-350],[12,12,12],sunCoreMaterial,app.root,"sphere");
 function updateWorldLighting(dt){
  worldTime=(worldTime+dt/cycleDuration)%1;
  const daylight=clamp((Math.sin((worldTime-.25)*Math.PI*2)+.18)/1.18,0,1);
  const night=1-daylight;
  const blend=(a,b,t)=>new pc.Color(a.r+(b.r-a.r)*t,a.g+(b.g-a.g)*t,a.b+(b.b-a.b)*t);
  app.scene.ambientLight=blend(nightAmbient,dayAmbient,daylight);
+ app.scene.fogColor=blend(nightFog,dayFog,daylight);
  skyMaterial.emissive=blend(nightSky,daySky,daylight);skyMaterial.diffuse=skyMaterial.emissive;skyMaterial.update();
+ sunVisual.enabled=daylight>.08;sunHalo.enabled=daylight>.08;
+ sunCoreMaterial.emissiveIntensity=1.4*daylight;sunCoreMaterial.update();
+ sunHaloMaterial.emissiveIntensity=.55*daylight;sunHaloMaterial.update();
  if(typeof sun!=="undefined"&&sun.light)sun.light.intensity=.12+daylight*1.05;
  for(const item of streetLights){
   item.glow.light.intensity=night*.9;
@@ -851,7 +958,7 @@ function activateVehicleModel(){
 const camera = new pc.Entity("Chase camera");
 camera.addComponent("camera", {
   clearColor: new pc.Color(0.23, 0.34, 0.49),
-  fov: 62,
+  fov: 68,
   nearClip: 0.1,
   farClip: 1000
 });
@@ -1460,9 +1567,9 @@ app.on("update", dt => {
   if(raceActive){const target=raceRoute[raceCheckpoint];if(target!==undefined&&Math.abs(p.z-target)<2.4&&Math.abs(p.x)<5.8){raceGates[raceCheckpoint].enabled=false;raceCheckpoint++;if(raceCheckpoint<raceRoute.length)raceGates[raceCheckpoint].enabled=true;else{raceActive=false;const elapsed=(performance.now()-raceStart)/1000;if(!bestRace||elapsed<bestRace){bestRace=elapsed;localStorage.setItem("kxic-best-race",String(bestRace))}showGarage("SPRINT COMPLETE",`Time: ${elapsed.toFixed(2)}s • Best: ${bestRace.toFixed(2)}s`)}}}
   raceStatusLabel.textContent=raceActive?`STREET SPRINT • CHECKPOINT ${raceCheckpoint+1}/3 • ${((performance.now()-raceStart)/1000).toFixed(1)}s`:"";
   // Smooth follow camera to reduce sudden movement on mobile.
-  const camTarget=cameraMode==="cockpit"?new pc.Vec3(p.x+Math.sin(heading*Math.PI/180)*.55,p.y+1.48,p.z-Math.cos(heading*Math.PI/180)*.25):new pc.Vec3(p.x-Math.sin(heading*Math.PI/180)*10.8,p.y+5.4,p.z+Math.cos(heading*Math.PI/180)*10.8);
+  const camTarget=cameraMode==="cockpit"?new pc.Vec3(p.x+Math.sin(heading*Math.PI/180)*.55,p.y+1.48,p.z-Math.cos(heading*Math.PI/180)*.25):new pc.Vec3(p.x-Math.sin(heading*Math.PI/180)*13.2,p.y+6.4,p.z+Math.cos(heading*Math.PI/180)*13.2);
   const camPos=camera.getPosition();camPos.lerp(camPos,camTarget,1-Math.pow(.001,dt));camera.setPosition(camPos);
-  camera.lookAt(p.x+Math.sin(heading*Math.PI/180)*(cameraMode==="cockpit"?12:-3.2),p.y+(cameraMode==="cockpit"?1.35:.65),p.z-Math.cos(heading*Math.PI/180)*(cameraMode==="cockpit"?12:-3.2));
+  camera.lookAt(p.x+Math.sin(heading*Math.PI/180)*(cameraMode==="cockpit"?12:-3.2),p.y+(cameraMode==="cockpit"?1.35:.7),p.z-Math.cos(heading*Math.PI/180)*(cameraMode==="cockpit"?12:-4.0));
 
   if (speedValue) speedValue.textContent = Math.round(Math.abs(speed) * 3.6).toString().padStart(3, "0");
   if (gearValue) gearValue.textContent = speed > 0.6 ? "D" : speed < -0.6 ? "R" : "N";
