@@ -485,8 +485,21 @@ function buildVehicleModel(vehicle){
   const lamp=block("Vehicle brake LED",[side*.64,.6,length*.5+.06],[.42,.16,.08],brakeLampMaterial,root);
   brakeLamps.push(lamp);
  }
+ // Damage meshes are hidden until impacts accumulate; they are separate from paintable body panels.
+ const damageMat=makeMat([.055,.045,.04],.25,.55);
+ const scratchParts=[
+  block("Bonnet scrape left",[-.48,.572,-1.12],[.055,.018,.62],damageMat,root),
+  block("Bonnet scrape right",[.38,.574,-1.02],[.045,.018,.48],damageMat,root),
+  block("Driver door scrape",[-width*.505,.48,.05],[.025,.12,.72],damageMat,root),
+  block("Passenger door scrape",[width*.505,.48,.18],[.025,.12,.68],damageMat,root)
+ ];
+ const bumperDamage=block("Bent front bumper",[0,.2,-length*.5-.12],[width*.9,.13,.2],damageMat,root);
+ const brokenLamp=block("Broken headlamp cover",[width*.65,.59,-length*.5-.065],[.5,.2,.09],damageMat,root);
+ const windshieldCrack=block("Windshield crack",[0,1.13,-.48],[.72,.025,.035],damageMat,root);
+ const damageParts={scratchParts,bumperDamage,brokenLamp,windshieldCrack};
+ Object.values(damageParts).flat().forEach(part=>part.enabled=false);
  root.enabled=false;
- return {root,wheels:wheelList,paintParts,brakeLamps,bodyMat};
+ return {root,wheels:wheelList,paintParts,brakeLamps,bodyMat,damageParts};
 }
 for(const v of vehicleCatalog) vehicleModels[v.id]=buildVehicleModel(v);
 function setPlayerPaint(rgb){
@@ -497,8 +510,21 @@ function setPlayerPaint(rgb){
  selectedVehicle.paint=rgb;
  saveGarage();
 }
+function applyVehicleDamage(model,amount=damage){
+ const parts=model.damageParts;
+ if(!parts)return;
+ parts.scratchParts.forEach(part=>part.enabled=amount>=15);
+ parts.bumperDamage.enabled=amount>=40;
+ parts.brokenLamp.enabled=amount>=65;
+ parts.windshieldCrack.enabled=amount>=85;
+ if(amount>=40)parts.bumperDamage.setLocalEulerAngles(0,0,Math.min(12,(amount-35)*.22));
+ else parts.bumperDamage.setLocalEulerAngles(0,0,0);
+}
+function refreshVehicleDamage(){
+ for(const model of Object.values(vehicleModels))applyVehicleDamage(model,damage);
+}
 function activateVehicleModel(){
- for(const [id,model] of Object.entries(vehicleModels)) model.root.enabled=id===selectedVehicle.id;
+ for(const [id,model] of Object.entries(vehicleModels)){model.root.enabled=id===selectedVehicle.id;applyVehicleDamage(model,damage);}
  activeVehicleWheels=vehicleModels[selectedVehicle.id].wheels;
 }
 
@@ -547,7 +573,7 @@ garageList.addEventListener("click",e=>{const b=e.target.closest("[data-vehicle]
 gameOverlay.querySelector(".paint-list").addEventListener("click",e=>{const b=e.target.closest("[data-paint]");if(!b)return;setPlayerPaint(garagePaints[Number(b.dataset.paint)].rgb);gameOverlay.querySelectorAll(".paint-swatch").forEach(x=>x.classList.toggle("selected",x===b))});
 gameOverlay.querySelector("#start-drive").addEventListener("click",()=>{raceActive=false;raceGates.forEach(g=>g.enabled=false);hideGarage()});
 gameOverlay.querySelector("#start-race").addEventListener("click",()=>{raceActive=true;raceCheckpoint=0;raceStart=performance.now();raceGates.forEach((g,i)=>g.enabled=i===0);const q=car.getPosition();q.x=0;q.z=19;car.setPosition(q);speed=0;lateralSpeed=0;hideGarage()});
-gameOverlay.querySelector("#repair-car").addEventListener("click",()=>{damage=0;speed=0;lateralSpeed=0;refreshGarage()});
+gameOverlay.querySelector("#repair-car").addEventListener("click",()=>{damage=0;speed=0;lateralSpeed=0;refreshVehicleDamage();refreshGarage()});
 
 const utilityBar=document.createElement("div");utilityBar.className="utility-bar";utilityBar.innerHTML='<button id="garage-open">GARAGE</button><button id="camera-toggle">CAMERA: CHASE</button><button id="pause-toggle">PAUSE</button>';document.querySelector("#game-stage").appendChild(utilityBar);
 utilityBar.querySelector("#garage-open").addEventListener("click",()=>showGarage("CITY GARAGE","Select a vehicle, choose paint and repair damage."));
@@ -856,7 +882,7 @@ app.on("update", dt => {
     const dz = npcPos.z - p.z;
     if (npc.hitCooldown === 0 && Math.abs(dx) < 1.65 && Math.abs(dz) < 3.05) {
       speed *= 0.32;
-      damage=Math.min(100,damage+8);refreshGarage();
+      damage=Math.min(100,damage+8);refreshVehicleDamage();refreshGarage();
       lateralSpeed += dx >= 0 ? -1.8 : 1.8;
       heading += dx >= 0 ? -4 : 4;
       npc.currentSpeed *= 0.25;
