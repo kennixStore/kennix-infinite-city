@@ -7,8 +7,12 @@ export async function joinCityRoom(roomCode, onPlayersChanged, onSnapshot = () =
   const room = String(roomCode || "nova-city").toLowerCase().replace(/[^a-z0-9-]/g, "").slice(0, 32);
   if (!room) throw new Error("Enter a valid room code.");
 
+  const { data: auth, error: authError } = await supabase.auth.getUser();
+  if (authError) throw authError;
+  if (!auth.user) throw new Error("Sign in before joining an online room.");
+
   const channel = supabase.channel("city-room:" + room, {
-    config: { presence: { key: "driver" }, broadcast: { self: false } }
+    config: { presence: { key: auth.user.id }, broadcast: { self: false } }
   });
 
   channel.on("presence", { event: "sync" }, () => {
@@ -34,10 +38,6 @@ export async function joinCityRoom(roomCode, onPlayersChanged, onSnapshot = () =
       sentAt: Number(payload.sent_at) || Date.now()
     });
   });
-
-  const { data: auth, error: authError } = await supabase.auth.getUser();
-  if (authError) throw authError;
-  if (!auth.user) throw new Error("Sign in before joining an online room.");
 
   await new Promise((resolve, reject) => {
     const timeout = setTimeout(() => reject(new Error("Online room connection timed out.")), 12000);
