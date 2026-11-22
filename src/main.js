@@ -211,6 +211,39 @@ for (const x of [-0.68, 0.68]) {
   block("Tail light", [x, 0.68, 2.16], [0.48, 0.2, 0.08], mats.red, car);
 }
 const wheels = [];
+
+// Functional vehicle lighting: forward beams and brake lamps follow the car.
+const brakeLampMaterial = makeMat([0.85, 0.018, 0.012]);
+brakeLampMaterial.emissive = new pc.Color(0.28, 0.008, 0.004);
+brakeLampMaterial.update();
+const brakeLamps = [];
+for (const x of [-0.68, 0.68]) {
+  brakeLamps.push(block("Brake lamp", [x, 0.68, 2.18], [0.38, 0.18, 0.07], brakeLampMaterial, car));
+}
+for (const x of [-0.62, 0.62]) {
+  const beam = new pc.Entity("Headlight beam");
+  beam.setLocalPosition(x, 0.72, -2.08);
+  beam.addComponent("light", {
+    type: "spot",
+    color: new pc.Color(1, 0.91, 0.72),
+    intensity: 2.2,
+    range: 42,
+    innerConeAngle: 22,
+    outerConeAngle: 42,
+    castShadows: false
+  });
+  car.addChild(beam);
+}
+const brakeGlow = new pc.Entity("Brake light glow");
+brakeGlow.setLocalPosition(0, 0.8, 2.2);
+brakeGlow.addComponent("light", {
+  type: "point",
+  color: new pc.Color(1, 0.025, 0.012),
+  intensity: 0,
+  range: 7,
+  castShadows: false
+});
+car.addChild(brakeGlow);
 for (const x of [-1.04, 1.04]) {
   for (const z of [-1.38, 1.38]) {
     const wheel = block("Tyre", [x, 0.27, z], [0.68, 0.28, 0.68], mats.trim, car, "cylinder");
@@ -396,6 +429,11 @@ app.on("update", dt => {
   }
   car.setPosition(p);
   car.setEulerAngles(0, heading, clamp(-steeringAngle * speedRatio * 0.035, -3, 3));
+  const braking = reverse && speed > 0.8;
+  brakeGlow.light.intensity = braking ? 2.8 : 0;
+  brakeLamps.forEach(lamp => {
+    lamp.render.material = braking ? brakeLampMaterial : mats.red;
+  });
 
   frontWheels.forEach(wheel => wheel.setLocalEulerAngles(0, steeringAngle * 0.55, 90));
   rearWheels.forEach(wheel => wheel.rotateLocal(0, 0, speed * dt * 85));
