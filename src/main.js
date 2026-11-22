@@ -313,6 +313,34 @@ for (const junctionZ of [-43, 39]) {
     signalLamps.push({ red: redLamp, green: greenLamp });
   }
 }
+
+const raceRoute = [-15,-39,-64];
+const raceGates = raceRoute.map((z,i)=>{
+ const gate=new pc.Entity("Race checkpoint "+(i+1));app.root.addChild(gate);
+ block("Checkpoint left post",[-5.1,2.1,0],[.22,4.2,.22],mats.paint,gate).setLocalPosition(-5.1,2.1,z);
+ block("Checkpoint right post",[5.1,2.1,z],[.22,4.2,.22],mats.paint,gate);
+ block("Checkpoint top beam",[0,4.15,z],[10.4,.22,.22],mats.paint,gate);
+ gate.enabled=false;return gate;
+});
+
+const vehicleCatalog = [
+ {id:"sport",name:"KX Sport",className:"SPORT",paint:[0.035,0.07,0.12],acceleration:12.5,maxSpeed:42,handling:1.0,owned:true},
+ {id:"muscle",name:"Vortex GT",className:"MUSCLE",paint:[0.52,0.075,0.035],acceleration:13.8,maxSpeed:39,handling:0.88,owned:true},
+ {id:"suv",name:"Ranger X",className:"SUV",paint:[0.18,0.23,0.2],acceleration:9.2,maxSpeed:32,handling:0.78,owned:true},
+ {id:"hyper",name:"Apex R",className:"HYPER",paint:[0.04,0.32,0.38],acceleration:16.5,maxSpeed:50,handling:1.12,owned:true}
+];
+const savedGarage=(()=>{try{return JSON.parse(localStorage.getItem("kxic-garage")||"{}")}catch{return {}}})();
+let selectedVehicle=vehicleCatalog.find(v=>v.id===savedGarage.vehicle)||vehicleCatalog[0];
+let selectedPaint=Array.isArray(savedGarage.paint)?savedGarage.paint:selectedVehicle.paint;
+let cameraMode="chase",gamePaused=true,damage=0,raceActive=false,raceStart=0,raceCheckpoint=0,bestRace=Number(localStorage.getItem("kxic-best-race")||0),drivenDistance=0;
+const garagePaints=[{name:"Midnight",rgb:[.035,.07,.12]},{name:"Crimson",rgb:[.52,.045,.035]},{name:"Ocean",rgb:[.035,.22,.42]},{name:"Silver",rgb:[.48,.5,.52]},{name:"Gold",rgb:[.55,.34,.08]}];
+function saveGarage(){localStorage.setItem("kxic-garage",JSON.stringify({vehicle:selectedVehicle.id,paint:selectedPaint}))}
+function setPlayerPaint(rgb){
+ selectedPaint=rgb; const paint=makeMat(rgb,.72,.2);
+ for(const name of ["Car chassis","Front hood"]){const part=car.findByName(name);if(part?.render)part.render.material=paint}
+ saveGarage();
+}
+
 const camera = new pc.Entity("Chase camera");
 camera.addComponent("camera", {
   clearColor: new pc.Color(0.23, 0.34, 0.49),
@@ -324,7 +352,7 @@ app.root.addChild(camera);
 
 const keys = new Set();
 const held = new Set();
-window.addEventListener("keydown", e => keys.add(e.key.toLowerCase()));
+window.addEventListener("keydown",e=>{if(e.key==="Escape"){if(gamePaused)hideGarage();else showGarage("PAUSED","Take a break or return to the garage.")}keys.add(e.key.toLowerCase())});
 window.addEventListener("keyup", e => keys.delete(e.key.toLowerCase()));
 window.addEventListener("blur", () => { keys.clear(); held.clear(); });
 
@@ -341,6 +369,30 @@ controls.innerHTML = `
     <button data-control="gas" aria-label="Accelerate">GAS</button>
   </div>`;
 document.querySelector("#game-stage").appendChild(controls);
+const gameOverlay=document.createElement("section");gameOverlay.className="game-overlay";
+gameOverlay.innerHTML=`<div class="game-panel"><div class="panel-kicker">KENNIX GAME STUDIOS</div><h1 id="panel-title">INFINITE CITY</h1><p id="panel-copy">Choose your ride, then enter the city.</p><div id="garage-list" class="garage-list"></div><div class="paint-list">${garagePaints.map((p,i)=>`<button class="paint-swatch" data-paint="${i}" title="${p.name}" style="--swatch:rgb(${p.rgb.map(v=>Math.round(v*255)).join(",")})"></button>`).join("")}</div><div class="panel-stats" id="vehicle-stats"></div><div class="panel-actions"><button id="start-drive" class="primary-action">START DRIVING</button><button id="start-race" class="secondary-action">STREET SPRINT</button><button id="repair-car" class="secondary-action">REPAIR VEHICLE</button></div><small id="panel-note">Prototype vehicles share temporary 3D geometry; distinct authored models are still needed.</small></div>`;
+document.querySelector("#game-stage").appendChild(gameOverlay);
+const panelTitle=gameOverlay.querySelector("#panel-title"),panelCopy=gameOverlay.querySelector("#panel-copy"),garageList=gameOverlay.querySelector("#garage-list"),vehicleStats=gameOverlay.querySelector("#vehicle-stats"),panelNote=gameOverlay.querySelector("#panel-note");
+function refreshGarage(){
+ garageList.innerHTML=vehicleCatalog.map(v=>`<button class="vehicle-option ${v.id===selectedVehicle.id?"selected":""}" data-vehicle="${v.id}"><strong>${v.name}</strong><span>${v.className}</span><small>AVAILABLE</small></button>`).join("");
+ vehicleStats.textContent=`TOP SPEED ${Math.round(selectedVehicle.maxSpeed*3.6)} KM/H • ACCELERATION ${selectedVehicle.acceleration.toFixed(1)} • HANDLING ${Math.round(selectedVehicle.handling*100)}%`;
+ gameOverlay.querySelector("#repair-car").textContent=damage?`REPAIR VEHICLE • ${damage}% DAMAGE`:"VEHICLE IN GOOD CONDITION";
+}
+function showGarage(title="INFINITE CITY",copy="Choose your ride, then enter the city."){gamePaused=true;gameOverlay.classList.remove("hidden");panelTitle.textContent=title;panelCopy.textContent=copy;refreshGarage()}
+function hideGarage(){gameOverlay.classList.add("hidden");gamePaused=false}
+garageList.addEventListener("click",e=>{const b=e.target.closest("[data-vehicle]");if(!b)return;selectedVehicle=vehicleCatalog.find(v=>v.id===b.dataset.vehicle)||vehicleCatalog[0];setPlayerPaint(selectedVehicle.paint);refreshGarage()});
+gameOverlay.querySelector(".paint-list").addEventListener("click",e=>{const b=e.target.closest("[data-paint]");if(!b)return;setPlayerPaint(garagePaints[Number(b.dataset.paint)].rgb);gameOverlay.querySelectorAll(".paint-swatch").forEach(x=>x.classList.toggle("selected",x===b))});
+gameOverlay.querySelector("#start-drive").addEventListener("click",()=>{raceActive=false;raceGates.forEach(g=>g.enabled=false);hideGarage()});
+gameOverlay.querySelector("#start-race").addEventListener("click",()=>{raceActive=true;raceCheckpoint=0;raceStart=performance.now();raceGates.forEach((g,i)=>g.enabled=i===0);const q=car.getPosition();q.x=0;q.z=19;car.setPosition(q);speed=0;lateralSpeed=0;hideGarage()});
+gameOverlay.querySelector("#repair-car").addEventListener("click",()=>{damage=0;speed=0;lateralSpeed=0;refreshGarage()});
+const utilityBar=document.createElement("div");utilityBar.className="utility-bar";utilityBar.innerHTML='<button id="garage-open">GARAGE</button><button id="camera-toggle">CAMERA: CHASE</button><button id="pause-toggle">PAUSE</button>';document.querySelector("#game-stage").appendChild(utilityBar);
+utilityBar.querySelector("#garage-open").addEventListener("click",()=>showGarage("CITY GARAGE","Select a vehicle, choose paint and repair damage."));
+utilityBar.querySelector("#pause-toggle").addEventListener("click",()=>gamePaused?hideGarage():showGarage("PAUSED","Take a break or return to the garage."));
+utilityBar.querySelector("#camera-toggle").addEventListener("click",e=>{cameraMode=cameraMode==="chase"?"cockpit":"chase";e.currentTarget.textContent="CAMERA: "+cameraMode.toUpperCase()});
+const raceStatusLabel=document.createElement("div");raceStatusLabel.className="race-status";raceStatusLabel.id="race-status";document.querySelector("#game-stage").appendChild(raceStatusLabel);
+const missionStatusLabel=document.createElement("div");missionStatusLabel.className="mission-status";missionStatusLabel.textContent="CITY DRIVE • 0 / 500 M";document.querySelector("#game-stage").appendChild(missionStatusLabel);
+setPlayerPaint(selectedPaint);refreshGarage();showGarage();
+
 controls.querySelectorAll("button").forEach(button => {
   const id = button.dataset.control;
   button.addEventListener("pointerdown", e => {
@@ -371,6 +423,7 @@ function isDown(...names) {
 }
 
 app.on("update", dt => {
+  if(gamePaused)return;
   const forward = isDown("w", "arrowup", "gas");
   const reverse = isDown("s", "arrowdown", "brake");
   const left = isDown("a", "arrowleft", "left");
@@ -380,7 +433,7 @@ app.on("update", dt => {
   // More grounded arcade handling: throttle, braking, coasting and tyre grip.
   // The brake input slows the car first, then engages reverse at low speed.
   if (forward) {
-    speed += (speed < 0 ? 26 : 12.5) * dt;
+    speed += (speed < 0 ? 26 : selectedVehicle.acceleration) * dt;
   } else if (reverse) {
     speed -= (speed > 0 ? 25 : 7.5) * dt;
   } else {
@@ -388,7 +441,7 @@ app.on("update", dt => {
   }
 
   if (handbrakeActive && Math.abs(speed) > 2) speed *= Math.exp(-1.2 * dt);
-  speed = clamp(speed, -12, 42);
+  speed = clamp(speed, -12, Math.max(18,selectedVehicle.maxSpeed*(1-damage/180)));
 
   const steerInput = (left ? 1 : 0) - (right ? 1 : 0);
   const targetSteering = steerInput * 30;
@@ -397,7 +450,7 @@ app.on("update", dt => {
   const speedRatio = clamp(Math.abs(speed) / 24, 0, 1);
   const directionSign = Math.sign(speed || 1);
   const gripFactor = handbrakeActive ? 1.25 : 1;
-  heading -= steeringAngle * 0.88 * (0.16 + speedRatio * 0.84) * gripFactor * dt * directionSign;
+  heading -= steeringAngle * 0.88 * selectedVehicle.handling * (0.16 + speedRatio * 0.84) * gripFactor * dt * directionSign;
 
   // Steering creates a little lateral movement; normal tyres quickly regain grip.
   lateralSpeed += steerInput * speedRatio * (handbrakeActive ? 5.2 : 1.35) * directionSign * dt;
@@ -501,6 +554,7 @@ app.on("update", dt => {
     const dz = npcPos.z - p.z;
     if (npc.hitCooldown === 0 && Math.abs(dx) < 1.65 && Math.abs(dz) < 3.05) {
       speed *= 0.32;
+      damage=Math.min(100,damage+8);refreshGarage();
       lateralSpeed += dx >= 0 ? -1.8 : 1.8;
       heading += dx >= 0 ? -4 : 4;
       npc.currentSpeed *= 0.25;
@@ -508,12 +562,14 @@ app.on("update", dt => {
     }
   }
 
+  drivenDistance+=Math.abs(speed)*dt;
+  missionStatusLabel.textContent=drivenDistance<500?`CITY DRIVE • ${Math.min(500,Math.floor(drivenDistance))} / 500 M`:"CITY DRIVE • COMPLETE";
+  if(raceActive){const target=raceRoute[raceCheckpoint];if(target!==undefined&&Math.abs(p.z-target)<2.4&&Math.abs(p.x)<5.8){raceGates[raceCheckpoint].enabled=false;raceCheckpoint++;if(raceCheckpoint<raceRoute.length)raceGates[raceCheckpoint].enabled=true;else{raceActive=false;const elapsed=(performance.now()-raceStart)/1000;if(!bestRace||elapsed<bestRace){bestRace=elapsed;localStorage.setItem("kxic-best-race",String(bestRace))}showGarage("SPRINT COMPLETE",`Time: ${elapsed.toFixed(2)}s • Best: ${bestRace.toFixed(2)}s`)}}}
+  raceStatusLabel.textContent=raceActive?`STREET SPRINT • CHECKPOINT ${raceCheckpoint+1}/3 • ${((performance.now()-raceStart)/1000).toFixed(1)}s`:"";
   // Smooth follow camera to reduce sudden movement on mobile.
-  const camTarget = new pc.Vec3(p.x, p.y + 5.4, p.z + 10.8);
-  const camPos = camera.getPosition();
-  camPos.lerp(camPos, camTarget, 1 - Math.pow(0.001, dt));
-  camera.setPosition(camPos);
-  camera.lookAt(p.x, p.y + 0.65, p.z - 3.2);
+  const camTarget=cameraMode==="cockpit"?new pc.Vec3(p.x+Math.sin(heading*Math.PI/180)*.55,p.y+1.48,p.z-Math.cos(heading*Math.PI/180)*.25):new pc.Vec3(p.x-Math.sin(heading*Math.PI/180)*10.8,p.y+5.4,p.z+Math.cos(heading*Math.PI/180)*10.8);
+  const camPos=camera.getPosition();camPos.lerp(camPos,camTarget,1-Math.pow(.001,dt));camera.setPosition(camPos);
+  camera.lookAt(p.x+Math.sin(heading*Math.PI/180)*(cameraMode==="cockpit"?12:-3.2),p.y+(cameraMode==="cockpit"?1.35:.65),p.z-Math.cos(heading*Math.PI/180)*(cameraMode==="cockpit"?12:-3.2));
 
   if (speedValue) speedValue.textContent = Math.round(Math.abs(speed) * 3.6).toString().padStart(3, "0");
   if (gearValue) gearValue.textContent = speed > 0.6 ? "D" : speed < -0.6 ? "R" : "N";

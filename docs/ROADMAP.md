@@ -1,69 +1,58 @@
 # Development Roadmap
 
-This roadmap is staged. A later stage does not begin just because it appears here; the current stage must be tested first.
+## First playable release candidate — implemented in code, awaiting verification
+- [x] PlayCanvas/Vite browser foundation.
+- [x] Procedural first-district roads, buildings, street furniture and skyline.
+- [x] Player vehicle with touch and keyboard driving controls.
+- [x] Chase and close cockpit-style camera views.
+- [x] Headlight and brake-light effects.
+- [x] Four selectable vehicle tuning profiles and paint colours.
+- [x] Garage and local browser persistence for vehicle/paint selection.
+- [x] Prototype traffic with simple following and signal stopping.
+- [x] Sidewalk pedestrians with basic walk cycles.
+- [x] Basic collision response and damage/repair loop.
+- [x] 500 m local driving objective.
+- [x] Three-checkpoint street sprint and local best-time record.
+- [x] GitHub Actions production-build workflow.
 
-## Stage 0 — Foundation (current)
+## Required before public playable launch
+- [ ] Confirm latest GitHub Actions build succeeds.
+- [ ] Deploy to a public HTTPS URL.
+- [ ] Test loading and play on creator's Android phone.
+- [ ] Verify controls, garage, camera, race and local saving in-browser.
+- [ ] Fix runtime errors, layout problems and performance issues.
+- [ ] Test a desktop browser and a lower-powered mobile browser.
 
-- [x] Create a separate private GitHub repository.
-- [x] Record the game vision and distinguish confirmed decisions from proposals.
-- [x] Select PlayCanvas as the technology to prototype.
-- [ ] Confirm the practical PlayCanvas Editor workflow on the Android phone.
-- [ ] Create a tiny test scene.
+## Production milestones still outstanding
 
-## Stage 1 — First playable driving prototype
+### Vehicles and driving
+- [ ] Original authored 3D vehicle models for each class.
+- [ ] True cockpit interiors, suspension and tyre simulation.
+- [ ] Robust collision physics, damage meshes and engine/audio systems.
 
-**Goal:** prove that driving feels responsive and runs in a mobile browser.
+### City and world
+- [ ] Expand the compact district into a connected streamed city.
+- [ ] Add original district art, shops, garages and services.
+- [ ] Improve traffic turning, yielding and pedestrian navigation.
+- [ ] Police AI, wanted system, weather and day/night cycle.
 
-- One placeholder vehicle.
-- One small test road/yard.
-- Accelerate, brake, reverse and steer.
-- Follow camera.
-- Touch controls.
-- Basic collision boundaries.
-- Simple pause/restart.
-- Test on Android and record performance.
+### Gameplay and progression
+- [ ] Approved story and side-mission framework.
+- [ ] More race types, missions, rewards and achievements.
+- [ ] Player character creation, clothing and properties.
+- [ ] Secure KX economy and progression.
 
-**Not included:** open-world city, story campaign, police, pedestrians, multiplayer, accounts, KX, ads or advanced damage.
+### Online services
+- [ ] Accounts and cloud saves.
+- [ ] Server-authoritative KX ledger and transfers.
+- [ ] Multiplayer rooms and races.
+- [ ] Anti-cheat, reporting, blocking and moderation.
+- [ ] Security, load and operating-cost testing.
 
-## Stage 2 — Driving foundation
+### Launch operations
+- [ ] Privacy policy and terms.
+- [ ] Hosting, monitoring and analytics.
+- [ ] Device-tier graphics settings and profiling.
+- [ ] Closed testing and staged release.
 
-- Improve vehicle handling and camera.
-- Add simple physics and collision tuning.
-- Add first-person camera experiment.
-- Add sound placeholders.
-- Add a basic garage/customisation test.
-
-## Stage 3 — Small city district
-
-- Build one compact district with roads and a few buildings.
-- Add basic traffic only after performance is acceptable.
-- Add a simple mission/race loop.
-- Add a save/load experiment.
-
-## Stage 4 — Core game systems
-
-- Character creation.
-- Mission framework.
-- Police and wanted-level prototype.
-- Vehicle ownership, repair and progression.
-- KX economy prototype with server-side design before online use.
-
-## Stage 5 — Online services
-
-- Accounts and cloud saves.
-- Authoritative KX ledger and player-to-player transfers.
-- Multiplayer rooms and races.
-- Anti-cheat, reporting, blocking and moderation.
-- Load testing and operational cost planning.
-
-## Stage 6 — Content and release preparation
-
-- Expand map and city content.
-- Add more vehicles, characters, missions, audio and cinematics.
-- Optimise for device tiers.
-- Choose hosting, analytics and compliant monetisation.
-- Closed testing, bug fixing and staged launch.
-
-## Release principle
-
-Do not announce a feature as available until it is implemented, tested and working. Keep a visible list of what is playable versus planned.
+A checked item means code has been added, not that it has passed runtime testing. Mark features verified only after browser and target-device testing.

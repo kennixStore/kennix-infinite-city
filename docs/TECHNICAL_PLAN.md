@@ -20,7 +20,11 @@ This is a technical direction, not a claim that the full game is already set up 
 
 The exact asset and scene hand-off between the Editor and this repository must be tested before the project depends on it.
 
-## 3. First technical milestone
+## 3. Current first-release candidate
+
+The current prototype contains a procedural first district, driving controls, prototype NPC traffic and pedestrians, a local garage with selectable tuning profiles and paint persistence, a short checkpoint sprint, and a basic driving objective. These systems are early implementations and must pass browser and Android runtime tests. Vehicle profiles still share placeholder geometry; production assets and full vehicle physics are not present.
+
+## 4. First technical milestone
 
 Build a tiny **driving-feel prototype**, not the open world:
 1. A browser page loads a PlayCanvas 3D scene.
@@ -32,7 +36,7 @@ Build a tiny **driving-feel prototype**, not the open world:
 
 Do not add accounts, KX economy, multiplayer, ads, police AI, large maps or vehicle ownership to this milestone.
 
-## 4. Proposed system boundaries for later
+## 5. Proposed system boundaries for later
 
 - Client presentation: scene rendering, camera, UI and input.
 - Gameplay simulation: vehicle handling, collisions, mission state and NPC behaviour.
@@ -42,11 +46,11 @@ Do not add accounts, KX economy, multiplayer, ads, police AI, large maps or vehi
 
 The browser client must not be trusted to decide authoritative online KX balances, player transfers, rewards or competitive outcomes.
 
-## 5. Multiplayer architecture — later milestone
+## 6. Multiplayer architecture — later milestone
 
 Online multiplayer is a separate engineering project. It will require authoritative server logic, networking, persistence, abuse prevention, scaling and operating costs. It should not be attempted until the offline driving prototype is stable and fun.
 
-## 6. Performance strategy
+## 7. Performance strategy
 
 The intended audience includes phones, so the game must be designed around mobile constraints:
 - Start with a very small test environment.
@@ -57,7 +61,7 @@ The intended audience includes phones, so the game must be designed around mobil
 - Provide graphics settings for lower-powered devices.
 - Measure on real devices before increasing visual complexity.
 
-## 7. Phone-only workflow
+## 8. Phone-only workflow
 
 For now:
 - Use GitHub in the Android browser/app for repository review.

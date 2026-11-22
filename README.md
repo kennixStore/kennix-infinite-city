@@ -1,53 +1,36 @@
 # KENNIX: INFINITE CITY
 
-**Working slogan:** One City. Endless Possibilities. *(Proposed; not final.)*
+An original browser-first 3D driving and open-world game project built with PlayCanvas Engine and Vite.
 
-An original browser-first 3D open-world action, driving and adventure game.
+## Current status — first-release candidate
 
-This repository is the source of truth for the game's design notes, technical decisions, custom code and release history. It is separate from the KENNIX Store website.
+The codebase includes a procedural first-district city, player driving, touch and keyboard controls, chase and close cockpit-style camera views, headlights and brake lights, prototype traffic, animated sidewalk pedestrians, a garage interface, four vehicle tuning profiles, paint selection, local browser saving, basic collision damage and repair, a 500 m driving objective and a three-checkpoint street sprint.
 
-## Current status
+## Important limitations
 
-**Foundation + first driving prototype in progress.** The current code is an early technical test using placeholder geometry. It is not the full open-world game and does not yet include a finished vehicle physics system, city, campaign, police, online services or KX economy.
+This is a **first-release candidate**, not a finished commercial open-world game. The code still needs successful CI, public deployment, browser runtime checks and Android device testing. The four selectable vehicle profiles currently share one temporary procedural 3D chassis; unique authored vehicle models and true cockpit interiors are not yet included. Vehicle handling and collision are lightweight arcade approximations, not professional rigid-body simulation.
 
-## Current prototype
+Not yet implemented: a large seamless world, multiple finished cities, full campaign/story missions, advanced pedestrian navigation, robust traffic turning, police pursuits, secure KX economy, player accounts, cloud saves, multiplayer, online transfers, anti-cheat, finished audio, dynamic weather, property ownership or monetisation.
 
-- PlayCanvas Engine with Vite.
-- A small 3D road and placeholder buildings.
-- A basic arcade-style placeholder car.
-- Follow camera.
-- Keyboard and on-screen touch controls.
-- Speed readout.
+Vehicle and paint selection are saved locally in the current browser only. The KX economy and online purchases are not active.
 
-The current steering and movement are deliberately simple and are not realistic vehicle physics.
+## Development
 
-## Run locally
-
-Requires Node.js on a computer:
 ```sh
 npm install
 npm run dev
+npm run build
 ```
-Then open the local Vite address shown in the terminal.
+
+GitHub Actions runs the production build on pushes and pull requests to `main`.
 
 ## Repository map
 
-- `docs/GAME_DESIGN.md` — agreed direction and proposals still awaiting approval.
-- `docs/TECHNICAL_PLAN.md` — architecture and technical approach.
-- `docs/ROADMAP.md` — staged development plan.
-- `docs/DECISIONS.md` — decision log.
-- `src/main.js` — current prototype scene and controls.
-- `src/style.css` — responsive browser interface.
-- `index.html` — app entry point.
+- `src/main.js` — scene, driving, traffic, pedestrians, garage and sprint.
+- `src/style.css` — responsive HUD, garage and touch interface.
+- `index.html` — browser entry point.
+- `docs/GAME_DESIGN.md` — creative direction.
+- `docs/TECHNICAL_PLAN.md` — architecture.
+- `docs/ROADMAP.md` — verified and planned work.
 
-## Technology
-
-- [PlayCanvas Engine](https://developer.playcanvas.com/)
-- [PlayCanvas Editor](https://playcanvas.com/)
-- [Vite](https://vite.dev/)
-
-## Important scope rule
-
-The complete vision is a major production. We will build and test one milestone at a time. Do not describe planned features as available until implemented and tested.
-
-The creator is currently working from an Android phone without a laptop. The workflow should remain phone-friendly where possible, while being honest that larger 3D production tasks may eventually need a computer or collaborators.
+This repository is separate from the KENNIX Store project. The creator is currently working from an Android phone; keep instructions phone-friendly.
