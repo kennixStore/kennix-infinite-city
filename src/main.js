@@ -454,8 +454,13 @@ function createTrafficCar(laneX, startZ, direction, paintIndex, cruiseSpeed, axi
   if(axis === "x") npc.setEulerAngles(0,direction>0?90:-90,0);
   app.root.addChild(npc);
   const paint = trafficPaints[paintIndex % trafficPaints.length];
+  block("Traffic underbody", [0, .22, 0], [1.48, .18, 2.9], mats.dark, npc);
   block("Traffic body", [0, 0.48, 0], [1.72, 0.48, 3.45], paint, npc);
+  block("Traffic bonnet", [0,.75,-1.12],[1.58,.12,1.12],paint,npc);
   block("Traffic cabin", [0, 0.83, 0.18], [1.38, 0.46, 1.62], mats.glass, npc);
+  block("Traffic roof", [0,1.09,.18],[1.2,.1,1.08],paint,npc);
+  block("Traffic windscreen", [0,.91,-.67],[1.18,.32,.06],mats.glass,npc).setLocalEulerAngles(-18,0,0);
+  block("Traffic rear glass", [0,.91,.98],[1.16,.3,.06],mats.glass,npc).setLocalEulerAngles(18,0,0);
   const brakeLamps = [];
   for (const side of [-1, 1]) {
     block("Traffic headlight", [side * 0.55, 0.52, -1.74], [0.26, 0.12, 0.06], mats.headlight, npc);
@@ -463,7 +468,12 @@ function createTrafficCar(laneX, startZ, direction, paintIndex, cruiseSpeed, axi
     for (const end of [-1, 1]) {
       const tyre = block("Traffic tyre", [side * 0.87, 0.25, end * 1.05], [0.22, 0.46, 0.58], mats.trim, npc, "cylinder");
       tyre.setLocalEulerAngles(0, 0, 90);
+      block("Traffic alloy hub",[side*.99,.25,end*1.05],[.25,.22,.22],mats.metal,npc,"cylinder").setLocalEulerAngles(0,0,90);
     }
+  }
+  for(const side of [-1,1]){
+    block("Traffic door handle",[side*.87,.67,.05],[.035,.05,.22],mats.metal,npc);
+    block("Traffic wing mirror",[side*.75,.98,-.58],[.22,.12,.24],paint,npc);
   }
   const travelStart=startZ;
   const junctions=axis==="z"?districtRoads:[-120,-60,60,120];
@@ -637,6 +647,14 @@ function buildVehicleModel(vehicle){
  const cabinHeight=kind==="suv"?1.05:kind==="muscle"?.58:.72;
  const cabinZ=kind==="suv"?.02:kind==="muscle"?.12:-.05;
  const cabin=block("Vehicle glass cabin",[0,.9,cabinZ],[width*(kind==="suv"?.82:.76),cabinHeight,length*.42],glassMat,root);
+ // Roof skin and angled windscreens give each silhouette a more finished profile.
+ const roofY=.9+cabinHeight*.5+.035;
+ const roofLength=kind==="suv"?length*.4:length*.29;
+ block("Painted roof panel",[0,roofY,cabinZ],[width*.72,.12,roofLength],bodyMat,root);
+ const frontScreen=block("Front windscreen",[0,.99,cabinZ-length*.205],[width*.7,.42,.055],glassMat,root);
+ frontScreen.setLocalEulerAngles(-20,0,0);
+ const rearScreen=block("Rear windscreen",[0,.99,cabinZ+length*.205],[width*.68,.38,.055],glassMat,root);
+ rearScreen.setLocalEulerAngles(20,0,0);
  if(kind==="suv") block("SUV roof",[0,1.48,.05],[width*.82,.13,length*.4],bodyMat,root);
  if(kind==="muscle") {
   block("Bonnet power bulge",[0,.73,-1.12],[.72,.22,1.05],trimMat,root);
@@ -655,17 +673,50 @@ function buildVehicleModel(vehicle){
   block("Wheel arch trim front",[side*width*.48,.42,-1.28],[.12,.72,1.05],trimMat,root);
   block("Wheel arch trim rear",[side*width*.48,.42,1.28],[.12,.72,1.05],trimMat,root);
   block("Side sill",[side*width*.49,.27,0],[.12,.16,2.6],chromeMat,root);
-  block("Wing mirror",[side*width*.49,.95,-.68],[.28,.16,.3],bodyMat,root);
-  for(const z of [-1.42,1.42]){
-   const tyre=block("Performance tyre",[side*width*.49,.28,z],[.7,.34,.72],trimMat,root,"cylinder");
-   tyre.setLocalEulerAngles(0,0,90);wheelList.push(tyre);
-   block("Alloy wheel hub",[side*width*.49,.28,z-.012],[.37,.35,.08],chromeMat,root,"cylinder").setLocalEulerAngles(0,0,90);
-  }
+  block("Wing mirror stem",[side*width*.49,.94,-.68],[.09,.1,.16],chromeMat,root);
+  block("Wing mirror",[side*width*.54,.99,-.68],[.28,.18,.32],bodyMat,root);
+  block("Front side glass",[side*width*.392,1.08,cabinZ-.43],[.055,cabinHeight*.58,.48],glassMat,root);
+  block("Rear side glass",[side*width*.392,1.08,cabinZ+.43],[.055,cabinHeight*.58,.48],glassMat,root);
+  block("Window beltline trim",[side*width*.395,.87,cabinZ],[.07,.07,length*.36],chromeMat,root);
+  block("B-pillar",[side*width*.405,1.1,cabinZ],[.075,cabinHeight*.83,.09],trimMat,root);
+  block("Front door seam",[side*width*.502,.49,-.48],[.025,.36,.035],trimMat,root);
+  block("Rear door seam",[side*width*.502,.49,.62],[.025,.34,.035],trimMat,root);
+  block("Door handle",[side*width*.515,.66,.08],[.035,.055,.28],chromeMat,root);
+  block("Front fender vent",[side*width*.505,.57,-1.08],[.035,.19,.42],trimMat,root);
   block("LED headlamp",[side*.65,.59,-length*.5-.02],[.48,.18,.07],lampMat,root);
   block("Rear LED lamp",[side*.65,.59,length*.5+.02],[.48,.16,.07],mats.red,root);
+  block("Rear reflector",[side*.65,.38,length*.5+.04],[.28,.07,.05],lampMat,root);
  }
- block("Front grille",[0,.39,-length*.5-.035],[.9,.24,.08],chromeMat,root);
- block("Lower air intake",[0,.25,-length*.5-.06],[1.35,.1,.08],trimMat,root);
+ // Four wheel assemblies with visible machined rims, brake discs and five spokes.
+ for(const z of [-1.42,1.42]){
+  for(const side of [-1,1]){
+   const wheelX=side*width*.49;
+   const tyre=block("Performance tyre",[wheelX,.28,z],[.7,.34,.72],trimMat,root,"cylinder");
+   tyre.setLocalEulerAngles(0,0,90);wheelList.push(tyre);
+   const rimX=wheelX+side*.19;
+   const rim=block("Machined alloy rim",[rimX,.28,z],[.43,.07,.43],chromeMat,root,"cylinder");
+   rim.setLocalEulerAngles(0,0,90);
+   block("Brake disc",[wheelX+side*.145,.28,z],[.34,.045,.34],mats.metal,root,"cylinder").setLocalEulerAngles(0,0,90);
+   block("Wheel centre cap",[rimX+side*.045,.28,z],[.12,.075,.12],mats.paint,root,"cylinder").setLocalEulerAngles(0,0,90);
+   for(let spoke=0;spoke<5;spoke++){
+    const angle=spoke*Math.PI*2/5;
+    const part=block("Five spoke alloy detail",[rimX+side*.055,.28+Math.sin(angle)*.13,z+Math.cos(angle)*.13],[.045,.19,.055],chromeMat,root);
+    part.setLocalEulerAngles(angle*180/Math.PI,0,0);
+   }
+  }
+ }
+ block("Front grille surround",[0,.41,-length*.5-.045],[1.05,.3,.1],trimMat,root);
+ block("Front grille",[0,.41,-length*.5-.105],[.82,.2,.035],chromeMat,root);
+ for(let slat=-2;slat<=2;slat++){
+  block("Front grille horizontal slat",[0,.41+slat*.035,-length*.5-.13],[.78,.018,.025],mats.metal,root);
+ }
+ block("Lower air intake",[0,.25,-length*.5-.07],[1.45,.12,.08],trimMat,root);
+ block("Front splitter",[0,.18,-length*.5-.12],[width*1.02,.08,.42],trimMat,root);
+ block("Rear diffuser",[0,.19,length*.5+.06],[width*.78,.12,.38],trimMat,root);
+ for(const exhaustSide of [-1,1]){
+  block("Polished exhaust tip",[exhaustSide*.62,.27,length*.5+.18],[.2,.14,.18],chromeMat,root,"cylinder").setLocalEulerAngles(90,0,0);
+  block("Hood character line",[exhaustSide*.48,.58,-1.15],[.035,.025,1.12],chromeMat,root);
+ }
  if(kind==="sport") block("Sport rear deck",[0,.84,1.35],[1.6,.12,.5],bodyMat,root);
  const brakeLamps=[];
  for(const side of [-1,1]){
