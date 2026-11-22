@@ -108,6 +108,22 @@ for (const z of districtRoads) {
 for (const x of [-120,-60,60,120]) {
   block("City north south avenue",[x,-0.035,0],[15,0.15,520],mats.asphalt);
   for(let z=-250;z<=250;z+=12) block("City avenue lane dash",[x,0.055,z],[0.14,0.03,6],mats.paint);
+  for(const side of [-1,1]){
+    block("Side avenue sidewalk",[x+side*9.1,0.025,0],[2.4,0.2,520],mats.concrete);
+    block("Side avenue curb",[x+side*7.7,0.13,0],[0.22,0.24,520],mats.curb);
+  }
+}
+for(const z of districtRoads){
+  if(z===0||z===-70||z===70)continue;
+  for(const side of [-1,1]){
+    block("Cross avenue sidewalk",[0,0.025,z+side*9.1],[320,0.2,2.4],mats.concrete);
+    block("Cross avenue curb",[0,0.13,z+side*7.7],[320,0.24,0.22],mats.curb);
+  }
+  for(const x of [-120,-60,0,60,120]){
+    for(let stripe=-4;stripe<=4;stripe++){
+      block("District zebra crossing",[x+stripe*0.9,0.075,z-5.1],[0.55,0.035,2.2],mats.white);
+    }
+  }
 }
 const districtPalettes=[
   makeMat([0.22,0.27,0.33]),makeMat([0.34,0.29,0.23]),
@@ -355,9 +371,10 @@ const trafficPaints = [
 ];
 const traffic = [];
 const trafficBrakeMaterial = makeMat([1, 0.035, 0.012], 0.12, 0.22);
-function createTrafficCar(laneX, startZ, direction, paintIndex, cruiseSpeed) {
+function createTrafficCar(laneX, startZ, direction, paintIndex, cruiseSpeed, axis = "z") {
   const npc = new pc.Entity("NPC traffic vehicle");
-  npc.setPosition(laneX, 0.08, startZ);
+  npc.setPosition(axis === "z" ? laneX : startZ, 0.08, axis === "z" ? startZ : laneX);
+  if(axis === "x") npc.setEulerAngles(0,direction>0?90:-90,0);
   app.root.addChild(npc);
   const paint = trafficPaints[paintIndex % trafficPaints.length];
   block("Traffic body", [0, 0.48, 0], [1.72, 0.48, 3.45], paint, npc);
@@ -371,7 +388,7 @@ function createTrafficCar(laneX, startZ, direction, paintIndex, cruiseSpeed) {
       tyre.setLocalEulerAngles(0, 0, 90);
     }
   }
-  traffic.push({ entity: npc, direction, cruiseSpeed, currentSpeed: cruiseSpeed, hitCooldown: 0, brakeLamps, braking: false });
+  traffic.push({ entity: npc, direction, cruiseSpeed, currentSpeed: cruiseSpeed, hitCooldown: 0, brakeLamps, braking: false, axis });
 }
 createTrafficCar(-2.55, -57, 1, 0, 10);
 createTrafficCar(2.55, -25, -1, 1, 8.5);
@@ -381,6 +398,15 @@ createTrafficCar(-2.55, 45, 1, 1, 8.2);
 createTrafficCar(2.55, 15, -1, 2, 9.4);
 createTrafficCar(-2.55, -76, 1, 3, 10.5);
 createTrafficCar(2.55, 39, -1, 0, 8.8);
+// East-west traffic gives the expanded cross-avenues life.
+createTrafficCar(-137.45,-145,1,0,8.5,"x");
+createTrafficCar(-142.55,145,-1,1,9.2,"x");
+createTrafficCar(-67.45,-145,1,2,10,"x");
+createTrafficCar(-72.55,145,-1,3,8.8,"x");
+createTrafficCar(72.55,-145,1,0,9.5,"x");
+createTrafficCar(67.45,145,-1,2,8.3,"x");
+createTrafficCar(212.55,-145,1,1,10.2,"x");
+createTrafficCar(207.45,145,-1,3,9,"x");
 
 // Pedestrian figures with simple looping walk cycles along the sidewalks.
 const skinMat = makeMat([0.55, 0.34, 0.22]);
@@ -911,25 +937,22 @@ app.on("update", dt => {
     // Follow the vehicle ahead and avoid driving into the player's car.
     let targetSpeed = npc.cruiseSpeed;
     for (const other of traffic) {
-      if (other === npc || other.direction !== npc.direction) continue;
+      if (other === npc || other.axis !== npc.axis || other.direction !== npc.direction) continue;
       const otherPos = other.entity.getPosition();
-      if (Math.abs(otherPos.x - npcPos.x) > 1.1) continue;
-      const gap = (otherPos.z - npcPos.z) * npc.direction;
-      if (gap > 0 && gap < 13) {
-        targetSpeed = Math.min(targetSpeed, npc.cruiseSpeed * clamp((gap - 3.5) / 9.5, 0, 1));
-      }
+      const sameLane = npc.axis === "z" ? Math.abs(otherPos.x - npcPos.x) < 1.1 : Math.abs(otherPos.z - npcPos.z) < 1.1;
+      if (!sameLane) continue;
+      const gap = (npc.axis === "z" ? otherPos.z - npcPos.z : otherPos.x - npcPos.x) * npc.direction;
+      if (gap > 0 && gap < 13) targetSpeed = Math.min(targetSpeed,npc.cruiseSpeed*clamp((gap-3.5)/9.5,0,1));
     }
-    const playerGap = (p.z - npcPos.z) * npc.direction;
-    if (Math.abs(p.x - npcPos.x) < 1.55 && playerGap > 0 && playerGap < 13) {
-      targetSpeed = Math.min(targetSpeed, npc.cruiseSpeed * clamp((playerGap - 4) / 9, 0, 1));
-    }
+    const playerGap = (npc.axis === "z" ? p.z-npcPos.z : p.x-npcPos.x)*npc.direction;
+    const playerInLane = npc.axis === "z" ? Math.abs(p.x-npcPos.x)<1.55 : Math.abs(p.z-npcPos.z)<1.55;
+    if(playerInLane&&playerGap>0&&playerGap<13)targetSpeed=Math.min(targetSpeed,npc.cruiseSpeed*clamp((playerGap-4)/9,0,1));
 
-    // Red lights bring traffic to a gradual stop before the junction.
-    for (const junctionZ of [-43, 39]) {
-      const distanceToJunction = (junctionZ - npcPos.z) * npc.direction;
-      if (distanceToJunction > 0 && distanceToJunction < 10 && npc.direction !== greenDirection) {
-        targetSpeed = 0;
-        break;
+    // Traffic obeys the alternating signal phase at the main avenue intersections.
+    if(npc.axis==="z"){
+      for(const junctionZ of [-43,39]){
+        const distanceToJunction=(junctionZ-npcPos.z)*npc.direction;
+        if(distanceToJunction>0&&distanceToJunction<10&&npc.direction!==greenDirection){targetSpeed=0;break}
       }
     }
     const wasMovingFaster = targetSpeed < npc.currentSpeed - 0.7;
@@ -937,9 +960,15 @@ app.on("update", dt => {
     npc.brakeLamps.forEach(lamp => { lamp.render.material = wasMovingFaster ? trafficBrakeMaterial : mats.red; });
     const response = targetSpeed < npc.currentSpeed ? 4.8 : 2.1;
     npc.currentSpeed += (targetSpeed - npc.currentSpeed) * Math.min(1, dt * response);
-    npcPos.z += npc.direction * npc.currentSpeed * dt;
-    if (npcPos.z < -82) npcPos.z = 82;
-    if (npcPos.z > 82) npcPos.z = -82;
+    if(npc.axis==="z"){
+      npcPos.z+=npc.direction*npc.currentSpeed*dt;
+      if(npcPos.z<-258)npcPos.z=258;
+      if(npcPos.z>258)npcPos.z=-258;
+    }else{
+      npcPos.x+=npc.direction*npc.currentSpeed*dt;
+      if(npcPos.x<-158)npcPos.x=158;
+      if(npcPos.x>158)npcPos.x=-158;
+    }
     npc.entity.setPosition(npcPos);
 
     // Low-cost contact response: slow the player and push the cars apart briefly.
