@@ -128,6 +128,60 @@ for(let row=0;row<6;row++){
   block("Rooftop plant room",[x,h+0.8,z],[w*.35,1.6,5],mats.metal,b);
  }
 }
+// District landmarks give the first city map recognisable destinations.
+const waterMat=makeMat([0.035,0.19,0.28],.35,.28);
+const dockWood=makeMat([0.27,0.19,0.12]);
+const marketFabric=makeMat([0.68,0.28,0.09]);
+const industrialPaint=makeMat([0.34,0.37,0.39],.45,.4);
+
+// Waterfront: water basin, pier, mooring posts and container stacks.
+block("NOVA waterfront basin",[70,-.24,-252],[190,.12,38],waterMat);
+block("Waterfront pier",[55,.08,-225],[92,.42,15],dockWood);
+for(let x=12;x<=98;x+=12){
+ block("Pier support post",[x,-.45,-225],[.55,1.2,.55],mats.trunk);
+ block("Pier light pole",[x,.9,-217],[.12,1.8,.12],mats.metal);
+ block("Pier light",[x,1.85,-217],[.45,.12,.35],mats.windowLit);
+}
+for(let x=24;x<=84;x+=20){
+ const container=block("Waterfront cargo container",[x,1.15,-240],[15,2.3,7],x%40?industrialPaint:marketFabric);
+ for(let rib=-6;rib<=6;rib+=2)block("Container rib",[x+rib,1.16,-236.42],[.12,2.05,.08],mats.metal,container);
+}
+block("Harbour crane tower",[112,8,-230],[2,16,2],mats.metal);
+block("Harbour crane boom",[99,16,-230],[28,1.2,1.2],mats.metal);
+block("Harbour crane cable",[89,8,-230],[.12,15,.12],mats.dark);
+block("Harbour crane hook",[89,.6,-230],[1.2,.18,.18],mats.paint);
+
+// Market Quarter: covered stalls and a small public square.
+block("Market Quarter plaza",[90,.02,-125],[42,.18,30],mats.concrete);
+for(let row=0;row<2;row++)for(let col=0;col<4;col++){
+ const x=76+col*10,z=-132+row*13;
+ block("Market stall counter",[x,.65,z],[5.8,1.2,4.8],dockWood);
+ block("Market stall canopy",[x,2.2,z],[6.6,.28,5.6],marketFabric);
+ for(const sx of [-2.8,2.8])for(const sz of [-2.2,2.2])
+  block("Market canopy support",[x+sx,1.35,z+sz],[.12,1.8,.12],mats.metal);
+}
+block("Market clock plinth",[90,1.3,-105],[3,2.6,3],mats.metal);
+block("Market clock face",[90,2.8,-103.35],[1.7,1.7,.12],mats.windowLit);
+
+// Industrial Edge: storage tanks, smokestacks and warehouse loading bays.
+const tankMat=makeMat([.31,.35,.37],.65,.32);
+for(let i=0;i<3;i++){
+ const x=-151+i*15,z=218;
+ block("Industrial storage tank",[x,4,z],[10,8,10],tankMat,app.root,"cylinder");
+ block("Storage tank roof",[x,8.1,z],[10.2,.35,10.2],mats.metal,app.root,"cylinder");
+}
+for(let i=0;i<2;i++){
+ const x=-165+i*18,z=242;
+ block("Industrial smokestack",[x,12,z],[3.2,24,3.2],industrialPaint,app.root,"cylinder");
+ block("Smokestack rim",[x,24.1,z],[3.8,.5,3.8],mats.dark,app.root,"cylinder");
+}
+block("Industrial warehouse",[ -135,7,215],[32,14,25],industrialPaint);
+for(let bay=0;bay<3;bay++){
+ const x=-147+bay*12;
+ block("Warehouse loading door",[x,3.4,202.35],[7,6.8,.2],mats.dark);
+ block("Loading bay light",[x,7.4,202],[1.3,.18,.25],mats.windowLit);
+}
+
 for(let i=0;i<24;i++){
  const z=-225+i*19;
  const side=i%2?1:-1;
