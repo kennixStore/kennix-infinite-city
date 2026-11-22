@@ -29,6 +29,10 @@
 
 - [x] City streetlight props and an accelerated day/night lighting cycle with ambient/sky transitions and automatic lamp glow at night (prototype; performance and visual tuning pending Android testing).
 
+- [x] First visual-density pass: corrected the city-block placement so the main avenue corridors remain open, added facade windows/shopfronts/roof equipment, and dressed the boulevard with bus shelters, benches and planters (browser runtime and Android performance validation pending).
+- [x] Procedural vehicle-detail pass: added windscreen panels, side glazing, mirrors, door seams, grille layers, aero trim, alloy rims and brake-disc details to the selectable vehicle silhouettes; NPC traffic cars also gained roof/glass details (still not equivalent to authored high-detail vehicle assets).
+- [x] Refined the garage, HUD, touch controls and build-status presentation; corrected sky-dome face culling and camera render distance (visual runtime verification pending).
+
 ## Still required
 - [ ] Apply migration in Supabase and configure build environment variables.
 - [ ] Deploy Supabase schema, configure credentials, and test account, profile, wallet and cloud-save UI end-to-end.
