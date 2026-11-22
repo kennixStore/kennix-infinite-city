@@ -98,3 +98,101 @@ footer span { color: #d8ad5b; text-align: right; }
 .fuel-status{position:absolute;left:14px;bottom:112px;z-index:8;padding:8px 11px;border:1px solid #ffffff35;border-radius:8px;background:#07111ddd;color:#f4d27a;font:700 11px/1.2 system-ui;letter-spacing:.08em;pointer-events:none}.refuel-button{position:absolute;left:50%;bottom:108px;transform:translateX(-50%);z-index:12;border:1px solid #e5bd55;border-radius:9px;padding:12px 16px;background:#182337;color:#ffe29a;font:800 11px system-ui;letter-spacing:.06em;max-width:90%}.refuel-button[hidden]{display:none}@media(max-width:600px){.fuel-status{bottom:166px;left:10px}.refuel-button{bottom:162px;font-size:10px;padding:10px 12px}}
 
 .cycle-status{position:absolute;right:14px;top:64px;z-index:8;padding:8px 11px;border:1px solid #ffffff35;border-radius:8px;background:#07111ddd;color:#f5d58c;font:700 11px/1.2 system-ui;letter-spacing:.08em;pointer-events:none}@media(max-width:600px){.cycle-status{right:10px;top:58px;font-size:10px}}
+
+
+/* Visual polish pass: premium motorsport interface with restrained KENNIX gold. */
+.game-header{
+  min-height:64px;padding:12px clamp(16px,3vw,38px);
+  border-bottom:1px solid rgba(216,173,91,.22);
+  background:linear-gradient(100deg,rgba(5,9,15,.98),rgba(14,22,33,.96) 58%,rgba(5,9,15,.98));
+  box-shadow:0 8px 28px rgba(0,0,0,.24)
+}
+.brand{letter-spacing:.2em;text-shadow:0 2px 16px rgba(216,173,91,.16)}
+.brand span{font-size:9px;color:#e0bd78;letter-spacing:.34em}
+.status{font-size:9px;letter-spacing:.18em;color:#c0c9d4}
+#game-stage{
+  background:radial-gradient(ellipse at 50% 42%,rgba(44,66,87,.16),transparent 62%),#080d14
+}
+.scene-label{
+  left:18px;bottom:18px;min-width:190px;padding:13px 16px;
+  border:1px solid rgba(216,173,91,.28);border-left:3px solid #d8ad5b;
+  border-radius:3px 12px 12px 3px;background:linear-gradient(110deg,rgba(5,10,17,.91),rgba(9,17,27,.72));
+  box-shadow:0 10px 32px rgba(0,0,0,.24);backdrop-filter:blur(10px)
+}
+.scene-label strong{font-size:10px;letter-spacing:.2em;color:#f4e6c8}
+.scene-label span{font-size:9px;letter-spacing:.08em}
+.hud-speed{
+  right:18px;bottom:18px;min-width:112px;padding:13px 16px;
+  border:1px solid rgba(216,173,91,.3);border-right:3px solid #d8ad5b;
+  border-radius:12px 3px 3px 12px;background:linear-gradient(110deg,rgba(5,10,17,.7),rgba(5,10,17,.94));
+  box-shadow:0 10px 32px rgba(0,0,0,.25);backdrop-filter:blur(10px);
+  font-size:31px;font-weight:900;letter-spacing:-.06em
+}
+.hud-speed small{font-size:8px;letter-spacing:.24em;color:#d8ad5b}
+.gear-indicator{font-size:8px;letter-spacing:.2em}
+.utility-bar button{
+  border-color:rgba(216,173,91,.28);background:rgba(5,10,17,.88);
+  backdrop-filter:blur(10px);letter-spacing:.13em;transition:border-color .15s,background .15s,transform .15s
+}
+.utility-bar button:hover{border-color:#d8ad5b;background:#202a35;transform:translateY(-1px)}
+.game-overlay{background:radial-gradient(ellipse at center,rgba(15,25,38,.72),rgba(2,5,9,.91));backdrop-filter:blur(9px)}
+.game-panel{
+  border:1px solid rgba(216,173,91,.48);border-radius:18px;
+  background:linear-gradient(145deg,rgba(17,27,40,.98),rgba(5,10,17,.99) 68%);
+  box-shadow:0 28px 90px rgba(0,0,0,.58),inset 0 1px rgba(255,255,255,.045)
+}
+.panel-kicker{letter-spacing:.34em;color:#e0bd78}
+.game-panel h1{letter-spacing:.13em;text-shadow:0 5px 24px rgba(216,173,91,.12)}
+.game-panel p{line-height:1.65;color:#c0c9d4}
+.vehicle-option{
+  min-height:74px;border-color:rgba(149,166,185,.2);
+  background:linear-gradient(135deg,rgba(26,39,54,.92),rgba(12,19,29,.96));
+  transition:transform .15s,border-color .15s,background .15s
+}
+.vehicle-option:hover{transform:translateY(-2px);border-color:rgba(216,173,91,.65)}
+.vehicle-option.selected{
+  border-color:#d8ad5b;
+  background:linear-gradient(135deg,rgba(73,57,30,.7),rgba(26,28,30,.96));
+  box-shadow:inset 0 0 0 1px rgba(216,173,91,.16),0 5px 20px rgba(0,0,0,.18)
+}
+.vehicle-option strong{font-size:13px;letter-spacing:.05em}
+.vehicle-option span{color:#e0bd78}
+.paint-swatch{width:34px;height:34px;border:2px solid rgba(255,255,255,.32);box-shadow:0 3px 10px rgba(0,0,0,.25)}
+.panel-actions button,.utility-bar button{letter-spacing:.12em}
+.panel-actions .primary-action{
+  color:#17120a;border-color:#f2d18d;
+  background:linear-gradient(135deg,#f1d69d,#c79743);
+  box-shadow:0 8px 24px rgba(194,145,61,.18)
+}
+.panel-actions .primary-action:hover{filter:brightness(1.08);transform:translateY(-1px)}
+.touch-controls button{
+  border-color:rgba(255,255,255,.24);border-radius:16px;
+  background:linear-gradient(145deg,rgba(21,32,46,.88),rgba(5,10,17,.9));
+  backdrop-filter:blur(8px);box-shadow:0 8px 22px rgba(0,0,0,.28),inset 0 1px rgba(255,255,255,.08)
+}
+.touch-controls button[data-control="gas"]{
+  border-color:rgba(216,173,91,.62);
+  background:linear-gradient(145deg,rgba(102,75,34,.94),rgba(45,31,17,.96))
+}
+.touch-controls button[data-control="brake"]{border-color:rgba(207,100,87,.5)}
+.fuel-status,.cycle-status,.race-status,.mission-status,.wanted-label,.mission-title-label{
+  border-color:rgba(216,173,91,.32);border-radius:9px;
+  background:rgba(5,10,17,.88);backdrop-filter:blur(10px);
+  box-shadow:0 6px 22px rgba(0,0,0,.2);letter-spacing:.12em
+}
+footer{
+  min-height:34px;border-top:1px solid rgba(216,173,91,.18);
+  background:linear-gradient(100deg,#070b11,#101722 55%,#070b11);
+  letter-spacing:.18em
+}
+footer span{letter-spacing:.16em}
+@media(max-width:600px){
+ .game-header{min-height:54px;padding:9px 12px}
+ .brand{font-size:14px}.brand span{font-size:8px}
+ .status{font-size:7px;letter-spacing:.1em;max-width:132px}
+ .scene-label{left:10px;bottom:174px;min-width:150px;padding:9px 11px}
+ .hud-speed{right:10px;bottom:174px;min-width:88px;padding:10px 12px;font-size:25px}
+ .touch-controls button{width:54px;height:50px;border-radius:14px}
+ .pedals button{width:59px}
+ footer{padding:8px 10px;font-size:7px}
+}
