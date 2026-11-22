@@ -31,6 +31,8 @@ body { overflow: hidden; }
   font: 700 24px/1 monospace; pointer-events: none;
 }
 .hud-speed small { display: block; margin-top: 5px; color: #b9c1cb; font: 9px Arial; letter-spacing: .12em; }
+.gear-indicator { display: block; margin-top: 7px; color: #d8ad5b; font: 9px Arial; letter-spacing: .12em; }
+.gear-indicator span { color: #fff; font-weight: 800; }
 .touch-controls {
   position: absolute; inset: auto 14px 16px; display: flex;
   justify-content: space-between; align-items: end; pointer-events: none;
@@ -44,6 +46,7 @@ body { overflow: hidden; }
 .steering, .pedals { display: flex; gap: 8px; }
 .pedals button { width: 66px; font-size: 10px; }
 .pedals button:last-child { border-color: #d8ad5b; background: rgba(100,69,27,.88); }
+.pedals button[data-control="handbrake"] { width: 58px; border-color: rgba(210,90,75,.75); background: rgba(75,25,24,.82); font-size: 9px; }
 footer { font-size: 8px; }
 footer span { color: #d8ad5b; text-align: right; }
 @media (hover: hover) and (pointer: fine) { .touch-controls { opacity: .58; } }
