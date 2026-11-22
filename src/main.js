@@ -1040,7 +1040,7 @@ const mapPositionLabel = miniMapPanel.querySelector("#map-position");
 const mapDistanceLabel = miniMapPanel.querySelector("#map-distance");
 const mapScale = 0.72;
 const mapRoadXs = [-120, -60, 0, 60, 120];
-const mapRoadZs = [-210, -140, -43, 39, 140, 210];
+const mapRoadZs = [-210, -140, -70, 0, 70, 140, 210];
 const nearestRoad = (values, value) => values.reduce((best, item) => Math.abs(item-value)<Math.abs(best-value)?item:best, values[0]);
 function setNavigationTarget(target) {
   navigationTarget = target ? { x: clamp(target.x, -158, 158), z: clamp(target.z, -258, 258), name: target.name || "CUSTOM WAYPOINT" } : null;
