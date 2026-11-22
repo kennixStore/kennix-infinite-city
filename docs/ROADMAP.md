@@ -1,29 +1,29 @@
 # Development Roadmap
 
-## Offline gameplay prototype — code added, runtime verification pending
-- [x] Browser 3D engine and responsive touch/keyboard controls.
-- [x] Procedural first district and expanded multi-road NOVA CITY grid.
-- [x] Four distinct procedural vehicle silhouettes and handling presets.
-- [x] Paint selection and local garage persistence.
-- [x] Traffic and animated pedestrian prototypes.
-- [x] Headlights, brake lamps, chase and close cockpit-style camera.
-- [x] Basic collision damage and repair.
-- [x] Street Sprint checkpoint race and 500 m driving objective.
-- [x] Police interceptor, wanted stars and basic pursuit.
-- [x] Three-step offline story campaign with destination markers and local progress.
-- [x] CI syntax and production build checks.
+## Implemented in source; runtime verification pending
+- [x] PlayCanvas/Vite browser foundation and responsive controls.
+- [x] Procedural multi-road NOVA CITY grid.
+- [x] Four primitive-built vehicle silhouettes and tuning presets.
+- [x] Paint selection, local garage persistence and camera modes.
+- [x] Traffic, pedestrian, collision, repair and sprint prototypes.
+- [x] Police interceptor and basic pursuit prototype.
+- [x] Three-step local story campaign.
+- [x] Supabase account service module (email/password, session).
+- [x] Per-player cloud-save service module.
+- [x] Database migration for player profiles and KX wallet/ledger.
+- [x] Authenticated transactional KX transfer RPC with row locks and idempotency.
+- [x] GitHub Actions syntax and production-build checks restored.
 
-## Still required for a real public release
-- [ ] Browser runtime testing and Android device testing.
-- [ ] Replace primitive-built vehicles with artist-authored meshes, materials, textures and interiors.
-- [ ] Add proper physics, collision shapes, suspension, vehicle damage meshes and audio.
-- [ ] Improve the city with authored landmarks, interiors, district activities and streaming/LOD.
-- [ ] Build robust police navigation, road pursuit, search, backup and arrest systems.
-- [ ] Expand story campaign with authored scenes, characters, dialogue, cutscenes and mission variety.
-- [ ] Add server-backed authentication, profiles and cloud saves.
-- [ ] Implement secure server-authoritative KX ledger and inventory.
-- [ ] Implement multiplayer networking, matchmaking, server validation and anti-cheat.
-- [ ] Add moderation, reporting, blocking, privacy policy and terms.
-- [ ] Performance, security, load and compatibility testing before launch.
+## Still required
+- [ ] Apply migration in Supabase and configure build environment variables.
+- [ ] Connect account, profile, wallet and cloud-save UI to the game.
+- [ ] Add verified server-side mission reward functions and anti-abuse limits.
+- [ ] Add email verification, password reset and account deletion flows.
+- [ ] Build authoritative multiplayer server, matchmaking and race validation.
+- [ ] Replace primitive vehicles with licensed/authored detailed 3D models and interiors.
+- [ ] Add visible damage states, proper vehicle physics and audio.
+- [ ] Expand city streaming, authored landmarks and road navigation.
+- [ ] Build full story campaign, character scenes and robust police AI.
+- [ ] Run browser, Android, network, load and security tests.
 
-A checked item means code was added. It is not a claim of runtime verification or production readiness.
+A checked item means source code or schema was added. It does not mean the service is deployed, verified or production-ready.

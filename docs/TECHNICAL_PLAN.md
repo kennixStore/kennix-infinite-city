@@ -1,20 +1,22 @@
 # Technical Plan
 
 ## Engine and client
-The browser client uses PlayCanvas Engine with Vite. The current offline prototype includes a procedural multi-road city grid, four distinct primitive-built vehicle silhouettes, driving controls, NPC traffic and pedestrians, a simple police pursuit loop, and a three-step local story campaign.
+The browser client uses PlayCanvas Engine with Vite. The offline game includes a procedural NOVA CITY grid, four primitive-built vehicle silhouettes, touch/keyboard driving, traffic and pedestrian prototypes, basic police pursuit and three local campaign objectives.
 
-## Current limitations
-The vehicle meshes are procedural primitive assemblies, not final production assets. City generation is static and compact, without streaming, interiors or robust path navigation. Police and campaign logic are early prototypes and require runtime validation.
+## Online service layer
+The repository now includes a Supabase client service module for email/password authentication, session persistence, per-player cloud saves, balance reads and authenticated KX transfers. Configure `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY` as build environment variables. Never put a Supabase service-role key in browser code.
 
-## Online architecture required before launch
-Online features must be server-authoritative:
-- Authentication provider verifies user identity; client tokens are validated server-side.
-- Player profile and cloud-save service stores progression and inventory.
-- KX is a ledger, not a client-side editable number. Every reward, purchase and transfer is an authenticated server transaction with idempotency keys, balance checks, rate limits and immutable audit history.
-- Multiplayer uses an authoritative room/server simulation for player state, race results and rewards. Clients submit inputs, not trusted positions, times or currency outcomes.
-- Moderation includes report/block tools, chat controls, abuse detection and account recovery.
+Apply `supabase/migrations/202611220001_online_accounts_and_kx.sql` in the Supabase SQL Editor. It creates player profiles, cloud saves, server-owned wallets, an append-only transaction history, a one-time welcome balance and a transaction-safe transfer RPC. Row-level security prevents clients from writing wallet balances or ledger entries directly. The transfer function validates the signed-in user, recipient, amount, available balance and idempotency key inside one database transaction.
 
-Do not enable real KX transfers or player-to-player theft until fraud controls, account recovery, rate limits and moderation have been reviewed. Do not claim secure accounts or multiplayer until the backend is deployed and tested.
+## Multiplayer
+Supabase Realtime can support presence, lobbies and casual room state, but it is not an authoritative simulation server. Ranked real-time racing still requires a dedicated authoritative game server, input validation, race-result verification, matchmaking, rate limits and anti-cheat. Do not award KX based on client-submitted race results.
 
-## Deployment and testing
-GitHub Actions performs JavaScript syntax validation and a Vite production build. This does not verify browser rendering, game logic, Android performance, network behaviour or security. Test on actual target devices before launch.
+## Production requirements
+- Deploy and test the Supabase migration and configure environment variables.
+- Add account UI, email verification, password recovery and account deletion flow.
+- Add cloud-save conflict handling and schema versioning.
+- Add server-side reward functions and abuse limits before granting KX.
+- Add authoritative multiplayer server and matchmaking.
+- Replace primitive vehicle assemblies with licensed/authored models, UV textures, interiors, rigs and damage states.
+- Expand city streaming, road navigation, police AI, campaign dialogue and authored missions.
+- Test browser runtime, Android performance, network failure and security before public launch.
