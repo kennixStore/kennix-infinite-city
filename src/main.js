@@ -850,6 +850,24 @@ function buildVehicleModel(vehicle){
  frontScreen.setLocalEulerAngles(-20,0,0);
  const rearScreen=block("Rear windscreen",[0,.99,cabinZ+length*.205],[width*.68,.38,.055],glassMat,root);
  rearScreen.setLocalEulerAngles(20,0,0);
+ // Interior details are deliberately visible through the glazing in chase view.
+ const interiorMat=makeMat([.035,.043,.05],.18,.72);
+ const seatMat=makeMat([.075,.082,.09],.08,.82);
+ const dashMat=makeMat([.055,.065,.075],.22,.48);
+ block("Full width dashboard",[0,.79,cabinZ-.66],[width*.72,.18,.38],dashMat,root);
+ block("Centre console",[0,.69,cabinZ-.02],[.34,.2,.88],interiorMat,root);
+ for(const side of [-1,1]){
+  block("Front seat cushion",[side*.39,.68,cabinZ-.12],[.55,.16,.66],seatMat,root);
+  const seatBack=block("Front seat backrest",[side*.39,.91,cabinZ+.18],[.55,.62,.17],seatMat,root);
+  seatBack.setLocalEulerAngles(-7,0,0);
+  block("Rear seat cushion",[side*.36,.67,cabinZ+.66],[.56,.14,.48],seatMat,root);
+  block("Rear seat backrest",[side*.36,.87,cabinZ+.84],[.56,.42,.14],seatMat,root);
+ }
+ const steeringColumn=block("Steering column",[-.43,.91,cabinZ-.54],[.09,.09,.32],chromeMat,root);
+ steeringColumn.setLocalEulerAngles(-18,0,0);
+ const steeringWheel=block("Steering wheel",[-.43,1.02,cabinZ-.72],[.36,.045,.36],interiorMat,root,"cylinder");
+ steeringWheel.setLocalEulerAngles(90,0,0);
+ block("Instrument cluster",[0,.91,cabinZ-.68],[.48,.12,.12],interiorMat,root);
  if(kind==="suv") block("SUV roof",[0,1.48,.05],[width*.82,.13,length*.4],bodyMat,root);
  if(kind==="muscle") {
   block("Bonnet power bulge",[0,.73,-1.12],[.72,.22,1.05],trimMat,root);
