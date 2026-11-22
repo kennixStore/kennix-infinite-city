@@ -743,6 +743,16 @@ let heading = 0;
 let steeringAngle = 0;
 let handbrakeActive = false;
 let signalTimer = 0;
+let skidMarkTimer = 0;
+const skidMarks = [];
+const skidMarkMaterial = makeMat([0.018,0.02,0.022],0.05,0.9);
+function addSkidMarks(position,forwardX,forwardZ,rightX,rightZ){
+ for(const side of [-1,1]){
+  const mark=block("Tyre skid mark",[position.x-forwardX*1.45+rightX*side*.72,.035,position.z-forwardZ*1.45+rightZ*side*.72],[.085,.012,.78],skidMarkMaterial);
+  mark.setEulerAngles(0,heading,0);skidMarks.push(mark);
+ }
+ while(skidMarks.length>100){const oldest=skidMarks.shift();oldest.destroy()}
+}
 const clamp = (v, min, max) => Math.max(min, Math.min(max, v));
 const speedValue = document.querySelector("#speed-value");
 const gearValue = document.querySelector("#gear-value");
@@ -808,6 +818,10 @@ app.on("update", dt => {
   }
   car.setPosition(p);
   car.setEulerAngles(0, heading, clamp(-steeringAngle * speedRatio * 0.035, -3, 3));
+  if(handbrakeActive&&Math.abs(speed)>9){
+   skidMarkTimer+=dt;
+   if(skidMarkTimer>=.13){skidMarkTimer=0;addSkidMarks(p,forwardX,forwardZ,rightX,rightZ)}
+  }else skidMarkTimer=0;
   const braking = reverse && speed > 0.8;
   brakeGlow.light.intensity = braking ? 2.8 : 0;
   brakeLamps.forEach(lamp => {
