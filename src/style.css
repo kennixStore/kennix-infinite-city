@@ -90,3 +90,7 @@ footer span { color: #d8ad5b; text-align: right; }
 .online-panel #online-note{display:block;margin:14px 0;color:#aab4c1;font-size:10px;line-height:1.5}
 .utility-bar{flex-wrap:wrap;max-width:min(95%,650px)}
 @media(max-width:600px){.utility-bar{left:8px;right:8px;justify-content:flex-end}.online-panel .game-panel{max-height:90svh}}
+
+#audio-toggle,#horn-button{touch-action:manipulation}
+#horn-button{border-color:#b68a43;color:#f1d39b}
+#horn-button:active{background:#60451f;transform:scale(.97)}
