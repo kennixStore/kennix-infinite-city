@@ -83,6 +83,59 @@ for (const side of [-1, 1]) {
   }
 }
 
+// Cross streets connect the avenue to the surrounding district.
+for (const junctionZ of [-43, 39]) {
+  block("Cross street", [0, -0.035, junctionZ], [118, 0.15, 10], mats.asphalt);
+  for (const side of [-1, 1]) {
+    block("Cross street edge line", [side * 56, 0.055, junctionZ], [0.16, 0.03, 9.6], mats.white);
+    block("Cross street sidewalk", [side * 0, 0.025, junctionZ + side * 6.5], [118, 0.2, 2.6], mats.concrete);
+  }
+  for (let x = -52; x <= 52; x += 8) {
+    block("Cross street centre dash", [x, 0.055, junctionZ], [3.8, 0.03, 0.14], mats.paint);
+  }
+}
+
+// A few parked vehicles give the first district a sense of scale and life.
+const parkedMats = [
+  makeMat([0.42, 0.055, 0.035], 0.45, 0.3),
+  makeMat([0.12, 0.2, 0.28], 0.55, 0.25),
+  makeMat([0.48, 0.48, 0.44], 0.35, 0.3)
+];
+function parkedCar(x, z, colorIndex, facing = 0) {
+  const vehicle = new pc.Entity("Parked city vehicle");
+  vehicle.setPosition(x, 0.08, z);
+  vehicle.setEulerAngles(0, facing, 0);
+  app.root.addChild(vehicle);
+  const paint = parkedMats[colorIndex % parkedMats.length];
+  block("Parked car body", [0, 0.48, 0], [1.75, 0.48, 3.5], paint, vehicle);
+  block("Parked car cabin", [0, 0.83, 0.15], [1.42, 0.48, 1.65], mats.glass, vehicle);
+  for (const side of [-1, 1]) for (const end of [-1, 1]) {
+    block("Parked car wheel", [side * 0.88, 0.25, end * 1.08], [0.22, 0.48, 0.62], mats.trim, vehicle, "cylinder");
+  }
+  for (const side of [-1, 1]) {
+    block("Parked car headlamp", [side * 0.58, 0.52, -1.77], [0.28, 0.12, 0.06], mats.headlight, vehicle);
+    block("Parked car tail lamp", [side * 0.58, 0.52, 1.77], [0.28, 0.12, 0.06], mats.red, vehicle);
+  }
+}
+parkedCar(-11.2, -29, 0, 90);
+parkedCar(11.2, -17, 1, -90);
+parkedCar(-11.2, 8, 2, 90);
+parkedCar(11.2, 57, 0, -90);
+
+// Distant skyline silhouettes make the district feel larger than the test road.
+const skylineMats = [
+  makeMat([0.12, 0.17, 0.23]),
+  makeMat([0.16, 0.19, 0.24]),
+  makeMat([0.2, 0.21, 0.24])
+];
+for (let i = 0; i < 18; i++) {
+  const side = i % 2 === 0 ? -1 : 1;
+  const z = -82 + Math.floor(i / 2) * 18;
+  const width = 9 + (i % 4) * 3;
+  const height = 22 + ((i * 13) % 30);
+  block("Distant skyline tower", [side * (42 + (i % 3) * 8), height / 2, z], [width, height, 12], skylineMats[i % skylineMats.length]);
+}
+
 // Buildings with road-facing windows, entrances and rooftop details.
 const facades = [
   makeMat([0.24, 0.29, 0.34]),
