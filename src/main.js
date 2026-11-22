@@ -640,7 +640,7 @@ gameOverlay.querySelector("#repair-car").addEventListener("click",()=>{damage=0;
 
 const fuelLabel=document.createElement("div");fuelLabel.className="fuel-status";fuelLabel.textContent="FUEL 100%";document.querySelector("#game-stage").appendChild(fuelLabel);
 const refuelButton=document.createElement("button");refuelButton.className="refuel-button";refuelButton.textContent="REFUEL";refuelButton.hidden=true;document.querySelector("#game-stage").appendChild(refuelButton);
-let fuel=100;try{fuel=clamp(Number(localStorage.getItem("kxic-fuel")??100),0,100)}catch{}
+let fuel=100;try{fuel=Math.max(0,Math.min(100,Number(localStorage.getItem("kxic-fuel")??100)))}catch{}
 refuelButton.addEventListener("click",()=>{if(fuel<99.5){fuel=100;try{localStorage.setItem("kxic-fuel","100")}catch{}fuelLabel.textContent="FUEL 100%";refuelButton.textContent="TANK FULL"}});
 const utilityBar=document.createElement("div");utilityBar.className="utility-bar";utilityBar.innerHTML='<button id="garage-open">GARAGE</button><button id="camera-toggle">CAMERA: CHASE</button><button id="audio-toggle">SOUND: OFF</button><button id="horn-button">HORN</button><button id="pause-toggle">PAUSE</button>';document.querySelector("#game-stage").appendChild(utilityBar);
 utilityBar.querySelector("#garage-open").addEventListener("click",()=>showGarage("CITY GARAGE","Select a vehicle, choose paint and repair damage."));
@@ -867,7 +867,7 @@ app.on("update", dt => {
   const posForStation=car.getPosition();
   const station=fuelStations.find(item=>Math.hypot(posForStation.x-item.x,posForStation.z-item.z)<15);
   refuelButton.hidden=!station;
-  if(station)refuelButton.textContent=fuel>=99.5?"TANK FULL":"REFUEL AT "+station.label+" • KX 250";
+  if(station)refuelButton.textContent=fuel>=99.5?"TANK FULL":"REFUEL AT "+station.label;
   fuelLabel.textContent="FUEL "+Math.round(fuel)+"%";
   const forward = isDown("w", "arrowup", "gas");
   const reverse = isDown("s", "arrowdown", "brake");
