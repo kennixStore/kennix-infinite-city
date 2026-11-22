@@ -989,19 +989,60 @@ app.on("update", dt => {
     const npcPos = npc.entity.getPosition();
     npc.hitCooldown = Math.max(0, npc.hitCooldown - dt);
 
-    // Follow the vehicle ahead and avoid driving into the player's car.
+    // Predictive following: maintain a speed-dependent gap and brake smoothly.
     let targetSpeed = npc.cruiseSpeed;
+    const sameAxis = npc.axis === "z" ? "z" : "x";
     for (const other of traffic) {
-      if (other === npc || other.axis !== npc.axis || other.direction !== npc.direction) continue;
+      if (other === npc) continue;
       const otherPos = other.entity.getPosition();
+      if (other.axis !== sameAxis || other.direction !== npc.direction) continue;
       const sameLane = npc.axis === "z" ? Math.abs(otherPos.x - npcPos.x) < 1.1 : Math.abs(otherPos.z - npcPos.z) < 1.1;
       if (!sameLane) continue;
       const gap = (npc.axis === "z" ? otherPos.z - npcPos.z : otherPos.x - npcPos.x) * npc.direction;
-      if (gap > 0 && gap < 13) targetSpeed = Math.min(targetSpeed,npc.cruiseSpeed*clamp((gap-3.5)/9.5,0,1));
+      const safeGap = 4.5 + npc.currentSpeed * 0.78;
+      if (gap > 0 && gap < safeGap + 9) {
+        const followSpeed = clamp((gap - 3.2) * 1.35, 0, npc.cruiseSpeed);
+        targetSpeed = Math.min(targetSpeed, followSpeed);
+      }
     }
+
+    // Treat the player's car as another moving road user when it is in the same lane.
     const playerGap = (npc.axis === "z" ? p.z-npcPos.z : p.x-npcPos.x)*npc.direction;
-    const playerInLane = npc.axis === "z" ? Math.abs(p.x-npcPos.x)<1.55 : Math.abs(p.z-npcPos.z)<1.55;
-    if(playerInLane&&playerGap>0&&playerGap<13)targetSpeed=Math.min(targetSpeed,npc.cruiseSpeed*clamp((playerGap-4)/9,0,1));
+    const playerInLane = npc.axis === "z" ? Math.abs(p.x-npcPos.x)<1.7 : Math.abs(p.z-npcPos.z)<1.7;
+    if(playerInLane && playerGap>0 && playerGap<18){
+      const playerSafeGap=4.8+npc.currentSpeed*.82;
+      targetSpeed=Math.min(targetSpeed,clamp((playerGap-3.4)*1.3,0,npc.cruiseSpeed));
+      if(playerGap<playerSafeGap)targetSpeed=Math.min(targetSpeed,Math.max(0,(playerGap-2.8)*1.1));
+    }
+
+    // Junction conflict check: do not enter a crossing while perpendicular traffic occupies it.
+    if(npc.axis==="z"){
+      const laneJunctionX=[-120,-60,60,120].reduce((best,x)=>Math.abs(x-npcPos.x)<Math.abs(best-npcPos.x)?x:best,-120);
+      for(const junctionZ of districtRoads){
+        const distanceToJunction=(junctionZ-npcPos.z)*npc.direction;
+        if(distanceToJunction>0&&distanceToJunction<15){
+          const occupied=traffic.some(other=>{
+            if(other===npc||other.axis!=="x")return false;
+            const q=other.entity.getPosition();
+            return Math.abs(q.x-laneJunctionX)<8&&Math.abs(q.z-junctionZ)<8;
+          });
+          if(occupied){targetSpeed=0;break}
+        }
+      }
+    }else{
+      const laneJunctionZ=districtRoads.reduce((best,z)=>Math.abs(z-npcPos.z)<Math.abs(best-npcPos.z)?z:best,districtRoads[0]);
+      for(const junctionX of [-120,-60,60,120]){
+        const distanceToJunction=(junctionX-npcPos.x)*npc.direction;
+        if(distanceToJunction>0&&distanceToJunction<15){
+          const occupied=traffic.some(other=>{
+            if(other===npc||other.axis!=="z")return false;
+            const q=other.entity.getPosition();
+            return Math.abs(q.x-junctionX)<8&&Math.abs(q.z-laneJunctionZ)<8;
+          });
+          if(occupied){targetSpeed=0;break}
+        }
+      }
+    }
 
     // Stop at red lights on every junction along each traffic axis.
     if(npc.axis==="z"){
@@ -1018,8 +1059,9 @@ app.on("update", dt => {
     const wasMovingFaster = targetSpeed < npc.currentSpeed - 0.7;
     npc.braking = wasMovingFaster;
     npc.brakeLamps.forEach(lamp => { lamp.render.material = wasMovingFaster ? trafficBrakeMaterial : mats.red; });
-    const response = targetSpeed < npc.currentSpeed ? 4.8 : 2.1;
-    npc.currentSpeed += (targetSpeed - npc.currentSpeed) * Math.min(1, dt * response);
+    const response = targetSpeed < npc.currentSpeed ? 6.2 : 1.65;
+    const speedDelta=(targetSpeed-npc.currentSpeed)*Math.min(1,dt*response);
+    npc.currentSpeed=clamp(npc.currentSpeed+speedDelta,0,npc.cruiseSpeed);
     const previousTravel=npc.axis==="z"?npcPos.z:npcPos.x;
     if(npc.axis==="z"){
       npcPos.z+=npc.direction*npc.currentSpeed*dt;

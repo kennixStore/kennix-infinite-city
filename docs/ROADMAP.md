@@ -23,6 +23,8 @@
 
 - [x] NPC traffic receives a planned next junction, lane-consistent facing, and deterministic turn timing instead of frame-by-frame random turns (prototype; signal and collision tuning still needs Android runtime testing).
 
+- [x] NPC predictive following with speed-dependent safety gaps, player-car awareness, and perpendicular-traffic junction occupancy checks (prototype; real-time collision tuning still needs in-game testing).
+
 ## Still required
 - [ ] Apply migration in Supabase and configure build environment variables.
 - [ ] Deploy Supabase schema, configure credentials, and test account, profile, wallet and cloud-save UI end-to-end.
