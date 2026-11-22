@@ -178,35 +178,74 @@ controls.querySelectorAll("button").forEach(button => {
   button.addEventListener("lostpointercapture", release);
 });
 
-let speed = 0;
+let speed = 0;                 // metres per second; forward is negative Z
 let heading = 0;
+let steeringAngle = 0;
+let handbrakeActive = false;
 const clamp = (v, min, max) => Math.max(min, Math.min(max, v));
 const speedValue = document.querySelector("#speed-value");
+const gearValue = document.querySelector("#gear-value");
+const frontWheels = wheels.slice(0, 2);
+const rearWheels = wheels.slice(2);
+
+function isDown(...names) {
+  return names.some(name => keys.has(name) || held.has(name));
+}
 
 app.on("update", dt => {
-  const forward = keys.has("w") || keys.has("arrowup") || held.has("gas");
-  const reverse = keys.has("s") || keys.has("arrowdown") || held.has("brake");
-  const left = keys.has("a") || keys.has("arrowleft") || held.has("left");
-  const right = keys.has("d") || keys.has("arrowright") || held.has("right");
+  const forward = isDown("w", "arrowup", "gas");
+  const reverse = isDown("s", "arrowdown", "brake");
+  const left = isDown("a", "arrowleft", "left");
+  const right = isDown("d", "arrowright", "right");
+  handbrakeActive = isDown(" ", "handbrake");
 
-  if (forward) speed += 19 * dt;
-  else if (reverse) speed -= 24 * dt;
-  else speed *= Math.pow(0.28, dt);
-  speed = clamp(speed, -9, 32);
+  // Arcade vehicle response with separate acceleration, braking and coasting.
+  if (forward) speed += (speed < 0 ? 39 : 17) * dt;
+  else if (reverse) speed -= (speed > 0 ? 48 : 11) * dt;
+  else speed *= Math.pow(handbrakeActive ? 0.12 : 0.42, dt);
 
-  const steer = (left ? 1 : 0) - (right ? 1 : 0);
-  heading += steer * 43 * (0.25 + Math.min(Math.abs(speed) / 32, 1)) * dt * Math.sign(speed || 1);
+  if (handbrakeActive && Math.abs(speed) > 1) speed *= Math.pow(0.16, dt);
+  speed = clamp(speed, -10, 38);
+
+  const steerInput = (left ? 1 : 0) - (right ? 1 : 0);
+  const steerLimit = 28;
+  const targetSteering = steerInput * steerLimit;
+  steeringAngle += (targetSteering - steeringAngle) * Math.min(1, dt * 8);
+
+  // Steering response increases with speed, but remains controllable at low speed.
+  const speedFactor = 0.18 + Math.min(Math.abs(speed) / 24, 1) * 0.82;
+  const grip = handbrakeActive ? 1.35 : 1;
+  heading += steeringAngle * 0.95 * speedFactor * grip * dt * Math.sign(speed || 1);
+
   const radians = heading * Math.PI / 180;
   const p = car.getPosition();
-  p.x = clamp(p.x + Math.sin(radians) * speed * dt, -5.7, 5.7);
-  p.z = clamp(p.z - Math.cos(radians) * speed * dt, -75, 75);
+  const nextX = p.x + Math.sin(radians) * speed * dt;
+  const nextZ = p.z - Math.cos(radians) * speed * dt;
+
+  // Keep the test vehicle on the drivable avenue.
+  const roadEdge = 5.75;
+  if (nextX < -roadEdge || nextX > roadEdge) {
+    speed *= -0.18;
+    p.x = clamp(nextX, -roadEdge, roadEdge);
+  } else {
+    p.x = nextX;
+  }
+  p.z = clamp(nextZ, -75, 75);
   car.setPosition(p);
   car.setEulerAngles(0, heading, 0);
 
-  wheels.forEach(wheel => wheel.rotateLocal(0, 0, speed * dt * 90));
-  camera.setPosition(p.x, p.y + 5.4, p.z + 10.8);
+  frontWheels.forEach(wheel => wheel.setLocalEulerAngles(0, steeringAngle * 0.55, 90));
+  rearWheels.forEach(wheel => wheel.rotateLocal(0, 0, speed * dt * 85));
+
+  // Smooth follow camera to reduce sudden movement on mobile.
+  const camTarget = new pc.Vec3(p.x, p.y + 5.4, p.z + 10.8);
+  const camPos = camera.getPosition();
+  camPos.lerp(camPos, camTarget, 1 - Math.pow(0.001, dt));
+  camera.setPosition(camPos);
   camera.lookAt(p.x, p.y + 0.65, p.z - 3.2);
+
   if (speedValue) speedValue.textContent = Math.round(Math.abs(speed) * 3.6).toString().padStart(3, "0");
+  if (gearValue) gearValue.textContent = speed > 0.6 ? "D" : speed < -0.6 ? "R" : "N";
 });
 
 app.start();
