@@ -575,7 +575,7 @@ const cycleLabel=document.createElement("div");cycleLabel.className="cycle-statu
 const skyDome=new pc.Entity("NOVA sky dome");
 skyDome.addComponent("render",{type:"sphere"});
 skyDome.setLocalScale(900,900,900);app.root.addChild(skyDome);
-const skyMaterial=new pc.StandardMaterial();skyMaterial.diffuse=new pc.Color(.43,.63,.86);skyMaterial.emissive=new pc.Color(.43,.63,.86);skyMaterial.emissiveIntensity=.35;skyMaterial.cull="FRONT";skyMaterial.update();skyDome.render.meshInstances[0].material=skyMaterial;
+const skyMaterial=new pc.StandardMaterial();skyMaterial.diffuse=new pc.Color(.43,.63,.86);skyMaterial.emissive=new pc.Color(.43,.63,.86);skyMaterial.emissiveIntensity=.35;skyMaterial.cull=pc.CULLFACE_FRONT;skyMaterial.update();skyDome.render.meshInstances[0].material=skyMaterial;
 function updateWorldLighting(dt){
  worldTime=(worldTime+dt/cycleDuration)%1;
  const daylight=clamp((Math.sin((worldTime-.25)*Math.PI*2)+.18)/1.18,0,1);
@@ -772,7 +772,7 @@ camera.addComponent("camera", {
   clearColor: new pc.Color(0.23, 0.34, 0.49),
   fov: 62,
   nearClip: 0.1,
-  farClip: 300
+  farClip: 1000
 });
 app.root.addChild(camera);
 
