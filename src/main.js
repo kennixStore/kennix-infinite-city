@@ -249,32 +249,37 @@ createTrafficCar(2.55, -25, -1, 1, 8.5);
 createTrafficCar(-2.55, 11, 1, 2, 9);
 createTrafficCar(2.55, 62, -1, 3, 11);
 
-// Pedestrian figures on the sidewalks (visual prototype, not animated AI yet).
+// Pedestrian figures with simple looping walk cycles along the sidewalks.
 const skinMat = makeMat([0.55, 0.34, 0.22]);
-const clothingMats = [
-  makeMat([0.12, 0.22, 0.48]),
-  makeMat([0.48, 0.12, 0.09]),
-  makeMat([0.12, 0.34, 0.2]),
-  makeMat([0.34, 0.27, 0.16])
-];
-function createPedestrian(x, z, outfit, facing = 0) {
-  const person = new pc.Entity("Sidewalk pedestrian");
-  person.setPosition(x, 0.12, z);
-  person.setEulerAngles(0, facing, 0);
-  app.root.addChild(person);
+const clothingMats = [makeMat([0.12, 0.22, 0.48]), makeMat([0.48, 0.12, 0.09]), makeMat([0.12, 0.34, 0.2]), makeMat([0.34, 0.27, 0.16])];
+const pedestrians = [];
+function createPedestrian(x, z, outfit, facing = 0, walkDirection = 1) {
+  const person = new pc.Entity("Walking pedestrian");
+  person.setPosition(x, 0.12, z); person.setEulerAngles(0, facing, 0); app.root.addChild(person);
   block("Pedestrian torso", [0, 0.98, 0], [0.48, 0.78, 0.28], clothingMats[outfit % clothingMats.length], person);
   block("Pedestrian head", [0, 1.58, -0.015], [0.34, 0.36, 0.34], skinMat, person, "sphere");
+  const legs = []; const arms = [];
   for (const side of [-1, 1]) {
-    block("Pedestrian leg", [side * 0.13, 0.43, 0], [0.16, 0.62, 0.18], mats.dark, person);
-    block("Pedestrian arm", [side * 0.31, 1.02, 0], [0.14, 0.58, 0.16], clothingMats[outfit % clothingMats.length], person);
+    legs.push(block("Pedestrian leg", [side * 0.13, 0.43, 0], [0.16, 0.62, 0.18], mats.dark, person));
+    arms.push(block("Pedestrian arm", [side * 0.31, 1.02, 0], [0.14, 0.58, 0.16], clothingMats[outfit % clothingMats.length], person));
+  }
+  pedestrians.push({ entity: person, legs, arms, phase: outfit * 0.9, direction: walkDirection, minZ: -72, maxZ: 72 });
+}
+createPedestrian(-9.1, -51, 0, 90, 1); createPedestrian(9.1, -35, 1, -90, -1);
+createPedestrian(-9.1, -5, 2, 90, 1); createPedestrian(9.1, 22, 3, -90, -1); createPedestrian(-9.1, 61, 1, 90, -1);
+
+// Traffic signal props at the two main junctions.
+const signalLamps = [];
+const signalRed = makeMat([0.62, 0.025, 0.018]); const signalGreen = makeMat([0.025, 0.48, 0.12]);
+for (const junctionZ of [-43, 39]) {
+  for (const side of [-1, 1]) {
+    block("Traffic signal pole", [side * 6.8, 2.1, junctionZ - 5.2], [0.13, 4.2, 0.13], mats.metal);
+    block("Traffic signal housing", [side * 6.8, 4.0, junctionZ - 5.2], [0.48, 1.25, 0.34], mats.dark);
+    const redLamp = block("Traffic red lamp", [side * 6.8, 4.35, junctionZ - 5.0], [0.22, 0.22, 0.08], signalRed, app.root, "sphere");
+    const greenLamp = block("Traffic green lamp", [side * 6.8, 3.65, junctionZ - 5.0], [0.22, 0.22, 0.08], signalGreen, app.root, "sphere");
+    signalLamps.push({ red: redLamp, green: greenLamp });
   }
 }
-createPedestrian(-9.1, -51, 0, 90);
-createPedestrian(9.1, -35, 1, -90);
-createPedestrian(-9.1, -5, 2, 90);
-createPedestrian(9.1, 22, 3, -90);
-createPedestrian(-9.1, 61, 1, 90);
-
 const camera = new pc.Entity("Chase camera");
 camera.addComponent("camera", {
   clearColor: new pc.Color(0.23, 0.34, 0.49),
@@ -376,14 +381,40 @@ app.on("update", dt => {
   rearWheels.forEach(wheel => wheel.rotateLocal(0, 0, speed * dt * 85));
 
   // Keep pedestrians visual-only for this milestone; no unsafe or misleading collision claims.
+  // Sidewalk pedestrians walk with alternating arm and leg swings.
+  for (const pedestrian of pedestrians) {
+    pedestrian.phase += dt * 5.2;
+    const swing = Math.sin(pedestrian.phase) * 0.42;
+    pedestrian.legs[0].setLocalEulerAngles(swing * 55, 0, 0);
+    pedestrian.legs[1].setLocalEulerAngles(-swing * 55, 0, 0);
+    pedestrian.arms[0].setLocalEulerAngles(-swing * 38, 0, 0);
+    pedestrian.arms[1].setLocalEulerAngles(swing * 38, 0, 0);
+    const position = pedestrian.entity.getPosition();
+    position.z += pedestrian.direction * 0.48 * dt;
+    if (position.z > pedestrian.maxZ) { position.z = pedestrian.maxZ; pedestrian.direction = -1; }
+    if (position.z < pedestrian.minZ) { position.z = pedestrian.minZ; pedestrian.direction = 1; }
+    pedestrian.entity.setPosition(position);
+  }
+  const trafficPhase = Math.floor(app.clock.elapsedTime / 8) % 2;
+  const greenDirection = trafficPhase === 0 ? 1 : -1;
+  for (const lamps of signalLamps) {
+    lamps.green.render.material = greenDirection === 1 ? signalGreen : signalRed;
+    lamps.red.render.material = greenDirection === -1 ? signalGreen : signalRed;
+  }
+
   // Move NPC traffic and recycle vehicles at the ends of the test district.
   for (const npc of traffic) {
     const npcPos = npc.entity.getPosition();
-    npcPos.z += npc.direction * npc.cruiseSpeed * dt;
+    npc.hitCooldown = Math.max(0, npc.hitCooldown - dt);
+    let trafficStopped = false;
+    for (const junctionZ of [-43, 39]) {
+      const distanceToJunction = (junctionZ - npcPos.z) * npc.direction;
+      if (distanceToJunction > 0 && distanceToJunction < 8 && npc.direction !== greenDirection) { trafficStopped = true; break; }
+    }
+    if (!trafficStopped) npcPos.z += npc.direction * npc.cruiseSpeed * dt;
     if (npcPos.z < -82) npcPos.z = 82;
     if (npcPos.z > 82) npcPos.z = -82;
     npc.entity.setPosition(npcPos);
-    npc.hitCooldown = Math.max(0, npc.hitCooldown - dt);
 
     // Basic low-cost contact response; full rigid-body collisions come later.
     const dx = npcPos.x - p.x;
