@@ -161,7 +161,8 @@ controls.innerHTML = `
     <button data-control="right" aria-label="Steer right">▶</button>
   </div>
   <div class="pedals">
-    <button data-control="brake" aria-label="Brake">BRAKE</button>
+    <button data-control="brake" aria-label="Brake and reverse">BRAKE</button>
+    <button data-control="handbrake" aria-label="Handbrake">HANDBRAKE</button>
     <button data-control="gas" aria-label="Accelerate">GAS</button>
   </div>`;
 document.querySelector("#game-stage").appendChild(controls);
