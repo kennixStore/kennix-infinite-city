@@ -6,7 +6,7 @@ An original browser-first 3D open-world driving and action game prototype built 
 - Procedural NOVA CITY road grid and district blocks.
 - Four procedural vehicle silhouettes and tuning profiles.
 - Paint selection and local garage persistence.
-- Traffic with probabilistic grid-junction turning, pedestrians, driving controls, camera modes, collision response and repairs.
+- Traffic with probabilistic grid-junction turning, pedestrians, driving controls, camera modes, collision response, repairs and prototype petrol stations with fuel consumption/refuelling.
 - Police pursuit prototype and three-step local story campaign.
 - Street sprint and distance objective.
 

@@ -362,6 +362,28 @@ for (const x of [-1.04, 1.04]) {
   }
 }
 
+// Interactive fuel stations with local fuel gauge and proximity-based refuelling.
+const fuelStations=[];
+const canopyMat=makeMat([.07,.11,.16],.45,.28), stationGold=makeMat([.92,.68,.18],.3,.35), pumpMat=makeMat([.78,.8,.82],.25,.35);
+function buildFuelStation(x,z,label){
+ const root=new pc.Entity(label);app.root.addChild(root);root.setPosition(x,0,z);
+ block("Fuel forecourt",[0,.025,0],[22,.08,18],mats.concrete,root);
+ block("Fuel canopy roof",[0,4.1,0],[17,.42,12],canopyMat,root);
+ block("Fuel canopy trim",[0,3.85,0],[17,.12,.22],stationGold,root);
+ for(const sx of [-7.3,7.3])for(const sz of [-4.8,4.8])block("Canopy support",[sx,1.95,sz],[.22,3.9,.22],mats.metal,root);
+ for(const px of [-4.3,0,4.3]){
+  block("Fuel pump base",[px,.55,0],[1.05,1.1,.9],pumpMat,root);
+  block("Fuel pump display",[px,.98,-.48],[.68,.4,.06],mats.dark,root);
+  block("Fuel pump nozzle",[px+.52,.65,-.12],[.12,.48,.12],stationGold,root);
+  block("Fuel pump hose",[px+.58,.52,.2],[.07,.62,.07],mats.dark,root);
+ }
+ block("Station shop",[0,1.5,8],[8,3,4],districtPalettes[0],root);
+ block("Station shop window",[0,1.55,5.94],[4.8,1.5,.08],mats.glass,root);
+ fuelStations.push({label,x,z});
+}
+buildFuelStation(75,0,"NOVA FUEL • DOWNTOWN");
+buildFuelStation(-135,140,"NOVA FUEL • INDUSTRIAL");
+
 // Lightweight ambient traffic: simple NPC cars circulate along the avenue.
 const trafficPaints = [
   makeMat([0.62, 0.08, 0.045], 0.35, 0.3),
@@ -616,6 +638,10 @@ gameOverlay.querySelector("#start-drive").addEventListener("click",()=>{raceActi
 gameOverlay.querySelector("#start-race").addEventListener("click",()=>{raceActive=true;raceCheckpoint=0;raceStart=performance.now();raceGates.forEach((g,i)=>g.enabled=i===0);const q=car.getPosition();q.x=0;q.z=19;car.setPosition(q);speed=0;lateralSpeed=0;hideGarage()});
 gameOverlay.querySelector("#repair-car").addEventListener("click",()=>{damage=0;try{localStorage.setItem("kxic-damage","0")}catch{}speed=0;lateralSpeed=0;refreshVehicleDamage();refreshGarage()});
 
+const fuelLabel=document.createElement("div");fuelLabel.className="fuel-status";fuelLabel.textContent="FUEL 100%";document.querySelector("#game-stage").appendChild(fuelLabel);
+const refuelButton=document.createElement("button");refuelButton.className="refuel-button";refuelButton.textContent="REFUEL";refuelButton.hidden=true;document.querySelector("#game-stage").appendChild(refuelButton);
+let fuel=100;try{fuel=clamp(Number(localStorage.getItem("kxic-fuel")??100),0,100)}catch{}
+refuelButton.addEventListener("click",()=>{if(fuel<99.5){fuel=100;try{localStorage.setItem("kxic-fuel","100")}catch{}fuelLabel.textContent="FUEL 100%";refuelButton.textContent="TANK FULL"}});
 const utilityBar=document.createElement("div");utilityBar.className="utility-bar";utilityBar.innerHTML='<button id="garage-open">GARAGE</button><button id="camera-toggle">CAMERA: CHASE</button><button id="audio-toggle">SOUND: OFF</button><button id="horn-button">HORN</button><button id="pause-toggle">PAUSE</button>';document.querySelector("#game-stage").appendChild(utilityBar);
 utilityBar.querySelector("#garage-open").addEventListener("click",()=>showGarage("CITY GARAGE","Select a vehicle, choose paint and repair damage."));
 utilityBar.querySelector("#pause-toggle").addEventListener("click",()=>gamePaused?hideGarage():showGarage("PAUSED","Take a break or return to the garage."));
@@ -838,6 +864,11 @@ function isDown(...names) {
 
 app.on("update", dt => {
   if(gamePaused)return;
+  const posForStation=car.getPosition();
+  const station=fuelStations.find(item=>Math.hypot(posForStation.x-item.x,posForStation.z-item.z)<15);
+  refuelButton.hidden=!station;
+  if(station)refuelButton.textContent=fuel>=99.5?"TANK FULL":"REFUEL AT "+station.label+" • KX 250";
+  fuelLabel.textContent="FUEL "+Math.round(fuel)+"%";
   const forward = isDown("w", "arrowup", "gas");
   const reverse = isDown("s", "arrowdown", "brake");
   const left = isDown("a", "arrowleft", "left");
@@ -846,7 +877,8 @@ app.on("update", dt => {
 
   // More grounded arcade handling: throttle, braking, coasting and tyre grip.
   // The brake input slows the car first, then engages reverse at low speed.
-  if (forward) {
+  if(forward&&fuel>0)fuel=Math.max(0,fuel-dt*(.018+Math.abs(speed)*.0009));
+  if(forward&&fuel>0){
     speed += (speed < 0 ? 26 : selectedVehicle.acceleration) * dt;
   } else if (reverse) {
     speed -= (speed > 0 ? 25 : 7.5) * dt;
@@ -876,6 +908,7 @@ app.on("update", dt => {
   const rightX = Math.cos(radians);
   const rightZ = Math.sin(radians);
   const p = car.getPosition();
+  if(fuel<=0.01&&speed>0)speed=Math.max(0,speed-8*dt);
   const nextX = p.x + (forwardX * speed + rightX * lateralSpeed) * dt;
   const nextZ = p.z + (forwardZ * speed + rightZ * lateralSpeed) * dt;
 

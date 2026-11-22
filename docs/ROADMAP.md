@@ -19,6 +19,8 @@
 - [x] Authenticated transactional KX transfer RPC with row locks and idempotency.
 - [x] GitHub Actions syntax and production-build checks restored.
 
+- [x] Two visible NOVA FUEL stations with local fuel gauge, fuel consumption and proximity refuelling (prototype; KX payment integration pending).
+
 ## Still required
 - [ ] Apply migration in Supabase and configure build environment variables.
 - [ ] Deploy Supabase schema, configure credentials, and test account, profile, wallet and cloud-save UI end-to-end.
