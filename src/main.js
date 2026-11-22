@@ -1,5 +1,6 @@
 import * as pc from "playcanvas";
 import "./style.css";
+import { backendConfigured, createPlayerAccount, signInPlayer, signOutPlayer, getPlayerSession, savePlayerProgress, loadPlayerProgress, getKXBalance, transferKX } from "./backend.js";
 
 const canvas = document.querySelector("#application");
 const app = new pc.Application(canvas, {
@@ -492,6 +493,40 @@ gameOverlay.querySelector(".paint-list").addEventListener("click",e=>{const b=e.
 gameOverlay.querySelector("#start-drive").addEventListener("click",()=>{raceActive=false;raceGates.forEach(g=>g.enabled=false);hideGarage()});
 gameOverlay.querySelector("#start-race").addEventListener("click",()=>{raceActive=true;raceCheckpoint=0;raceStart=performance.now();raceGates.forEach((g,i)=>g.enabled=i===0);const q=car.getPosition();q.x=0;q.z=19;car.setPosition(q);speed=0;lateralSpeed=0;hideGarage()});
 gameOverlay.querySelector("#repair-car").addEventListener("click",()=>{damage=0;speed=0;lateralSpeed=0;refreshGarage()});
+
+const accountButton=document.createElement("button");
+accountButton.textContent="ACCOUNT / KX";
+utilityBar.appendChild(accountButton);
+const onlinePanel=document.createElement("section");
+onlinePanel.className="game-overlay hidden";
+onlinePanel.innerHTML='<div class="game-panel"><div class="panel-kicker">KENNIX ONLINE</div><h1>DRIVER ACCOUNT</h1><p id="online-status">Create an account or sign in.</p><div id="account-form"><label class="online-label">DRIVER NAME<input id="account-name" maxlength="24"></label><label class="online-label">EMAIL<input id="account-email" type="email"></label><label class="online-label">PASSWORD<input id="account-password" type="password" minlength="8"></label><div class="panel-actions"><button id="account-create" class="primary-action">CREATE ACCOUNT</button><button id="account-login">SIGN IN</button></div></div><div id="account-tools" hidden><h2 id="kx-balance">KX —</h2><button id="wallet-refresh">REFRESH WALLET</button><label class="online-label">RECIPIENT USER ID<input id="transfer-recipient"></label><label class="online-label">AMOUNT<input id="transfer-amount" type="number" min="1" max="100000"></label><button id="transfer-kx">TRANSFER KX</button><button id="cloud-save">SAVE TO CLOUD</button><button id="cloud-load">LOAD CLOUD SAVE</button><button id="account-logout">SIGN OUT</button></div><small id="online-note">Requires the Supabase migration and hosting environment variables. Never share your password.</small><button id="online-close">CLOSE</button></div>';
+document.querySelector("#game-stage").appendChild(onlinePanel);
+const onlineStatus=onlinePanel.querySelector("#online-status");
+const accountForm=onlinePanel.querySelector("#account-form");
+const accountTools=onlinePanel.querySelector("#account-tools");
+const accountEmail=onlinePanel.querySelector("#account-email");
+const accountPassword=onlinePanel.querySelector("#account-password");
+const accountName=onlinePanel.querySelector("#account-name");
+const walletLabel=onlinePanel.querySelector("#kx-balance");
+function openAccount(){gamePaused=true;gameOverlay.classList.add("hidden");onlinePanel.classList.remove("hidden");refreshAccount()}
+async function refreshAccount(){
+ if(!backendConfigured){onlineStatus.textContent="Backend not configured. Add the Supabase project URL and publishable key to the hosting build settings.";accountForm.hidden=false;accountTools.hidden=true;return}
+ try{const session=await getPlayerSession();const signed=Boolean(session?.user);accountForm.hidden=signed;accountTools.hidden=!signed;onlineStatus.textContent=signed?"Signed in: "+(session.user.user_metadata?.display_name||session.user.email):"Create an account or sign in.";if(signed)await refreshWallet()}
+ catch(error){onlineStatus.textContent=error.message}
+}
+async function refreshWallet(){walletLabel.textContent="KX "+(await getKXBalance()).toLocaleString("en-US")}
+async function runOnline(button,task){const label=button.textContent;button.disabled=true;button.textContent="PLEASE WAIT";try{await task()}catch(error){onlineStatus.textContent=error.message||"Request failed"}finally{button.disabled=false;button.textContent=label}}
+accountButton.addEventListener("click",openAccount);
+onlinePanel.querySelector("#account-create").addEventListener("click",e=>runOnline(e.currentTarget,async()=>{if(accountPassword.value.length<8)throw new Error("Password must be at least 8 characters.");await createPlayerAccount(accountEmail.value.trim(),accountPassword.value,accountName.value.trim());accountPassword.value="";onlineStatus.textContent="Registration submitted. Confirm your email if requested.";await refreshAccount()}));
+onlinePanel.querySelector("#account-login").addEventListener("click",e=>runOnline(e.currentTarget,async()=>{await signInPlayer(accountEmail.value.trim(),accountPassword.value);accountPassword.value="";await refreshAccount()}));
+onlinePanel.querySelector("#account-logout").addEventListener("click",e=>runOnline(e.currentTarget,async()=>{await signOutPlayer();await refreshAccount()}));
+onlinePanel.querySelector("#wallet-refresh").addEventListener("click",e=>runOnline(e.currentTarget,refreshWallet));
+onlinePanel.querySelector("#transfer-kx").addEventListener("click",e=>runOnline(e.currentTarget,async()=>{const recipient=onlinePanel.querySelector("#transfer-recipient").value.trim();const amount=Number(onlinePanel.querySelector("#transfer-amount").value);const key=globalThis.crypto?.randomUUID?.()||("kx-"+Date.now()+"-"+Math.random().toString(36).slice(2));const result=await transferKX(recipient,amount,key);onlineStatus.textContent="Transfer: "+result.status;await refreshWallet()}));
+function cloudProgress(){return {level:1,xp:0,selected_vehicle:selectedVehicle.id,paint:"#"+selectedPaint.map(v=>Math.round(v*255).toString(16).padStart(2,"0")).join(""),campaign_step:Number(localStorage.getItem("kxic-story-progress")||0)}}
+onlinePanel.querySelector("#cloud-save").addEventListener("click",e=>runOnline(e.currentTarget,async()=>{await savePlayerProgress(cloudProgress());onlineStatus.textContent="Progress saved to your account."}));
+onlinePanel.querySelector("#cloud-load").addEventListener("click",e=>runOnline(e.currentTarget,async()=>{const progress=await loadPlayerProgress();if(!progress){onlineStatus.textContent="No cloud save found.";return}const chosen=vehicleCatalog.find(v=>v.id===progress.selected_vehicle);if(chosen)selectedVehicle=chosen;const match=/^#([0-9a-f]{6})$/i.exec(progress.paint||"");if(match){const hex=match[1];setPlayerPaint([0,2,4].map(i=>parseInt(hex.slice(i,i+2),16)/255))}localStorage.setItem("kxic-story-progress",String(progress.campaign_step||0));refreshGarage();onlineStatus.textContent="Cloud progress loaded."}));
+onlinePanel.querySelector("#online-close").addEventListener("click",()=>{onlinePanel.classList.add("hidden");if(gameOverlay.classList.contains("hidden"))gamePaused=false});
+
 const utilityBar=document.createElement("div");utilityBar.className="utility-bar";utilityBar.innerHTML='<button id="garage-open">GARAGE</button><button id="camera-toggle">CAMERA: CHASE</button><button id="pause-toggle">PAUSE</button>';document.querySelector("#game-stage").appendChild(utilityBar);
 utilityBar.querySelector("#garage-open").addEventListener("click",()=>showGarage("CITY GARAGE","Select a vehicle, choose paint and repair damage."));
 utilityBar.querySelector("#pause-toggle").addEventListener("click",()=>gamePaused?hideGarage():showGarage("PAUSED","Take a break or return to the garage."));
