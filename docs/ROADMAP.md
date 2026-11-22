@@ -6,6 +6,7 @@
 - [x] Four primitive-built vehicle silhouettes and tuning presets.
 - [x] Paint selection, local garage persistence and camera modes.
 - [x] Traffic, pedestrian, collision, repair and sprint prototypes.
+- [x] Probabilistic NPC turns between north-south avenues and east-west cross streets (prototype; runtime tuning pending).
 - [x] Police interceptor pursuit with steering, chase acceleration, capture and escape timers.
 - [x] Three-step story campaign with mission failure and retry flow.
 - [x] Waterfront, Market Quarter and Industrial Edge district landmarks.

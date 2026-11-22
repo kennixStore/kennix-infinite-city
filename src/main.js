@@ -984,10 +984,27 @@ app.on("update", dt => {
       npcPos.z+=npc.direction*npc.currentSpeed*dt;
       if(npcPos.z<-258)npcPos.z=258;
       if(npcPos.z>258)npcPos.z=-258;
+      // A subset of NPCs turn onto cross avenues at real grid junctions.
+      if((npc.turns||0)<2 && Math.random()<0.012){
+        const junction=districtRoads.reduce((best,z)=>Math.abs(z-npcPos.z)<Math.abs(best-npcPos.z)?z:best,districtRoads[0]);
+        if(Math.abs(junction-npcPos.z)<Math.max(1.2,npc.currentSpeed*dt+0.35)){
+          npcPos.z=junction+(npc.direction>0?-2.55:2.55);
+          npc.axis="x";npc.direction=Math.random()<0.5?1:-1;npc.turns=(npc.turns||0)+1;
+          npc.entity.setEulerAngles(0,npc.direction>0?90:-90,0);
+        }
+      }
     }else{
       npcPos.x+=npc.direction*npc.currentSpeed*dt;
       if(npcPos.x<-158)npcPos.x=158;
       if(npcPos.x>158)npcPos.x=-158;
+      if((npc.turns||0)<2 && Math.random()<0.012){
+        const junction=[-120,-60,60,120].reduce((best,x)=>Math.abs(x-npcPos.x)<Math.abs(best-npcPos.x)?x:best,-120);
+        if(Math.abs(junction-npcPos.x)<Math.max(1.2,npc.currentSpeed*dt+0.35)){
+          npcPos.x=junction+(npc.direction>0?-2.55:2.55);
+          npc.axis="z";npc.direction=Math.random()<0.5?1:-1;npc.turns=(npc.turns||0)+1;
+          npc.entity.setEulerAngles(0,npc.direction>0?0:180,0);
+        }
+      }
     }
     npc.entity.setPosition(npcPos);
 
