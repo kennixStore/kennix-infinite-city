@@ -943,6 +943,10 @@ function buildVehicleModel(vehicle){
    const wheelX=side*width*.49;
    const wheelPivot=new pc.Entity("Suspended wheel assembly");
    wheelPivot.setLocalPosition(wheelX,.28,z);
+   // Store per-corner spring state so each wheel can travel independently.
+   wheelPivot.suspensionBaseY=.28;
+   wheelPivot.suspensionOffset=0;
+   wheelPivot.suspensionVelocity=0;
    root.addChild(wheelPivot);
    const tyre=block("Performance tyre",[0,0,0],[tyreDiameter,tyreWidth,tyreDiameter],trimMat,wheelPivot,"cylinder");
    tyre.setLocalEulerAngles(0,0,90);
@@ -1532,7 +1536,18 @@ app.on("update", dt => {
   // The cockpit steering wheel follows the same smoothed steering input as the front tyres.
   if(activeSteeringWheel) activeSteeringWheel.setLocalEulerAngles(90,0,steeringAngle*2.8);
   activeVehicleWheels.forEach((wheel,index)=>{
-    const steer=index<2 ? steeringAngle*.55 : 0;
+    const isFront=index<2;
+    const isLeft=index%2===0;
+    const steer=isFront ? steeringAngle*.55 : 0;
+    // Chassis pitch and cornering load each suspension corner independently.
+    const pitchLoad=bodyPitch*(isFront?-1:1)*.012;
+    const cornerLoad=steeringAngle*speedRatio*(isLeft?1:-1)*.0009;
+    const targetTravel=clamp(pitchLoad+cornerLoad,-.055,.055);
+    const springForce=(targetTravel-wheel.suspensionOffset)*85;
+    wheel.suspensionVelocity+=(springForce-wheel.suspensionVelocity*14)*dt;
+    wheel.suspensionOffset=clamp(wheel.suspensionOffset+wheel.suspensionVelocity*dt,-.06,.06);
+    const wheelPosition=wheel.getLocalPosition();
+    wheel.setLocalPosition(wheelPosition.x,wheel.suspensionBaseY+wheel.suspensionOffset,wheelPosition.z);
     wheel.setLocalEulerAngles(wheelSpinAngle,steer,0);
   });
 
