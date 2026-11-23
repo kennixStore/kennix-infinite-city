@@ -848,6 +848,7 @@ function buildVehicleModel(vehicle){
  const reverseMat=makeMat([.9,.94,1],.08,.18);reverseMat.emissive=new pc.Color(.72,.82,1);reverseMat.update();
  const reverseOffMat=makeMat([.34,.37,.4],.08,.28);
  const wheelList=[],paintParts=[],indicators=[],reverseLamps=[];
+ const caliperMat=makeMat(kind==="muscle"?[.72,.045,.018]:kind==="hyper"?[.025,.22,.62]:kind==="suv"?[.68,.48,.08]:[.62,.055,.035],.62,.28);
  const tyreTreadMat=makeMat([.045,.05,.055],.08,.9);
   let steeringWheel;
  const kind=vehicle.id;
@@ -1052,11 +1053,15 @@ function buildVehicleModel(vehicle){
    block("Machined alloy rim",[rimX,0,0],[rimDiameter,tyreWidth*.22,rimDiameter],chromeMat,wheelPivot,"cylinder").setLocalEulerAngles(0,0,90);
    block("Brake disc",[side*tyreWidth*.43,0,0],[rimDiameter*.78,.045,rimDiameter*.78],mats.metal,wheelPivot,"cylinder").setLocalEulerAngles(0,0,90);
    block("Wheel centre cap",[rimX+side*.035,0,0],[.12,.075,.12],mats.paint,wheelPivot,"cylinder").setLocalEulerAngles(0,0,90);
-   for(let spoke=0;spoke<5;spoke++){
-    const angle=spoke*Math.PI*2/5;
-    const part=block("Five spoke alloy detail",[rimX+side*.04,Math.sin(angle)*rimDiameter*.3,Math.cos(angle)*rimDiameter*.3],[.045,rimDiameter*.44,.055],chromeMat,wheelPivot);
+   const spokeCount=kind==="suv"?6:kind==="muscle"?5:kind==="hyper"?10:7;
+   for(let spoke=0;spoke<spokeCount;spoke++){
+    const angle=spoke*Math.PI*2/spokeCount;
+    const spokeWidth=kind==="hyper"?.032:kind==="muscle"?.065:.045;
+    const part=block(kind+" alloy wheel spoke",[rimX+side*.04,Math.sin(angle)*rimDiameter*.3,Math.cos(angle)*rimDiameter*.3],[spokeWidth,rimDiameter*.44,.055],chromeMat,wheelPivot);
     part.setLocalEulerAngles(angle*180/Math.PI,0,0);
    }
+   const caliper=block("Performance brake caliper",[side*tyreWidth*.49,0,rimDiameter*.18],[.11,rimDiameter*.38,.16],caliperMat,wheelPivot);
+   caliper.setLocalEulerAngles(0,0,12);
    wheelList.push(wheelPivot);
   }
  }
