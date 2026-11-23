@@ -1066,6 +1066,28 @@ function buildVehicleModel(vehicle){
   block("Front grille horizontal slat",[0,.41+slat*.035,-length*.5-.13],[.78,.018,.025],mats.metal,root);
  }
  block("Lower air intake",[0,.25,-length*.5-.07],[1.45,.12,.08],trimMat,root);
+ // Give each class its own front-end identity instead of reusing one grille.
+ if(kind==="suv"){
+  block("SUV upright grille",[0,.48,-length*.5-.105],[.9,.42,.075],chromeMat,root);
+  for(let bar=-3;bar<=3;bar++)block("SUV vertical grille bar",[bar*.115,.48,-length*.5-.15],[.025,.34,.025],mats.metal,root);
+  const skid=block("SUV brushed skid plate",[0,.19,-length*.5-.15],[1.55,.12,.16],chromeMat,root);
+  block("SUV raised bumper guard",[0,.34,-length*.5-.12],[1.82,.12,.14],trimMat,root);
+ }else if(kind==="muscle"){
+  const scoop=block("Muscle car bonnet scoop",[0,.66,-1.12],[.72,.17,.72],trimMat,root);
+  block("Muscle wide grille",[0,.45,-length*.5-.145],[1.35,.23,.045],chromeMat,root);
+  for(let bar=-4;bar<=4;bar++)block("Muscle grille slat",[bar*.14,.45,-length*.5-.18],[.018,.19,.018],mats.metal,root);
+  for(const side of [-1,1])block("Muscle front air vent",[side*.78,.31,-length*.5-.14],[.28,.18,.045],trimMat,root);
+ }else if(kind==="hyper"){
+  block("Hypercar central intake",[0,.35,-length*.5-.17],[1.48,.24,.07],trimMat,root);
+  for(const side of [-1,1]){
+   block("Hypercar vertical aero blade",[side*.82,.29,-length*.5-.2],[.09,.27,.22],chromeMat,root);
+   block("Hypercar bumper canard",[side*1.02,.23,-length*.5-.25],[.28,.055,.38],trimMat,root);
+  }
+  block("Hypercar bonnet centre channel",[0,.59,-1.45],[.16,.035,.92],trimMat,root);
+ }else{
+  block("Sport wide lower grille",[0,.34,-length*.5-.15],[1.28,.18,.045],chromeMat,root);
+  for(const side of [-1,1])block("Sport bonnet crease",[side*.55,.59,-1.28],[.035,.025,.92],chromeMat,root);
+ }
  for(const side of [-1,1]){
   block("Front fog lamp bezel",[side*.78,.3,-length*.5-.085],[.34,.16,.07],trimMat,root);
   block("Front fog lamp lens",[side*.78,.3,-length*.5-.13],[.22,.085,.025],lampMat,root);
@@ -1079,6 +1101,18 @@ function buildVehicleModel(vehicle){
  block("Front splitter",[0,.18,-length*.5-.12],[width*1.02,.08,.42],trimMat,root);
  block("Front bumper lower lip",[0,.29,-length*.5-.095],[width*.94,.09,.16],chromeMat,root);
  block("Rear diffuser",[0,.19,length*.5+.06],[width*.78,.12,.38],trimMat,root);
+ if(kind==="suv"){
+  block("SUV rear bumper step",[0,.22,length*.5+.14],[1.55,.12,.2],chromeMat,root);
+  for(const side of [-1,1])block("SUV rear reflector",[side*.82,.39,length*.5+.1],[.16,.22,.045],rearSignatureMat,root);
+ }else if(kind==="muscle"){
+  block("Muscle rear deck spoiler",[0,.91,length*.36],[1.75,.12,.34],bodyMat,root);
+  for(const side of [-1,1])block("Muscle rear exhaust surround",[side*.68,.25,length*.5+.16],[.34,.18,.08],chromeMat,root);
+ }else if(kind==="hyper"){
+  for(let fin=-3;fin<=3;fin++)block("Hypercar diffuser fin",[fin*.19,.16,length*.5+.2],[.045,.18,.52],chromeMat,root);
+  block("Hypercar active rear wing",[0,1.02,length*.43],[2.12,.075,.24],chromeMat,root);
+ }else{
+  block("Sport rear lip spoiler",[0,.91,length*.4],[1.55,.075,.22],bodyMat,root);
+ }
  block("Rear bumper valance",[0,.3,length*.5+.045],[width*.9,.13,.12],trimMat,root);
  for(const exhaustSide of [-1,1]){
   block("Polished exhaust tip",[exhaustSide*.62,.27,length*.5+.18],[.2,.14,.18],chromeMat,root,"cylinder").setLocalEulerAngles(90,0,0);
