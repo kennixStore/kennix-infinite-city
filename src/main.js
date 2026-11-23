@@ -1148,8 +1148,16 @@ function buildVehicleModel(vehicle){
  ];
  const bumperDamage=block("Bent front bumper",[0,.2,-length*.5-.12],[width*.9,.13,.2],damageMat,root);
  const brokenLamp=block("Broken headlamp cover",[width*.65,.59,-length*.5-.065],[.5,.2,.09],damageMat,root);
- const windshieldCrack=block("Windshield crack",[0,1.13,-.48],[.72,.025,.035],damageMat,root);
- const damageParts={scratchParts,bumperDamage,brokenLamp,windshieldCrack};
+ const windshieldCrack=block("Windshield crack main",[0,1.13,-.48],[.72,.025,.035],damageMat,root);
+ const windshieldCracks=[
+  windshieldCrack,
+  block("Windshield crack branch left",[-.22,1.135,-.5],[.025,.022,.48],damageMat,root),
+  block("Windshield crack branch right",[.2,1.135,-.51],[.025,.022,.42],damageMat,root),
+  block("Windshield crack upper fracture",[.02,1.145,-.66],[.48,.02,.025],damageMat,root),
+  block("Rear quarter panel scrape left",[-width*.505,.53,length*.24],[.025,.1,.42],damageMat,root),
+  block("Rear quarter panel scrape right",[width*.505,.53,length*.24],[.025,.1,.42],damageMat,root)
+ ];
+ const damageParts={scratchParts,bumperDamage,brokenLamp,windshieldCrack,windshieldCracks};
  Object.values(damageParts).flat().forEach(part=>part.enabled=false);
  root.enabled=false;
  return {root,wheels:wheelList,paintParts,brakeLamps,reverseLamps,exhaustFlames,steeringWheel,indicators,bodyMat,damageParts};
@@ -1170,6 +1178,7 @@ function applyVehicleDamage(model,amount=damage){
  parts.bumperDamage.enabled=amount>=40;
  parts.brokenLamp.enabled=amount>=65;
  parts.windshieldCrack.enabled=amount>=85;
+ if(parts.windshieldCracks)parts.windshieldCracks.forEach((part,index)=>part.enabled=amount>=85&&index>0||amount>=55&&index>=4);
  if(amount>=40)parts.bumperDamage.setLocalEulerAngles(0,0,Math.min(12,(amount-35)*.22));
  else parts.bumperDamage.setLocalEulerAngles(0,0,0);
 }
