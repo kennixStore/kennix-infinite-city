@@ -1124,9 +1124,15 @@ window.addEventListener("blur", () => { keys.clear(); held.clear(); });
 const controls = document.createElement("div");
 controls.className = "touch-controls";
 controls.innerHTML = `
-  <div class="steering">
-    <button data-control="left" aria-label="Steer left">◀</button>
-    <button data-control="right" aria-label="Steer right">▶</button>
+  <div class="steering-panel">
+    <button class="steering-mode" type="button" aria-label="Change steering control">STEERING: WHEEL</button>
+    <div class="steering-wheel-control" role="slider" aria-label="Virtual steering wheel" aria-valuemin="-100" aria-valuemax="100" aria-valuenow="0" tabindex="0">
+      <span class="wheel-spoke wheel-spoke-top"></span><span class="wheel-spoke wheel-spoke-left"></span><span class="wheel-spoke wheel-spoke-right"></span><span class="wheel-hub"></span>
+    </div>
+    <div class="steering steering-arrows" hidden>
+      <button data-control="left" aria-label="Steer left">◀</button>
+      <button data-control="right" aria-label="Steer right">▶</button>
+    </div>
   </div>
   <div class="pedals">
     <button data-control="brake" aria-label="Brake and reverse">BRAKE</button>
@@ -1468,7 +1474,35 @@ const raceStatusLabel=document.createElement("div");raceStatusLabel.className="r
 const missionStatusLabel=document.createElement("div");missionStatusLabel.className="mission-status";missionStatusLabel.textContent=`LEVEL ${playerLevel} • ${playerXP} XP • CITY DRIVE ${Math.min(500,Math.floor(drivenDistance))}/500 M`;document.querySelector("#game-stage").appendChild(missionStatusLabel);
 setPlayerPaint(selectedPaint);refreshGarage();showGarage();
 
-controls.querySelectorAll("button").forEach(button => {
+const steeringModeButton=controls.querySelector(".steering-mode");
+const steeringWheelControl=controls.querySelector(".steering-wheel-control");
+const steeringArrows=controls.querySelector(".steering-arrows");
+let steeringMode="wheel",wheelSteeringInput=0;
+function setSteeringMode(mode){
+  steeringMode=mode;
+  steeringModeButton.textContent=mode==="wheel"?"STEERING: WHEEL":"STEERING: ARROWS";
+  steeringWheelControl.hidden=mode!=="wheel";
+  steeringArrows.hidden=mode!=="arrows";
+  wheelSteeringInput=0;
+  steeringWheelControl.style.setProperty("--wheel-turn","0deg");
+  steeringWheelControl.setAttribute("aria-valuenow","0");
+}
+steeringModeButton.addEventListener("click",()=>setSteeringMode(steeringMode==="wheel"?"arrows":"wheel"));
+function updateVirtualWheel(e){
+  const rect=steeringWheelControl.getBoundingClientRect();
+  const centerX=rect.left+rect.width/2;
+  const radius=rect.width*.43;
+  wheelSteeringInput=Math.max(-1,Math.min(1,(centerX-e.clientX)/radius));
+  steeringWheelControl.style.setProperty("--wheel-turn",(-wheelSteeringInput*135)+"deg");
+  steeringWheelControl.setAttribute("aria-valuenow",String(Math.round(wheelSteeringInput*100)));
+}
+steeringWheelControl.addEventListener("pointerdown",e=>{e.preventDefault();steeringWheelControl.setPointerCapture(e.pointerId);updateVirtualWheel(e)});
+steeringWheelControl.addEventListener("pointermove",e=>{if(steeringWheelControl.hasPointerCapture(e.pointerId))updateVirtualWheel(e)});
+const releaseWheel=()=>{wheelSteeringInput=0;steeringWheelControl.style.setProperty("--wheel-turn","0deg");steeringWheelControl.setAttribute("aria-valuenow","0")};
+steeringWheelControl.addEventListener("pointerup",releaseWheel);
+steeringWheelControl.addEventListener("pointercancel",releaseWheel);
+steeringWheelControl.addEventListener("lostpointercapture",releaseWheel);
+controls.querySelectorAll("button[data-control]").forEach(button => {
   const id = button.dataset.control;
   button.addEventListener("pointerdown", e => {
     e.preventDefault();
@@ -1481,6 +1515,7 @@ controls.querySelectorAll("button").forEach(button => {
   button.addEventListener("pointercancel", release);
   button.addEventListener("lostpointercapture", release);
 });
+setSteeringMode("wheel");
 
 let speed = 0;                 // metres per second; forward is negative Z
 let lateralSpeed = 0;          // sideways slip, damped by tyre grip
@@ -1542,7 +1577,7 @@ app.on("update", dt => {
   const targetBodyPitch = clamp(-longitudinalAcceleration*.16,-3,3);
   bodyPitch += (targetBodyPitch-bodyPitch)*Math.min(1,dt*5);
 
-  const steerInput = (left ? 1 : 0) - (right ? 1 : 0);
+  const steerInput = steeringMode==="wheel" ? wheelSteeringInput : (left ? 1 : 0) - (right ? 1 : 0);
   const targetSteering = steerInput * 30;
   steeringAngle += (targetSteering - steeringAngle) * Math.min(1, dt * 7.5);
 
