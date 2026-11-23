@@ -853,7 +853,44 @@ function buildVehicleModel(vehicle){
  const width=kind==="suv"?2.25:kind==="muscle"?2.18:kind==="hyper"?2.02:2.08;
  const length=kind==="suv"?4.65:kind==="muscle"?4.55:kind==="hyper"?4.35:4.25;
  const height=kind==="suv"?1.05:kind==="muscle"?.68:.55;
- const body=block("Vehicle sculpted body",[0,.48,0],[width,height,length],bodyMat,root);paintParts.push(body);
+ const body=block("Vehicle base body",[0,.48,0],[width,height,length],bodyMat,root);
+ body.enabled=false;
+ // Build a continuous rounded body shell from tapered cross-sections.
+ const bodyEntity=new pc.Entity("Smooth sculpted vehicle shell");
+ const bodyMesh=new pc.Mesh(app.graphicsDevice);
+ const bodyPositions=[],bodyIndices=[];
+ const bodyStations=[
+  [-length*.5,width*.34,.25],
+  [-length*.43,width*.72,.39],
+  [-length*.27,width*.94,.47],
+  [0,width*.5,.49],
+  [length*.27,width*.96,.47],
+  [length*.43,width*.78,.4],
+  [length*.5,width*.48,.27]
+ ];
+ const ringSegments=16;
+ bodyStations.forEach(([z,halfWidth,halfHeight])=>{
+  for(let segment=0;segment<ringSegments;segment++){
+   const angle=segment/ringSegments*Math.PI*2;
+   bodyPositions.push(Math.cos(angle)*halfWidth,.48+Math.sin(angle)*halfHeight,z);
+  }
+ });
+ for(let station=0;station<bodyStations.length-1;station++){
+  for(let segment=0;segment<ringSegments;segment++){
+   const a=station*ringSegments+segment;
+   const b=station*ringSegments+(segment+1)%ringSegments;
+   const c=(station+1)*ringSegments+(segment+1)%ringSegments;
+   const d=(station+1)*ringSegments+segment;
+   bodyIndices.push(a,b,d,b,c,d);
+  }
+ }
+ bodyMesh.setPositions(bodyPositions);
+ bodyMesh.setNormals(pc.calculateNormals(bodyPositions,bodyIndices));
+ bodyMesh.setIndices(bodyIndices);
+ bodyMesh.update();
+ bodyEntity.addComponent("render",{meshInstances:[new pc.MeshInstance(bodyMesh,bodyMat,bodyEntity)]});
+ root.addChild(bodyEntity);
+ paintParts.push(bodyEntity);
  const hood=block("Sculpted bonnet",[0,.48+height*.53,-length*.29],[width*.91,.16,length*.34],bodyMat,root);paintParts.push(hood);
  const cabinHeight=kind==="suv"?1.05:kind==="muscle"?.58:.72;
  const cabinZ=kind==="suv"?.02:kind==="muscle"?.12:-.05;
