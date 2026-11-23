@@ -847,6 +847,7 @@ function buildVehicleModel(vehicle){
  const reverseMat=makeMat([.9,.94,1],.08,.18);reverseMat.emissive=new pc.Color(.72,.82,1);reverseMat.update();
  const reverseOffMat=makeMat([.34,.37,.4],.08,.28);
  const wheelList=[],paintParts=[],indicators=[],reverseLamps=[];
+ const tyreTreadMat=makeMat([.045,.05,.055],.08,.9);
   let steeringWheel;
  const kind=vehicle.id;
  const width=kind==="suv"?2.25:kind==="muscle"?2.18:kind==="hyper"?2.02:2.08;
@@ -952,6 +953,13 @@ function buildVehicleModel(vehicle){
    root.addChild(wheelPivot);
    const tyre=block("Performance tyre",[0,0,0],[tyreDiameter,tyreWidth,tyreDiameter],trimMat,wheelPivot,"cylinder");
    tyre.setLocalEulerAngles(0,0,90);
+   // Raised circumferential tread bars add visible tyre texture without heavy geometry.
+   const treadRadius=tyreDiameter*.485;
+   for(let tread=0;tread<16;tread++){
+    const angle=tread*Math.PI*2/16;
+    const treadBar=block("Tyre tread bar",[0,Math.sin(angle)*treadRadius,Math.cos(angle)*treadRadius],[tyreWidth*1.015,.075,.022],tyreTreadMat,wheelPivot);
+    treadBar.setLocalEulerAngles(angle*180/Math.PI,0,0);
+   }
    const rimX=side*tyreWidth*.56;
    const rimDiameter=tyreDiameter*.61;
    block("Machined alloy rim",[rimX,0,0],[rimDiameter,tyreWidth*.22,rimDiameter],chromeMat,wheelPivot,"cylinder").setLocalEulerAngles(0,0,90);
