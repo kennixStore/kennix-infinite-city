@@ -897,6 +897,12 @@ function buildVehicleModel(vehicle){
   block("Wheel arch trim front",[side*width*.48,.42,-1.28],[.12,.72,1.05],trimMat,root);
   block("Wheel arch trim rear",[side*width*.48,.42,1.28],[.12,.72,1.05],trimMat,root);
   block("Side sill",[side*width*.49,.27,0],[.12,.16,2.6],chromeMat,root);
+  // Layered lower-door surfacing gives the slab-sided body a more finished profile.
+  block("Lower door sculpting",[side*width*.505,.43,.12],[.055,.22,length*.48],bodyMat,root);
+  block("Upper shoulder crease",[side*width*.505,.64,.02],[.045,.045,length*.68],chromeMat,root);
+  block("Lower rocker aero blade",[side*width*.515,.19,.02],[.075,.075,2.72],trimMat,root);
+  block("Front bumper corner",[side*width*.43,.34,-length*.485],[.32,.2,.28],bodyMat,root);
+  block("Rear bumper corner",[side*width*.43,.34,length*.485],[.32,.2,.28],bodyMat,root);
   block("Wing mirror stem",[side*width*.49,.94,-.68],[.09,.1,.16],chromeMat,root);
   block("Wing mirror",[side*width*.54,.99,-.68],[.28,.18,.32],bodyMat,root);
   block("Front side glass",[side*width*.392,1.08,cabinZ-.43],[.055,cabinHeight*.58,.48],glassMat,root);
@@ -954,7 +960,9 @@ function buildVehicleModel(vehicle){
  block("Rear registration plate",[0,.34,length*.5+.085],[.62,.16,.025],plateMat,root);
  block("Rear reverse light",[0,.43,length*.5+.075],[.28,.09,.025],reverseMat,root);
  block("Front splitter",[0,.18,-length*.5-.12],[width*1.02,.08,.42],trimMat,root);
+ block("Front bumper lower lip",[0,.29,-length*.5-.095],[width*.94,.09,.16],chromeMat,root);
  block("Rear diffuser",[0,.19,length*.5+.06],[width*.78,.12,.38],trimMat,root);
+ block("Rear bumper valance",[0,.3,length*.5+.045],[width*.9,.13,.12],trimMat,root);
  for(const exhaustSide of [-1,1]){
   block("Polished exhaust tip",[exhaustSide*.62,.27,length*.5+.18],[.2,.14,.18],chromeMat,root,"cylinder").setLocalEulerAngles(90,0,0);
   block("Hood character line",[exhaustSide*.48,.58,-1.15],[.035,.025,1.12],chromeMat,root);
