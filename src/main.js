@@ -839,6 +839,8 @@ function buildVehicleModel(vehicle){
  bodyMat.clearCoat=.72;bodyMat.clearCoatGloss=.88;bodyMat.useMetalness=true;bodyMat.update();
  const glassMat=makeMat([.025,.095,.14],.5,.12), chromeMat=makeMat([.38,.42,.46],.85,.18);
  const lampMat=makeMat([.9,.78,.48],.1,.15);lampMat.emissive=new pc.Color(.55,.38,.12);lampMat.update();
+ const frontSignatureMat=makeMat([.82,.9,1],.08,.18);frontSignatureMat.emissive=new pc.Color(.72,.82,1);frontSignatureMat.update();
+ const rearSignatureMat=makeMat([.72,.018,.012],.08,.2);rearSignatureMat.emissive=new pc.Color(.58,.008,.004);rearSignatureMat.update();
  const amberMat=makeMat([.95,.31,.035],.08,.22);amberMat.emissive=new pc.Color(.32,.055,.004);amberMat.update();
  const plateMat=makeMat([.72,.75,.74],.12,.55);
  const reverseMat=makeMat([.82,.86,.88],.08,.2);reverseMat.emissive=new pc.Color(.12,.14,.15);reverseMat.update();
@@ -914,7 +916,9 @@ function buildVehicleModel(vehicle){
   block("Door handle",[side*width*.515,.66,.08],[.035,.055,.28],chromeMat,root);
   block("Front fender vent",[side*width*.505,.57,-1.08],[.035,.19,.42],trimMat,root);
   block("LED headlamp",[side*.65,.59,-length*.5-.02],[.48,.18,.07],lampMat,root);
+  block("Front signature light strip",[side*.65,.69,-length*.5-.055],[.43,.035,.035],frontSignatureMat,root);
   block("Rear LED lamp",[side*.65,.59,length*.5+.02],[.48,.16,.07],mats.red,root);
+  block("Rear signature light strip",[side*.65,.67,length*.5+.055],[.44,.045,.035],rearSignatureMat,root);
   block("Rear reflector",[side*.65,.38,length*.5+.04],[.28,.07,.05],lampMat,root);
   block("Front amber side marker",[side*width*.505,.49,-.62],[.045,.09,.25],amberMat,root);
   block("Rear amber side marker",[side*width*.505,.49,.72],[.045,.09,.22],amberMat,root);
@@ -963,6 +967,7 @@ function buildVehicleModel(vehicle){
  block("Front registration plate",[0,.32,-length*.5-.145],[.62,.16,.025],plateMat,root);
  block("Rear registration plate",[0,.34,length*.5+.085],[.62,.16,.025],plateMat,root);
  block("Rear reverse light",[0,.43,length*.5+.075],[.28,.09,.025],reverseMat,root);
+ block("Rear centre light bridge",[0,.65,length*.5+.04],[.78,.035,.035],rearSignatureMat,root);
  block("Front splitter",[0,.18,-length*.5-.12],[width*1.02,.08,.42],trimMat,root);
  block("Front bumper lower lip",[0,.29,-length*.5-.095],[width*.94,.09,.16],chromeMat,root);
  block("Rear diffuser",[0,.19,length*.5+.06],[width*.78,.12,.38],trimMat,root);
