@@ -828,6 +828,7 @@ const vehicleModels = {};
 let activeVehicleWheels = [];
 let activeSteeringWheel = null;
 let activeVehicleIndicators = [];
+let activeVehicleReverseLamps = [];
 let indicatorBlinkTimer = 0;
 let wheelSpinAngle = 0;
 for(const child of [...car.children]){
@@ -843,8 +844,9 @@ function buildVehicleModel(vehicle){
  const rearSignatureMat=makeMat([.72,.018,.012],.08,.2);rearSignatureMat.emissive=new pc.Color(.58,.008,.004);rearSignatureMat.update();
  const amberMat=makeMat([.95,.31,.035],.08,.22);amberMat.emissive=new pc.Color(.32,.055,.004);amberMat.update();
  const plateMat=makeMat([.72,.75,.74],.12,.55);
- const reverseMat=makeMat([.82,.86,.88],.08,.2);reverseMat.emissive=new pc.Color(.12,.14,.15);reverseMat.update();
- const wheelList=[],paintParts=[],indicators=[];
+ const reverseMat=makeMat([.9,.94,1],.08,.18);reverseMat.emissive=new pc.Color(.72,.82,1);reverseMat.update();
+ const reverseOffMat=makeMat([.34,.37,.4],.08,.28);
+ const wheelList=[],paintParts=[],indicators=[],reverseLamps=[];
   let steeringWheel;
  const kind=vehicle.id;
  const width=kind==="suv"?2.25:kind==="muscle"?2.18:kind==="hyper"?2.02:2.08;
@@ -975,7 +977,9 @@ function buildVehicleModel(vehicle){
  }
  block("Front registration plate",[0,.32,-length*.5-.145],[.62,.16,.025],plateMat,root);
  block("Rear registration plate",[0,.34,length*.5+.085],[.62,.16,.025],plateMat,root);
- block("Rear reverse light",[0,.43,length*.5+.075],[.28,.09,.025],reverseMat,root);
+ for(const side of [-1,1]){
+  reverseLamps.push(block("Rear reverse lamp",[side*.42,.43,length*.5+.078],[.2,.085,.028],reverseOffMat,root));
+ }
  block("Rear centre light bridge",[0,.65,length*.5+.04],[.78,.035,.035],rearSignatureMat,root);
  block("Front splitter",[0,.18,-length*.5-.12],[width*1.02,.08,.42],trimMat,root);
  block("Front bumper lower lip",[0,.29,-length*.5-.095],[width*.94,.09,.16],chromeMat,root);
@@ -1005,7 +1009,7 @@ function buildVehicleModel(vehicle){
  const damageParts={scratchParts,bumperDamage,brokenLamp,windshieldCrack};
  Object.values(damageParts).flat().forEach(part=>part.enabled=false);
  root.enabled=false;
- return {root,wheels:wheelList,paintParts,brakeLamps,steeringWheel,indicators,bodyMat,damageParts};
+ return {root,wheels:wheelList,paintParts,brakeLamps,reverseLamps,steeringWheel,indicators,bodyMat,damageParts};
 }
 for(const v of vehicleCatalog) vehicleModels[v.id]=buildVehicleModel(v);
 function setPlayerPaint(rgb){
@@ -1034,6 +1038,7 @@ function activateVehicleModel(){
  activeVehicleWheels=vehicleModels[selectedVehicle.id].wheels;
   activeSteeringWheel=vehicleModels[selectedVehicle.id].steeringWheel;
   activeVehicleIndicators=vehicleModels[selectedVehicle.id].indicators;
+  activeVehicleReverseLamps=vehicleModels[selectedVehicle.id].reverseLamps;
 }
 
 
@@ -1516,10 +1521,14 @@ app.on("update", dt => {
    engineFilter.frequency.setTargetAtTime(260+Math.abs(speed)*24,audioContext.currentTime,.1);
    engineGain.gain.setTargetAtTime((gamePaused?0:.018+Math.abs(speed)/Math.max(1,selectedVehicle.maxSpeed)*.035)*throttleLoad,audioContext.currentTime,.1);
   }
-  const braking = reverse && speed > 0.8;
+  const braking = (reverse && speed > 0.8) || (forward && speed < -0.8);
+  const reversing = speed < -0.6 || (reverse && Math.abs(speed) <= 0.6);
   brakeGlow.light.intensity = braking ? 2.8 : 0;
   brakeLamps.forEach(lamp => {
     lamp.render.material = braking ? brakeLampMaterial : mats.red;
+  });
+  activeVehicleReverseLamps.forEach(lamp => {
+    lamp.render.material = reversing ? reverseMat : reverseOffMat;
   });
 
   // Keep all four tyres rotating with road speed. Front wheels also steer,
