@@ -855,24 +855,32 @@ function buildVehicleModel(vehicle){
  const height=kind==="suv"?1.05:kind==="muscle"?.68:.55;
  const body=block("Vehicle base body",[0,.48,0],[width,height,length],bodyMat,root);
  body.enabled=false;
- // Build a continuous rounded body shell from tapered cross-sections.
- const bodyEntity=new pc.Entity("Smooth sculpted vehicle shell");
+ // Authored-style procedural shell: a flattened underfloor, broad shoulders,
+ // sculpted front/rear taper and closed end caps avoid the old box silhouette.
+ const bodyEntity=new pc.Entity("Sculpted vehicle body shell");
  const bodyMesh=new pc.Mesh(app.graphicsDevice);
  const bodyPositions=[],bodyIndices=[];
  const bodyStations=[
-  [-length*.5,width*.25,.25],
-  [-length*.43,width*.36,.39],
-  [-length*.27,width*.46,.47],
-  [0,width*.49,.49],
-  [length*.27,width*.46,.47],
-  [length*.43,width*.38,.4],
-  [length*.5,width*.25,.27]
+  [-length*.5,width*.22,.23],
+  [-length*.47,width*.31,.31],
+  [-length*.39,width*.39,.38],
+  [-length*.25,width*.46,.43],
+  [-length*.08,width*.49,.45],
+  [length*.17,width*.48,.44],
+  [length*.34,width*.43,.4],
+  [length*.44,width*.35,.34],
+  [length*.5,width*.23,.24]
  ];
- const ringSegments=16;
+ const ringSegments=20;
  bodyStations.forEach(([z,halfWidth,halfHeight])=>{
   for(let segment=0;segment<ringSegments;segment++){
    const angle=segment/ringSegments*Math.PI*2;
-   bodyPositions.push(Math.cos(angle)*halfWidth,.48+Math.sin(angle)*halfHeight,z);
+   const side=Math.cos(angle),vertical=Math.sin(angle);
+   const shoulderShape=.94+.06*Math.abs(vertical);
+   const x=side*halfWidth*shoulderShape;
+   const lowerFlatten=vertical<-.48?-.48+(vertical+.48)*.42:vertical;
+   const y=.48+lowerFlatten*halfHeight;
+   bodyPositions.push(x,y,z);
   }
  });
  for(let station=0;station<bodyStations.length-1;station++){
@@ -883,6 +891,16 @@ function buildVehicleModel(vehicle){
    const d=(station+1)*ringSegments+segment;
    bodyIndices.push(a,b,d,b,c,d);
   }
+ }
+ const frontCap=bodyPositions.length/3;
+ bodyPositions.push(0,.48-bodyStations[0][2]*.2,bodyStations[0][0]);
+ const rearCap=bodyPositions.length/3;
+ bodyPositions.push(0,.48-bodyStations[bodyStations.length-1][2]*.2,bodyStations[bodyStations.length-1][0]);
+ for(let segment=0;segment<ringSegments;segment++){
+  const next=(segment+1)%ringSegments;
+  bodyIndices.push(frontCap,next,segment);
+  const rearStart=(bodyStations.length-1)*ringSegments;
+  bodyIndices.push(rearCap,rearStart+segment,rearStart+next);
  }
  bodyMesh.setPositions(bodyPositions);
  bodyMesh.setNormals(pc.calculateNormals(bodyPositions,bodyIndices));
