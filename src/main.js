@@ -1220,6 +1220,17 @@ function loadImportedVehicleModels(){
      model.importedWheels=importedWheels;
     }
     model.importedRoot=imported;
+    model.importedMaterials=[];
+    imported.findComponents("render").forEach(component=>{
+     component.meshInstances.forEach(instance=>{
+      if(!instance.material)return;
+      const material=instance.material.clone();
+      instance.material=material;
+      model.importedMaterials.push(material);
+     });
+    });
+    const catalogPaint=vehicleCatalog.find(vehicle=>vehicle.id===id)?.paint||[.2,.2,.2];
+    applyImportedPaint(model,selectedVehicle.id===id?selectedPaint:catalogPaint);
     model.root.enabled=false;
     activateVehicleModel();
     console.info("Loaded Kenney CC0 vehicle:",filename);
@@ -1227,11 +1238,20 @@ function loadImportedVehicleModels(){
   }
  }).catch(error=>console.warn("Optional vehicle manifest unavailable; using procedural vehicles.",error));
 }
+function applyImportedPaint(model,rgb){
+ if(!model?.importedMaterials)return;
+ const tint=new pc.Color(rgb[0],rgb[1],rgb[2]);
+ model.importedMaterials.forEach(material=>{
+  material.diffuse=tint.clone();
+  material.update();
+ });
+}
 function setPlayerPaint(rgb){
  selectedPaint=rgb;
  const model=vehicleModels[selectedVehicle.id];
  const paint=makeMat(rgb,.78,.2);
  model.paintParts.forEach(part=>part.render.material=paint);
+ applyImportedPaint(model,rgb);
  selectedVehicle.paint=rgb;
  saveGarage();
 }
