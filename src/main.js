@@ -1007,6 +1007,12 @@ function buildVehicleModel(vehicle){
   block("Rear side glass",[side*width*.392,1.08,cabinZ+.43],[.055,cabinHeight*.58,.48],glassMat,root);
   block("Window beltline trim",[side*width*.395,.87,cabinZ],[.07,.07,length*.36],chromeMat,root);
   block("B-pillar",[side*width*.405,1.1,cabinZ],[.075,cabinHeight*.83,.09],trimMat,root);
+  const aPillar=block("A-pillar",[side*width*.365,1.12,cabinFrontZ+.12],[.075,cabinHeight*.92,.11],bodyMat,root);
+  aPillar.setLocalEulerAngles(-12,0,side*8);paintParts.push(aPillar);
+  const cPillar=block("C-pillar",[side*width*.36,1.11,cabinRearZ-.1],[.085,cabinHeight*.88,.13],bodyMat,root);
+  cPillar.setLocalEulerAngles(10,0,-side*7);paintParts.push(cPillar);
+  block("Window upper chrome frame",[side*width*.397,1.36,cabinZ],[.045,.035,length*.34],chromeMat,root);
+  block("Rear quarter glass",[side*width*.34,1.08,cabinRearZ-.27],[.045,cabinHeight*.48,.25],glassMat,root);
   block("Front door seam",[side*width*.502,.49,-.48],[.025,.36,.035],trimMat,root);
   block("Rear door seam",[side*width*.502,.49,.62],[.025,.34,.035],trimMat,root);
   block("Door handle",[side*width*.515,.66,.08],[.035,.055,.28],chromeMat,root);
