@@ -1395,6 +1395,7 @@ let miniMapElapsed = 0;
 
 
 let audioContext=null,engineOscillator=null,engineGain=null,engineFilter=null,hornOscillator=null,hornGain=null,nitroOscillator=null,nitroGain=null,audioEnabled=false;
+let simulatedGear=1,gearShiftFlash=0;
 function initialiseVehicleAudio(){
  const AudioEngine=window.AudioContext||window.webkitAudioContext;
  if(!AudioEngine)throw new Error("This browser does not support game audio.");
@@ -1728,7 +1729,16 @@ app.on("update", dt => {
    const engineBase=selectedVehicle.id==="muscle"?48:selectedVehicle.id==="suv"?42:selectedVehicle.id==="hyper"?76:58;
    const engineWave=selectedVehicle.id==="muscle"?"sawtooth":selectedVehicle.id==="suv"?"triangle":selectedVehicle.id==="hyper"?"square":"sawtooth";
    engineOscillator.type=engineWave;
-   engineOscillator.frequency.setTargetAtTime(engineBase+Math.abs(speed)*(selectedVehicle.id==="hyper"?6.3:5.2)+(forward?selectedVehicle.acceleration*1.1:0),audioContext.currentTime,.08);
+   const speedRatio=clamp(Math.abs(speed)/Math.max(1,selectedVehicle.maxSpeed),0,1);
+   const gearThresholds=[.16,.34,.54,.76];
+   let nextGear=1;while(nextGear<=gearThresholds.length&&speedRatio>gearThresholds[nextGear-1])nextGear++;
+   if(nextGear!==simulatedGear){simulatedGear=nextGear;gearShiftFlash=.16;}
+   const gearStart=simulatedGear===1?0:gearThresholds[simulatedGear-2];
+   const gearEnd=gearThresholds[simulatedGear-1]??1;
+   const gearLoad=clamp((speedRatio-gearStart)/Math.max(.01,gearEnd-gearStart),0,1);
+   gearShiftFlash=Math.max(0,gearShiftFlash-dt);
+   const revFrequency=engineBase+gearLoad*(selectedVehicle.id==="hyper"?66:54)+(forward?selectedVehicle.acceleration*.8:0);
+   engineOscillator.frequency.setTargetAtTime(revFrequency*(gearShiftFlash>0?.78:1),audioContext.currentTime,.055);
    if(nitroOscillator&&nitroGain){nitroOscillator.frequency.setTargetAtTime(85+Math.abs(speed)*2.8,audioContext.currentTime,.05);nitroGain.gain.setTargetAtTime(nitroActive?.012:0,audioContext.currentTime,.08);}
    engineFilter.frequency.setTargetAtTime(260+Math.abs(speed)*24,audioContext.currentTime,.1);
    engineGain.gain.setTargetAtTime((gamePaused?0:.018+Math.abs(speed)/Math.max(1,selectedVehicle.maxSpeed)*.035)*throttleLoad,audioContext.currentTime,.1);
