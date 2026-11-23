@@ -1175,6 +1175,8 @@ controls.innerHTML = `
     <button data-control="handbrake" aria-label="Handbrake">HANDBRAKE</button>
     <button data-control="gas" aria-label="Accelerate">GAS</button>
     <button data-control="nitro" aria-label="Nitro boost">NITRO</button>
+    <button data-control="signal-left" aria-label="Left turn signal">SIGNAL ◀</button>
+    <button data-control="signal-right" aria-label="Right turn signal">SIGNAL ▶</button>
     <button data-control="hazards" aria-label="Toggle hazard lights">HAZARDS</button>
   </div>`;
 document.querySelector("#game-stage").appendChild(controls);
@@ -1547,6 +1549,7 @@ controls.querySelectorAll("button[data-control]").forEach(button => {
   button.addEventListener("pointerdown", e => {
     e.preventDefault();
     if(id==="hazards"){hazardLights=!hazardLights;button.classList.toggle("is-active",hazardLights);return;}
+    if(id==="signal-left"||id==="signal-right"){manualIndicatorSide=manualIndicatorSide===(id==="signal-left"?-1:1)?0:(id==="signal-left"?-1:1);controls.querySelectorAll('[data-control^="signal-"]').forEach(signal=>signal.classList.toggle("is-active",signal.dataset.control===(manualIndicatorSide<0?"signal-left":"signal-right")));return;}
     held.add(id);
     button.setPointerCapture(e.pointerId);
   });
@@ -1564,6 +1567,7 @@ let heading = 0;
 let steeringAngle = 0;
 let handbrakeActive = false;
 let hazardLights = false;
+let manualIndicatorSide=0;
 let signalTimer = 0;
 let skidMarkTimer = 0;
 const skidMarks = [];
@@ -1686,7 +1690,7 @@ app.on("update", dt => {
   // Blink the matching side indicators while steering.
   indicatorBlinkTimer += dt;
   const indicatorLit=Math.floor(indicatorBlinkTimer/.38)%2===0;
-  const activeIndicatorSide=steeringAngle>7?-1:steeringAngle< -7?1:0;
+  const activeIndicatorSide=manualIndicatorSide||(steeringAngle>7?-1:steeringAngle< -7?1:0);
   activeVehicleIndicators.forEach((lamp,index)=>{
     const lampSide=Math.floor(index/2)===0?-1:1;
     const shouldBlink=hazardLights||activeIndicatorSide===lampSide;
