@@ -1377,6 +1377,7 @@ controls.querySelectorAll("button").forEach(button => {
 
 let speed = 0;                 // metres per second; forward is negative Z
 let lateralSpeed = 0;          // sideways slip, damped by tyre grip
+let bodyPitch = 0;              // subtle chassis pitch from acceleration and braking
 let heading = 0;
 let steeringAngle = 0;
 let handbrakeActive = false;
@@ -1414,6 +1415,7 @@ app.on("update", dt => {
   const right = isDown("d", "arrowright", "right");
   handbrakeActive = isDown(" ", "handbrake");
 
+  const previousSpeed = speed;
   // More grounded arcade handling: throttle, braking, coasting and tyre grip.
   // The brake input slows the car first, then engages reverse at low speed.
   if(forward&&fuel>0)fuel=Math.max(0,fuel-dt*(.018+Math.abs(speed)*.0009));
@@ -1428,6 +1430,9 @@ app.on("update", dt => {
 
   if (handbrakeActive && Math.abs(speed) > 2) speed *= Math.exp(-1.2 * dt);
   speed = clamp(speed, -12, Math.max(18,selectedVehicle.maxSpeed*(1-damage/180)));
+  const longitudinalAcceleration = dt > 0 ? (speed-previousSpeed)/dt : 0;
+  const targetBodyPitch = clamp(-longitudinalAcceleration*.16,-3,3);
+  bodyPitch += (targetBodyPitch-bodyPitch)*Math.min(1,dt*5);
 
   const steerInput = (left ? 1 : 0) - (right ? 1 : 0);
   const targetSteering = steerInput * 30;
@@ -1463,7 +1468,7 @@ app.on("update", dt => {
     lateralSpeed*=Math.exp(-3.2*dt);
   }
   car.setPosition(p);
-  car.setEulerAngles(0, heading, clamp(-steeringAngle * speedRatio * 0.035, -3, 3));
+  car.setEulerAngles(bodyPitch, heading, clamp(-steeringAngle * speedRatio * 0.035, -3, 3));
   if(handbrakeActive&&Math.abs(speed)>9){
    skidMarkTimer+=dt;
    if(skidMarkTimer>=.13){skidMarkTimer=0;addSkidMarks(p,forwardX,forwardZ,rightX,rightZ)}
