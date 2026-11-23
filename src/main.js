@@ -537,6 +537,9 @@ for (const x of [-0.68, 0.68]) {
 const wheels = [];
 
 // Functional vehicle lighting: forward beams and brake lamps follow the car.
+const indicatorOffMaterial=makeMat([.22,.075,.012],.08,.3);
+const indicatorOnMaterial=makeMat([1,.38,.025],.08,.2);
+indicatorOnMaterial.emissive=new pc.Color(.9,.22,.008);indicatorOnMaterial.update();
 const brakeLampMaterial = makeMat([0.85, 0.018, 0.012]);
 brakeLampMaterial.emissive = new pc.Color(0.28, 0.008, 0.004);
 brakeLampMaterial.update();
@@ -824,6 +827,8 @@ function saveGarage(){localStorage.setItem("kxic-garage",JSON.stringify({vehicle
 const vehicleModels = {};
 let activeVehicleWheels = [];
 let activeSteeringWheel = null;
+let activeVehicleIndicators = [];
+let indicatorBlinkTimer = 0;
 let wheelSpinAngle = 0;
 for(const child of [...car.children]){
  if(child.name!=="Headlight beam" && child.name!=="Brake light glow") child.enabled=false;
@@ -837,7 +842,7 @@ function buildVehicleModel(vehicle){
  const amberMat=makeMat([.95,.31,.035],.08,.22);amberMat.emissive=new pc.Color(.32,.055,.004);amberMat.update();
  const plateMat=makeMat([.72,.75,.74],.12,.55);
  const reverseMat=makeMat([.82,.86,.88],.08,.2);reverseMat.emissive=new pc.Color(.12,.14,.15);reverseMat.update();
- const wheelList=[],paintParts=[];
+ const wheelList=[],paintParts=[],indicators=[];
   let steeringWheel;
  const kind=vehicle.id;
  const width=kind==="suv"?2.25:kind==="muscle"?2.18:kind==="hyper"?2.02:2.08;
@@ -908,6 +913,11 @@ function buildVehicleModel(vehicle){
   block("Front amber side marker",[side*width*.505,.49,-.62],[.045,.09,.25],amberMat,root);
   block("Rear amber side marker",[side*width*.505,.49,.72],[.045,.09,.22],amberMat,root);
  }
+ // Front and rear indicator lenses for each side.
+ for(const side of [-1,1]){
+  indicators.push(block("Front turn indicator",[side*.86,.57,-length*.5-.11],[.22,.09,.045],indicatorOffMaterial,root));
+  indicators.push(block("Rear turn indicator",[side*.86,.57,length*.5+.11],[.22,.09,.045],indicatorOffMaterial,root));
+ }
  // Each wheel is a single pivot: tyre, brake disc, rim and spokes now
  // rotate and steer together instead of leaving the alloy details frozen.
  for(const z of [-1.42,1.42]){
@@ -969,7 +979,7 @@ function buildVehicleModel(vehicle){
  const damageParts={scratchParts,bumperDamage,brokenLamp,windshieldCrack};
  Object.values(damageParts).flat().forEach(part=>part.enabled=false);
  root.enabled=false;
- return {root,wheels:wheelList,paintParts,brakeLamps,steeringWheel,bodyMat,damageParts};
+ return {root,wheels:wheelList,paintParts,brakeLamps,steeringWheel,indicators,bodyMat,damageParts};
 }
 for(const v of vehicleCatalog) vehicleModels[v.id]=buildVehicleModel(v);
 function setPlayerPaint(rgb){
@@ -997,6 +1007,7 @@ function activateVehicleModel(){
  for(const [id,model] of Object.entries(vehicleModels)){model.root.enabled=id===selectedVehicle.id;applyVehicleDamage(model,damage);}
  activeVehicleWheels=vehicleModels[selectedVehicle.id].wheels;
   activeSteeringWheel=vehicleModels[selectedVehicle.id].steeringWheel;
+  activeVehicleIndicators=vehicleModels[selectedVehicle.id].indicators;
 }
 
 
@@ -1488,6 +1499,14 @@ app.on("update", dt => {
   // Keep all four tyres rotating with road speed. Front wheels also steer,
   // while rear wheels remain aligned with the chassis.
   wheelSpinAngle += speed * dt * 85;
+  // Blink the matching side indicators while steering.
+  indicatorBlinkTimer += dt;
+  const indicatorLit=Math.floor(indicatorBlinkTimer/.38)%2===0;
+  const activeIndicatorSide=steeringAngle>7?-1:steeringAngle< -7?1:0;
+  activeVehicleIndicators.forEach((lamp,index)=>{
+    const lampSide=Math.floor(index/2)===0?-1:1;
+    lamp.render.material=activeIndicatorSide===lampSide&&indicatorLit?indicatorOnMaterial:indicatorOffMaterial;
+  });
   // The cockpit steering wheel follows the same smoothed steering input as the front tyres.
   if(activeSteeringWheel) activeSteeringWheel.setLocalEulerAngles(90,0,steeringAngle*2.8);
   activeVehicleWheels.forEach((wheel,index)=>{
