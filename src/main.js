@@ -823,6 +823,7 @@ function saveGarage(){localStorage.setItem("kxic-garage",JSON.stringify({vehicle
 
 const vehicleModels = {};
 let activeVehicleWheels = [];
+let activeSteeringWheel = null;
 let wheelSpinAngle = 0;
 for(const child of [...car.children]){
  if(child.name!=="Headlight beam" && child.name!=="Brake light glow") child.enabled=false;
@@ -837,6 +838,7 @@ function buildVehicleModel(vehicle){
  const plateMat=makeMat([.72,.75,.74],.12,.55);
  const reverseMat=makeMat([.82,.86,.88],.08,.2);reverseMat.emissive=new pc.Color(.12,.14,.15);reverseMat.update();
  const wheelList=[],paintParts=[];
+  let steeringWheel;
  const kind=vehicle.id;
  const width=kind==="suv"?2.25:kind==="muscle"?2.18:kind==="hyper"?2.02:2.08;
  const length=kind==="suv"?4.65:kind==="muscle"?4.55:kind==="hyper"?4.35:4.25;
@@ -869,7 +871,7 @@ function buildVehicleModel(vehicle){
  }
  const steeringColumn=block("Steering column",[-.43,.91,cabinZ-.54],[.09,.09,.32],chromeMat,root);
  steeringColumn.setLocalEulerAngles(-18,0,0);
- const steeringWheel=block("Steering wheel",[-.43,1.02,cabinZ-.72],[.36,.045,.36],interiorMat,root,"cylinder");
+ steeringWheel=block("Steering wheel",[-.43,1.02,cabinZ-.72],[.36,.045,.36],interiorMat,root,"cylinder");
  steeringWheel.setLocalEulerAngles(90,0,0);
  block("Instrument cluster",[0,.91,cabinZ-.68],[.48,.12,.12],interiorMat,root);
  if(kind==="suv") block("SUV roof",[0,1.48,.05],[width*.82,.13,length*.4],bodyMat,root);
@@ -967,7 +969,7 @@ function buildVehicleModel(vehicle){
  const damageParts={scratchParts,bumperDamage,brokenLamp,windshieldCrack};
  Object.values(damageParts).flat().forEach(part=>part.enabled=false);
  root.enabled=false;
- return {root,wheels:wheelList,paintParts,brakeLamps,bodyMat,damageParts};
+ return {root,wheels:wheelList,paintParts,brakeLamps,steeringWheel,bodyMat,damageParts};
 }
 for(const v of vehicleCatalog) vehicleModels[v.id]=buildVehicleModel(v);
 function setPlayerPaint(rgb){
@@ -994,6 +996,7 @@ function refreshVehicleDamage(){
 function activateVehicleModel(){
  for(const [id,model] of Object.entries(vehicleModels)){model.root.enabled=id===selectedVehicle.id;applyVehicleDamage(model,damage);}
  activeVehicleWheels=vehicleModels[selectedVehicle.id].wheels;
+  activeSteeringWheel=vehicleModels[selectedVehicle.id].steeringWheel;
 }
 
 
@@ -1480,6 +1483,8 @@ app.on("update", dt => {
   // Keep all four tyres rotating with road speed. Front wheels also steer,
   // while rear wheels remain aligned with the chassis.
   wheelSpinAngle += speed * dt * 85;
+  // The cockpit steering wheel follows the same smoothed steering input as the front tyres.
+  if(activeSteeringWheel) activeSteeringWheel.setLocalEulerAngles(90,0,steeringAngle*2.8);
   activeVehicleWheels.forEach((wheel,index)=>{
     const steer=index<2 ? steeringAngle*.55 : 0;
     wheel.setLocalEulerAngles(wheelSpinAngle,steer,0);
