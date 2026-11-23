@@ -60,6 +60,11 @@ body { overflow: hidden; }
 .wheel-spoke-left{width:38px;height:9px;left:4px;top:62%;transform:rotate(25deg);transform-origin:right center}
 .wheel-spoke-right{width:38px;height:9px;right:4px;top:62%;transform:rotate(-25deg);transform-origin:left center}
 .wheel-hub{position:absolute;width:31px;height:31px;left:calc(50% - 15.5px);top:calc(50% - 15.5px);border:2px solid #d8ad5b;border-radius:50%;background:radial-gradient(circle,#384552,#111923);box-shadow:0 2px 4px #0009}
+.nitro-status{position:absolute;left:16px;bottom:76px;width:116px;padding:7px 9px;border:1px solid rgba(95,178,255,.45);border-radius:8px;background:rgba(5,13,23,.78);color:#b9dfff;font:800 9px monospace;letter-spacing:.12em;pointer-events:none}
+.nitro-track{height:5px;margin-top:5px;border-radius:8px;background:#26394b;overflow:hidden}
+.nitro-track i{display:block;width:100%;height:100%;border-radius:8px;background:linear-gradient(90deg,#2385d8,#8be4ff);transition:width .12s linear}
+.nitro-status.boosting{border-color:#8be4ff;box-shadow:0 0 14px #36aaff77}
+.pedals button[data-control="nitro"]{border-color:#42a8ed;background:rgba(19,66,103,.88);width:58px}
 .steering, .pedals { display: flex; gap: 8px; }
 .pedals button { width: 66px; font-size: 10px; }
 .pedals button:last-child { border-color: #d8ad5b; background: rgba(100,69,27,.88); }
