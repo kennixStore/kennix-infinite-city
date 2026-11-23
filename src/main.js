@@ -1116,7 +1116,7 @@ app.root.addChild(camera);
 
 const keys = new Set();
 const held = new Set();
-window.addEventListener("keydown",e=>{if(e.key==="Escape"){if(gamePaused)hideGarage();else showGarage("PAUSED","Take a break or return to the garage.")}if(e.key.toLowerCase()==="h")setHorn(true);keys.add(e.key.toLowerCase())});
+window.addEventListener("keydown",e=>{const key=e.key.toLowerCase();if(e.key==="Escape"){if(gamePaused)hideGarage();else showGarage("PAUSED","Take a break or return to the garage.")}if(key==="h")setHorn(true);if(key==="j"&&!keys.has("j"))hazardLights=!hazardLights;keys.add(key)});
 window.addEventListener("keyup",e=>{if(e.key.toLowerCase()==="h")setHorn(false)});
 window.addEventListener("keyup", e => keys.delete(e.key.toLowerCase()));
 window.addEventListener("blur", () => { keys.clear(); held.clear(); });
@@ -1132,6 +1132,7 @@ controls.innerHTML = `
     <button data-control="brake" aria-label="Brake and reverse">BRAKE</button>
     <button data-control="handbrake" aria-label="Handbrake">HANDBRAKE</button>
     <button data-control="gas" aria-label="Accelerate">GAS</button>
+    <button data-control="hazards" aria-label="Toggle hazard lights">HAZARDS</button>
   </div>`;
 document.querySelector("#game-stage").appendChild(controls);
 const gameOverlay=document.createElement("section");gameOverlay.className="game-overlay";
@@ -1471,6 +1472,7 @@ controls.querySelectorAll("button").forEach(button => {
   const id = button.dataset.control;
   button.addEventListener("pointerdown", e => {
     e.preventDefault();
+    if(id==="hazards"){hazardLights=!hazardLights;button.classList.toggle("is-active",hazardLights);return;}
     held.add(id);
     button.setPointerCapture(e.pointerId);
   });
@@ -1486,6 +1488,7 @@ let bodyPitch = 0;              // subtle chassis pitch from acceleration and br
 let heading = 0;
 let steeringAngle = 0;
 let handbrakeActive = false;
+let hazardLights = false;
 let signalTimer = 0;
 let skidMarkTimer = 0;
 const skidMarks = [];
@@ -1603,7 +1606,8 @@ app.on("update", dt => {
   const activeIndicatorSide=steeringAngle>7?-1:steeringAngle< -7?1:0;
   activeVehicleIndicators.forEach((lamp,index)=>{
     const lampSide=Math.floor(index/2)===0?-1:1;
-    lamp.render.material=activeIndicatorSide===lampSide&&indicatorLit?indicatorOnMaterial:indicatorOffMaterial;
+    const shouldBlink=hazardLights||activeIndicatorSide===lampSide;
+    lamp.render.material=shouldBlink&&indicatorLit?indicatorOnMaterial:indicatorOffMaterial;
   });
   // The cockpit steering wheel follows the same smoothed steering input as the front tyres.
   if(activeSteeringWheel) activeSteeringWheel.setLocalEulerAngles(90,0,steeringAngle*2.8);
