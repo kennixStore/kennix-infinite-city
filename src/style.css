@@ -51,6 +51,15 @@ body { overflow: hidden; }
   filter: brightness(1.35);
   background: rgba(216,173,91,.72);
 }
+.steering-panel{display:flex;flex-direction:column;align-items:center;gap:6px;pointer-events:auto}
+.steering-mode{width:auto!important;height:25px!important;padding:0 9px;border-radius:8px!important;font-size:8px!important;letter-spacing:.08em;border-color:rgba(216,173,91,.7)!important}
+.steering-wheel-control{position:relative;width:112px;height:112px;border:9px solid #c4cbd2;border-radius:50%;background:radial-gradient(circle,#202a35 0 24%,#0b1119 25% 100%);box-shadow:inset 0 0 0 3px #59636d,0 4px 14px #0008;touch-action:none;transform:rotate(var(--wheel-turn,0deg));transition:transform .08s ease;cursor:grab}
+.steering-wheel-control[hidden],.steering-arrows[hidden]{display:none}
+.wheel-spoke{position:absolute;display:block;background:linear-gradient(90deg,#69737d,#d0d6dc,#66717b);border-radius:5px;box-shadow:0 1px 3px #0008}
+.wheel-spoke-top{width:9px;height:38px;left:calc(50% - 4.5px);top:0}
+.wheel-spoke-left{width:38px;height:9px;left:4px;top:62%;transform:rotate(25deg);transform-origin:right center}
+.wheel-spoke-right{width:38px;height:9px;right:4px;top:62%;transform:rotate(-25deg);transform-origin:left center}
+.wheel-hub{position:absolute;width:31px;height:31px;left:calc(50% - 15.5px);top:calc(50% - 15.5px);border:2px solid #d8ad5b;border-radius:50%;background:radial-gradient(circle,#384552,#111923);box-shadow:0 2px 4px #0009}
 .steering, .pedals { display: flex; gap: 8px; }
 .pedals button { width: 66px; font-size: 10px; }
 .pedals button:last-child { border-color: #d8ad5b; background: rgba(100,69,27,.88); }
