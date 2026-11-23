@@ -906,22 +906,26 @@ function buildVehicleModel(vehicle){
   block("Front amber side marker",[side*width*.505,.49,-.62],[.045,.09,.25],amberMat,root);
   block("Rear amber side marker",[side*width*.505,.49,.72],[.045,.09,.22],amberMat,root);
  }
- // Four wheel assemblies with visible machined rims, brake discs and five spokes.
+ // Each wheel is a single pivot: tyre, brake disc, rim and spokes now
+ // rotate and steer together instead of leaving the alloy details frozen.
  for(const z of [-1.42,1.42]){
   for(const side of [-1,1]){
    const wheelX=side*width*.49;
-   const tyre=block("Performance tyre",[wheelX,.28,z],[.7,.34,.72],trimMat,root,"cylinder");
-   tyre.setLocalEulerAngles(0,0,90);wheelList.push(tyre);
-   const rimX=wheelX+side*.19;
-   const rim=block("Machined alloy rim",[rimX,.28,z],[.43,.07,.43],chromeMat,root,"cylinder");
-   rim.setLocalEulerAngles(0,0,90);
-   block("Brake disc",[wheelX+side*.145,.28,z],[.34,.045,.34],mats.metal,root,"cylinder").setLocalEulerAngles(0,0,90);
-   block("Wheel centre cap",[rimX+side*.045,.28,z],[.12,.075,.12],mats.paint,root,"cylinder").setLocalEulerAngles(0,0,90);
+   const wheelPivot=new pc.Entity("Suspended wheel assembly");
+   wheelPivot.setLocalPosition(wheelX,.28,z);
+   root.addChild(wheelPivot);
+   const tyre=block("Performance tyre",[0,0,0],[.7,.34,.72],trimMat,wheelPivot,"cylinder");
+   tyre.setLocalEulerAngles(0,0,90);
+   const rimX=side*.19;
+   block("Machined alloy rim",[rimX,0,0],[.43,.07,.43],chromeMat,wheelPivot,"cylinder").setLocalEulerAngles(0,0,90);
+   block("Brake disc",[side*.145,0,0],[.34,.045,.34],mats.metal,wheelPivot,"cylinder").setLocalEulerAngles(0,0,90);
+   block("Wheel centre cap",[rimX+side*.045,0,0],[.12,.075,.12],mats.paint,wheelPivot,"cylinder").setLocalEulerAngles(0,0,90);
    for(let spoke=0;spoke<5;spoke++){
     const angle=spoke*Math.PI*2/5;
-    const part=block("Five spoke alloy detail",[rimX+side*.055,.28+Math.sin(angle)*.13,z+Math.cos(angle)*.13],[.045,.19,.055],chromeMat,root);
+    const part=block("Five spoke alloy detail",[rimX+side*.055,Math.sin(angle)*.13,Math.cos(angle)*.13],[.045,.19,.055],chromeMat,wheelPivot);
     part.setLocalEulerAngles(angle*180/Math.PI,0,0);
    }
+   wheelList.push(wheelPivot);
   }
  }
  block("Front grille surround",[0,.41,-length*.5-.045],[1.05,.3,.1],trimMat,root);
@@ -1478,7 +1482,7 @@ app.on("update", dt => {
   wheelSpinAngle += speed * dt * 85;
   activeVehicleWheels.forEach((wheel,index)=>{
     const steer=index<2 ? steeringAngle*.55 : 0;
-    wheel.setLocalEulerAngles(wheelSpinAngle,steer,90);
+    wheel.setLocalEulerAngles(wheelSpinAngle,steer,0);
   });
 
   // Pedestrians use marked crossings, wait for a safe signal phase and pause for approaching traffic.
