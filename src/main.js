@@ -860,13 +860,13 @@ function buildVehicleModel(vehicle){
  const bodyMesh=new pc.Mesh(app.graphicsDevice);
  const bodyPositions=[],bodyIndices=[];
  const bodyStations=[
-  [-length*.5,width*.34,.25],
-  [-length*.43,width*.72,.39],
-  [-length*.27,width*.94,.47],
-  [0,width*.5,.49],
-  [length*.27,width*.96,.47],
-  [length*.43,width*.78,.4],
-  [length*.5,width*.48,.27]
+  [-length*.5,width*.25,.25],
+  [-length*.43,width*.36,.39],
+  [-length*.27,width*.46,.47],
+  [0,width*.49,.49],
+  [length*.27,width*.46,.47],
+  [length*.43,width*.38,.4],
+  [length*.5,width*.25,.27]
  ];
  const ringSegments=16;
  bodyStations.forEach(([z,halfWidth,halfHeight])=>{
