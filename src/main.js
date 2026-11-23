@@ -829,6 +829,7 @@ let activeVehicleWheels = [];
 let activeSteeringWheel = null;
 let activeVehicleIndicators = [];
 let activeVehicleReverseLamps = [];
+let activeVehicleExhaustFlames = [];
 let indicatorBlinkTimer = 0;
 let wheelSpinAngle = 0;
 for(const child of [...car.children]){
@@ -1053,6 +1054,9 @@ function buildVehicleModel(vehicle){
   block("Hood character line",[exhaustSide*.48,.58,-1.15],[.035,.025,1.12],chromeMat,root);
  }
  if(kind==="sport"){const rearDeck=block("Sport rear deck",[0,.84,1.35],[1.6,.12,.5],bodyMat,root);paintParts.push(rearDeck);}
+ const exhaustFlameMat=makeMat([.15,.42,.95],.05,.25);exhaustFlameMat.emissive=new pc.Color(.08,.38,1);exhaustFlameMat.update();
+ const exhaustFlames=[];
+ for(const side of [-1,1]){const flame=block("Nitro exhaust flame",[side*.62,.27,length*.5+.29],[.12,.18,.42],exhaustFlameMat,root,"cone");flame.setLocalEulerAngles(90,0,0);flame.enabled=false;exhaustFlames.push(flame);}
  const brakeLamps=[];
  for(const side of [-1,1]){
   const lamp=block("Vehicle brake LED",[side*.64,.6,length*.5+.06],[.42,.16,.08],brakeLampMaterial,root);
@@ -1072,7 +1076,7 @@ function buildVehicleModel(vehicle){
  const damageParts={scratchParts,bumperDamage,brokenLamp,windshieldCrack};
  Object.values(damageParts).flat().forEach(part=>part.enabled=false);
  root.enabled=false;
- return {root,wheels:wheelList,paintParts,brakeLamps,reverseLamps,steeringWheel,indicators,bodyMat,damageParts};
+ return {root,wheels:wheelList,paintParts,brakeLamps,reverseLamps,exhaustFlames,steeringWheel,indicators,bodyMat,damageParts};
 }
 for(const v of vehicleCatalog) vehicleModels[v.id]=buildVehicleModel(v);
 function setPlayerPaint(rgb){
@@ -1102,6 +1106,7 @@ function activateVehicleModel(){
   activeSteeringWheel=vehicleModels[selectedVehicle.id].steeringWheel;
   activeVehicleIndicators=vehicleModels[selectedVehicle.id].indicators;
   activeVehicleReverseLamps=vehicleModels[selectedVehicle.id].reverseLamps;
+  activeVehicleExhaustFlames=vehicleModels[selectedVehicle.id].exhaustFlames;
 }
 
 
@@ -1630,6 +1635,10 @@ app.on("update", dt => {
    engineFilter.frequency.setTargetAtTime(260+Math.abs(speed)*24,audioContext.currentTime,.1);
    engineGain.gain.setTargetAtTime((gamePaused?0:.018+Math.abs(speed)/Math.max(1,selectedVehicle.maxSpeed)*.035)*throttleLoad,audioContext.currentTime,.1);
   }
+  activeVehicleExhaustFlames.forEach((flame,index)=>{
+    flame.enabled=nitroActive;
+    if(nitroActive)flame.setLocalScale(.1,.12,.28+Math.random()*.28);
+  });
   const braking = (reverse && speed > 0.8) || (forward && speed < -0.8);
   const reversing = speed < -0.6 || (reverse && Math.abs(speed) <= 0.6);
   brakeGlow.light.intensity = braking ? 2.8 : 0;
