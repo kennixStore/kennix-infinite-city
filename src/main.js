@@ -856,7 +856,7 @@ function buildVehicleModel(vehicle){
  // Roof skin and angled windscreens give each silhouette a more finished profile.
  const roofY=.9+cabinHeight*.5+.035;
  const roofLength=kind==="suv"?length*.4:length*.29;
- block("Painted roof panel",[0,roofY,cabinZ],[width*.72,.12,roofLength],bodyMat,root);
+ const roofPanel=block("Painted roof panel",[0,roofY,cabinZ],[width*.72,.12,roofLength],bodyMat,root);paintParts.push(roofPanel);
  const frontScreen=block("Front windscreen",[0,.99,cabinZ-length*.205],[width*.7,.42,.055],glassMat,root);
  frontScreen.setLocalEulerAngles(-20,0,0);
  const rearScreen=block("Rear windscreen",[0,.99,cabinZ+length*.205],[width*.68,.38,.055],glassMat,root);
@@ -879,7 +879,7 @@ function buildVehicleModel(vehicle){
  steeringWheel=block("Steering wheel",[-.43,1.02,cabinZ-.72],[.36,.045,.36],interiorMat,root,"cylinder");
  steeringWheel.setLocalEulerAngles(90,0,0);
  block("Instrument cluster",[0,.91,cabinZ-.68],[.48,.12,.12],interiorMat,root);
- if(kind==="suv") block("SUV roof",[0,1.48,.05],[width*.82,.13,length*.4],bodyMat,root);
+ if(kind==="suv"){const suvRoof=block("SUV roof",[0,1.48,.05],[width*.82,.13,length*.4],bodyMat,root);paintParts.push(suvRoof);}
  if(kind==="muscle") {
   block("Bonnet power bulge",[0,.73,-1.12],[.72,.22,1.05],trimMat,root);
   block("Rear spoiler wing",[0,1.02,1.82],[2.05,.12,.34],chromeMat,root);
@@ -898,11 +898,11 @@ function buildVehicleModel(vehicle){
   block("Wheel arch trim rear",[side*width*.48,.42,1.28],[.12,.72,1.05],trimMat,root);
   block("Side sill",[side*width*.49,.27,0],[.12,.16,2.6],chromeMat,root);
   // Layered lower-door surfacing gives the slab-sided body a more finished profile.
-  block("Lower door sculpting",[side*width*.505,.43,.12],[.055,.22,length*.48],bodyMat,root);
+  const lowerDoor=block("Lower door sculpting",[side*width*.505,.43,.12],[.055,.22,length*.48],bodyMat,root);paintParts.push(lowerDoor);
   block("Upper shoulder crease",[side*width*.505,.64,.02],[.045,.045,length*.68],chromeMat,root);
   block("Lower rocker aero blade",[side*width*.515,.19,.02],[.075,.075,2.72],trimMat,root);
-  block("Front bumper corner",[side*width*.43,.34,-length*.485],[.32,.2,.28],bodyMat,root);
-  block("Rear bumper corner",[side*width*.43,.34,length*.485],[.32,.2,.28],bodyMat,root);
+  const frontCorner=block("Front bumper corner",[side*width*.43,.34,-length*.485],[.32,.2,.28],bodyMat,root);paintParts.push(frontCorner);
+  const rearCorner=block("Rear bumper corner",[side*width*.43,.34,length*.485],[.32,.2,.28],bodyMat,root);paintParts.push(rearCorner);
   block("Wing mirror stem",[side*width*.49,.94,-.68],[.09,.1,.16],chromeMat,root);
   block("Wing mirror",[side*width*.54,.99,-.68],[.28,.18,.32],bodyMat,root);
   block("Front side glass",[side*width*.392,1.08,cabinZ-.43],[.055,cabinHeight*.58,.48],glassMat,root);
@@ -967,7 +967,7 @@ function buildVehicleModel(vehicle){
   block("Polished exhaust tip",[exhaustSide*.62,.27,length*.5+.18],[.2,.14,.18],chromeMat,root,"cylinder").setLocalEulerAngles(90,0,0);
   block("Hood character line",[exhaustSide*.48,.58,-1.15],[.035,.025,1.12],chromeMat,root);
  }
- if(kind==="sport") block("Sport rear deck",[0,.84,1.35],[1.6,.12,.5],bodyMat,root);
+ if(kind==="sport"){const rearDeck=block("Sport rear deck",[0,.84,1.35],[1.6,.12,.5],bodyMat,root);paintParts.push(rearDeck);}
  const brakeLamps=[];
  for(const side of [-1,1]){
   const lamp=block("Vehicle brake LED",[side*.64,.6,length*.5+.06],[.42,.16,.08],brakeLampMaterial,root);
