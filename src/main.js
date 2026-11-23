@@ -913,11 +913,42 @@ function buildVehicleModel(vehicle){
  const hood=block("Sculpted bonnet",[0,.48+height*.53,-length*.29],[width*.91,.16,length*.34],bodyMat,root);paintParts.push(hood);
  const cabinHeight=kind==="suv"?1.05:kind==="muscle"?.58:.72;
  const cabinZ=kind==="suv"?.02:kind==="muscle"?.12:-.05;
- const cabin=block("Vehicle glass cabin",[0,.9,cabinZ],[width*(kind==="suv"?.82:.76),cabinHeight,length*.42],glassMat,root);
- // Roof skin and angled windscreens give each silhouette a more finished profile.
- const roofY=.9+cabinHeight*.5+.035;
- const roofLength=kind==="suv"?length*.4:length*.29;
- const roofPanel=block("Painted roof panel",[0,roofY,cabinZ],[width*.72,.12,roofLength],bodyMat,root);paintParts.push(roofPanel);
+ // Lofted cabin shell: tapered pillars, a narrower roof and a model-specific roofline.
+ const cabinBaseY=.57,cabinTopY=cabinBaseY+cabinHeight;
+ const cabinFrontZ=cabinZ-length*(kind==="suv"?.235:kind==="muscle"?.17:.205);
+ const cabinRearZ=cabinZ+length*(kind==="suv"?.235:kind==="muscle"?.17:.205);
+ const cabinRoofFactor=kind==="suv"?.79:kind==="muscle"?.76:kind==="hyper"?.68:.73;
+ const cabinStations=[
+  [cabinFrontZ,width*.31,width*.31,cabinBaseY,cabinTopY-(kind==="suv"?.08:.16)],
+  [cabinFrontZ+length*.055,width*.385,width*.34,cabinBaseY,cabinTopY],
+  [cabinZ,width*.405,width*cabinRoofFactor*.5,cabinBaseY,cabinTopY+.025],
+  [cabinRearZ-length*.055,width*.38,width*.33,cabinBaseY,cabinTopY-.015],
+  [cabinRearZ,width*.29,width*.27,cabinBaseY,cabinTopY-(kind==="suv"?.06:.18)]
+ ];
+ const cabinPositions=[],cabinIndices=[];
+ cabinStations.forEach(([z,bottomHalf,topHalf,bottomY,topY])=>{
+  cabinPositions.push(-bottomHalf,bottomY,z,bottomHalf,bottomY,z,topHalf,topY,z,-topHalf,topY,z);
+ });
+ for(let station=0;station<cabinStations.length-1;station++){
+  for(let corner=0;corner<4;corner++){
+   const a=station*4+corner,b=station*4+(corner+1)%4,c=(station+1)*4+(corner+1)%4,d=(station+1)*4+corner;
+   cabinIndices.push(a,b,c,a,c,d);
+  }
+ }
+ cabinIndices.push(0,3,2,0,2,1);
+ const lastCabin=(cabinStations.length-1)*4;
+ cabinIndices.push(lastCabin,lastCabin+1,lastCabin+2,lastCabin,lastCabin+2,lastCabin+3);
+ const cabinMesh=new pc.Mesh(app.graphicsDevice);
+ cabinMesh.setPositions(cabinPositions);
+ cabinMesh.setNormals(pc.calculateNormals(cabinPositions,cabinIndices));
+ cabinMesh.setIndices(cabinIndices);cabinMesh.update();
+ const cabin=new pc.Entity("Tapered sculpted glass cabin");
+ cabin.addComponent("render",{meshInstances:[new pc.MeshInstance(cabinMesh,glassMat,cabin)]});
+ root.addChild(cabin);
+ // Painted roof follows the reduced cabin width and unique roof length.
+ const roofY=cabinTopY+.025;
+ const roofLength=kind==="suv"?length*.39:kind==="muscle"?length*.25:kind==="hyper"?length*.23:length*.29;
+ const roofPanel=block("Painted roof panel",[0,roofY,cabinZ],[width*cabinRoofFactor,.09,roofLength],bodyMat,root);paintParts.push(roofPanel);
  const frontScreen=block("Front windscreen",[0,.99,cabinZ-length*.205],[width*.7,.42,.055],glassMat,root);
  frontScreen.setLocalEulerAngles(-20,0,0);
  const rearScreen=block("Rear windscreen",[0,.99,cabinZ+length*.205],[width*.68,.38,.055],glassMat,root);
