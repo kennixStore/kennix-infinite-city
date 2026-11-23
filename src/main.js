@@ -1138,6 +1138,7 @@ controls.innerHTML = `
     <button data-control="brake" aria-label="Brake and reverse">BRAKE</button>
     <button data-control="handbrake" aria-label="Handbrake">HANDBRAKE</button>
     <button data-control="gas" aria-label="Accelerate">GAS</button>
+    <button data-control="nitro" aria-label="Nitro boost">NITRO</button>
     <button data-control="hazards" aria-label="Toggle hazard lights">HAZARDS</button>
   </div>`;
 document.querySelector("#game-stage").appendChild(controls);
@@ -1160,6 +1161,9 @@ gameOverlay.querySelector("#start-race").addEventListener("click",()=>{raceActiv
 gameOverlay.querySelector("#repair-car").addEventListener("click",()=>{damage=0;try{localStorage.setItem("kxic-damage","0")}catch{}speed=0;lateralSpeed=0;refreshVehicleDamage();refreshGarage()});
 
 const fuelLabel=document.createElement("div");fuelLabel.className="fuel-status";fuelLabel.textContent="FUEL 100%";document.querySelector("#game-stage").appendChild(fuelLabel);
+const nitroLabel=document.createElement("div");nitroLabel.className="nitro-status";nitroLabel.innerHTML='<span>NITRO</span><div class="nitro-track"><i></i></div>';document.querySelector("#game-stage").appendChild(nitroLabel);
+const nitroFill=nitroLabel.querySelector("i");
+let nitro=100,nitroActive=false;
 const refuelButton=document.createElement("button");refuelButton.className="refuel-button";refuelButton.textContent="REFUEL";refuelButton.hidden=true;document.querySelector("#game-stage").appendChild(refuelButton);
 let fuel=100;try{fuel=Math.max(0,Math.min(100,Number(localStorage.getItem("kxic-fuel")??100)))}catch{}
 let lastFuelSaved=Math.floor(fuel);
@@ -1557,6 +1561,10 @@ app.on("update", dt => {
   const left = isDown("a", "arrowleft", "left");
   const right = isDown("d", "arrowright", "right");
   handbrakeActive = isDown(" ", "handbrake");
+  nitroActive=forward&&isDown("shift","nitro")&&nitro>0.5;
+  nitro=clamp(nitro+(nitroActive?-34:12)*dt,0,100);
+  nitroFill.style.width=nitro+"%";
+  nitroLabel.classList.toggle("boosting",nitroActive);
 
   const previousSpeed = speed;
   // More grounded arcade handling: throttle, braking, coasting and tyre grip.
@@ -1564,7 +1572,7 @@ app.on("update", dt => {
   if(forward&&fuel>0)fuel=Math.max(0,fuel-dt*(.018+Math.abs(speed)*.0009));
   if(Math.floor(fuel)!==lastFuelSaved){lastFuelSaved=Math.floor(fuel);try{localStorage.setItem("kxic-fuel",String(fuel))}catch{}}
   if(forward&&fuel>0){
-    speed += (speed < 0 ? 26 : selectedVehicle.acceleration) * dt;
+    speed += (speed < 0 ? 26 : selectedVehicle.acceleration*(nitroActive?1.75:1)) * dt;
   } else if (reverse) {
     speed -= (speed > 0 ? 25 : 7.5) * dt;
   } else {
@@ -1572,7 +1580,7 @@ app.on("update", dt => {
   }
 
   if (handbrakeActive && Math.abs(speed) > 2) speed *= Math.exp(-1.2 * dt);
-  speed = clamp(speed, -12, Math.max(18,selectedVehicle.maxSpeed*(1-damage/180)));
+  speed = clamp(speed, -12, Math.max(18,selectedVehicle.maxSpeed*(1-damage/180)*(nitroActive?1.22:1)));
   const longitudinalAcceleration = dt > 0 ? (speed-previousSpeed)/dt : 0;
   const targetBodyPitch = clamp(-longitudinalAcceleration*.16,-3,3);
   bodyPitch += (targetBodyPitch-bodyPitch)*Math.min(1,dt*5);
