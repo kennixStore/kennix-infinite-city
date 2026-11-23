@@ -848,10 +848,10 @@ function buildVehicleModel(vehicle){
  const reverseMat=makeMat([.9,.94,1],.08,.18);reverseMat.emissive=new pc.Color(.72,.82,1);reverseMat.update();
  const reverseOffMat=makeMat([.34,.37,.4],.08,.28);
  const wheelList=[],paintParts=[],indicators=[],reverseLamps=[];
+ const kind=vehicle.id;
  const caliperMat=makeMat(kind==="muscle"?[.72,.045,.018]:kind==="hyper"?[.025,.22,.62]:kind==="suv"?[.68,.48,.08]:[.62,.055,.035],.62,.28);
  const tyreTreadMat=makeMat([.045,.05,.055],.08,.9);
-  let steeringWheel;
- const kind=vehicle.id;
+ let steeringWheel;
  const width=kind==="suv"?2.25:kind==="muscle"?2.18:kind==="hyper"?2.02:2.08;
  const length=kind==="suv"?4.65:kind==="muscle"?4.55:kind==="hyper"?4.35:4.25;
  const height=kind==="suv"?1.05:kind==="muscle"?.68:.55;
