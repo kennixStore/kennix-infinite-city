@@ -812,10 +812,10 @@ const raceGates = raceRoute.map((z,i)=>{
 });
 
 const vehicleCatalog = [
- {id:"sport",name:"KX Sport",className:"SPORT",paint:[0.035,0.07,0.12],acceleration:12.5,maxSpeed:42,handling:1.0,owned:true},
- {id:"muscle",name:"Vortex GT",className:"MUSCLE",paint:[0.52,0.075,0.035],acceleration:13.8,maxSpeed:39,handling:0.88,owned:true},
- {id:"suv",name:"Ranger X",className:"SUV",paint:[0.18,0.23,0.2],acceleration:9.2,maxSpeed:32,handling:0.78,owned:true},
- {id:"hyper",name:"Apex R",className:"HYPER",paint:[0.04,0.32,0.38],acceleration:16.5,maxSpeed:50,handling:1.12,owned:true}
+ {id:"sport",name:"KX Sport",className:"SPORT",paint:[0.035,0.07,0.12],acceleration:12.5,maxSpeed:42,handling:1.0,braking:1.0,grip:1.0,owned:true},
+ {id:"muscle",name:"Vortex GT",className:"MUSCLE",paint:[0.52,0.075,0.035],acceleration:13.8,maxSpeed:39,handling:0.88,braking:1.12,grip:.91,owned:true},
+ {id:"suv",name:"Ranger X",className:"SUV",paint:[0.18,0.23,0.2],acceleration:9.2,maxSpeed:32,handling:0.78,braking:1.28,grip:1.18,owned:true},
+ {id:"hyper",name:"Apex R",className:"HYPER",paint:[0.04,0.32,0.38],acceleration:16.5,maxSpeed:50,handling:1.12,braking:1.08,grip:1.06,owned:true}
 ];
 const savedGarage=(()=>{try{return JSON.parse(localStorage.getItem("kxic-garage")||"{}")}catch{return {}}})();
 let selectedVehicle=vehicleCatalog.find(v=>v.id===savedGarage.vehicle)||vehicleCatalog[0];
@@ -1653,7 +1653,7 @@ app.on("update", dt => {
   if(forward&&fuel>0){
     speed += (speed < 0 ? 26 : selectedVehicle.acceleration*(nitroActive?1.75:1)) * dt;
   } else if (reverse) {
-    speed -= (speed > 0 ? 25 : 7.5) * dt;
+    speed -= (speed > 0 ? 25*selectedVehicle.braking : 7.5) * dt;
   } else {
     speed *= Math.exp(-(handbrakeActive ? 1.7 : 0.72) * dt);
   }
@@ -1670,12 +1670,12 @@ app.on("update", dt => {
 
   const speedRatio = clamp(Math.abs(speed) / 24, 0, 1);
   const directionSign = Math.sign(speed || 1);
-  const gripFactor = handbrakeActive ? 1.25 : 1;
+  const gripFactor = handbrakeActive ? 1.25 : selectedVehicle.grip;
   heading -= steeringAngle * 0.88 * selectedVehicle.handling * (0.16 + speedRatio * 0.84) * gripFactor * dt * directionSign;
 
   // Steering creates a little lateral movement; normal tyres quickly regain grip.
   lateralSpeed += steerInput * speedRatio * (handbrakeActive ? 5.2 : 1.35) * directionSign * dt;
-  lateralSpeed *= Math.exp(-(handbrakeActive ? 1.15 : 6.2) * dt);
+  lateralSpeed *= Math.exp(-(handbrakeActive ? 1.15 : 6.2*selectedVehicle.grip) * dt);
 
   const radians = heading * Math.PI / 180;
   const forwardX = Math.sin(radians);
