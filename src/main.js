@@ -1163,6 +1163,70 @@ function buildVehicleModel(vehicle){
  return {root,wheels:wheelList,paintParts,brakeLamps,reverseLamps,exhaustFlames,steeringWheel,indicators,bodyMat,damageParts};
 }
 for(const v of vehicleCatalog) vehicleModels[v.id]=buildVehicleModel(v);
+
+// Optional Kenney CC0 vehicle containers. The procedural models remain the safe
+// fallback until public/models/vehicles/manifest.json and its GLB files are present.
+const importedVehicleFiles = {
+ sport: "race.glb",
+ muscle: "sedan-sports.glb",
+ suv: "suv-luxury.glb",
+ hyper: "race-future.glb"
+};
+let importedVehiclesReady = false;
+function activateVehicleModel(){
+ for(const [id,model] of Object.entries(vehicleModels)){
+  const selected=id===selectedVehicle.id;
+  model.root.enabled=selected&&!model.importedRoot;
+  if(model.importedRoot)model.importedRoot.enabled=selected;
+  applyVehicleDamage(model,damage);
+ }
+ const current=vehicleModels[selectedVehicle.id];
+ activeVehicleWheels=current.importedWheels||current.wheels;
+ activeSteeringWheel=current.steeringWheel;
+ activeVehicleIndicators=current.indicators;
+ activeVehicleReverseLamps=current.reverseLamps;
+ activeVehicleExhaustFlames=current.exhaustFlames;
+}
+function loadImportedVehicleModels(){
+ fetch("/models/vehicles/manifest.json",{cache:"no-store"}).then(response=>{
+  if(!response.ok) return null;
+  return response.json();
+ }).then(manifest=>{
+  if(!manifest||manifest.version!==1||!manifest.vehicles)return;
+  importedVehiclesReady=true;
+  for(const [id,filename] of Object.entries(importedVehicleFiles)){
+   if(!manifest.vehicles.includes(filename)||!vehicleModels[id])continue;
+   app.assets.loadFromUrl("/models/vehicles/"+filename,"container",(err,asset)=>{
+    if(err||!asset?.resource){console.warn("Optional vehicle model unavailable:",filename,err||"empty asset");return;}
+    const model=vehicleModels[id];
+    if(model.importedRoot)return;
+    const imported=asset.resource.instantiateRenderEntity();
+    imported.name="KENNIX imported "+id;
+    imported.setLocalScale(1.5,1.5,1.5);
+    imported.setLocalEulerAngles(0,180,0);
+    imported.setLocalPosition(0,0,0);
+    car.addChild(imported);
+    const wheelNames=["wheel-front-left","wheel-front-right","wheel-back-left","wheel-back-right"];
+    const importedWheels=wheelNames.map(name=>imported.findByName(name)).filter(Boolean);
+    if(importedWheels.length===4){
+     importedWheels.forEach(wheel=>{
+      const p=wheel.getLocalPosition();
+      wheel.suspensionBaseY=p.y;
+      wheel.suspensionOffset=0;
+      wheel.suspensionVelocity=0;
+      wheel.baseLocalX=p.x;
+      wheel.baseLocalZ=p.z;
+     });
+     model.importedWheels=importedWheels;
+    }
+    model.importedRoot=imported;
+    model.root.enabled=false;
+    activateVehicleModel();
+    console.info("Loaded Kenney CC0 vehicle:",filename);
+   });
+  }
+ }).catch(error=>console.warn("Optional vehicle manifest unavailable; using procedural vehicles.",error));
+}
 function setPlayerPaint(rgb){
  selectedPaint=rgb;
  const model=vehicleModels[selectedVehicle.id];
@@ -1185,16 +1249,6 @@ function applyVehicleDamage(model,amount=damage){
 function refreshVehicleDamage(){
  for(const model of Object.values(vehicleModels))applyVehicleDamage(model,damage);
 }
-function activateVehicleModel(){
- for(const [id,model] of Object.entries(vehicleModels)){model.root.enabled=id===selectedVehicle.id;applyVehicleDamage(model,damage);}
- activeVehicleWheels=vehicleModels[selectedVehicle.id].wheels;
-  activeSteeringWheel=vehicleModels[selectedVehicle.id].steeringWheel;
-  activeVehicleIndicators=vehicleModels[selectedVehicle.id].indicators;
-  activeVehicleReverseLamps=vehicleModels[selectedVehicle.id].reverseLamps;
-  activeVehicleExhaustFlames=vehicleModels[selectedVehicle.id].exhaustFlames;
-}
-
-
 const camera = new pc.Entity("Chase camera");
 camera.addComponent("camera", {
   clearColor: new pc.Color(0.23, 0.34, 0.49),
@@ -1783,7 +1837,8 @@ app.on("update", dt => {
     wheel.suspensionVelocity+=(springForce-wheel.suspensionVelocity*14)*dt;
     wheel.suspensionOffset=clamp(wheel.suspensionOffset+wheel.suspensionVelocity*dt,-.06,.06);
     const wheelPosition=wheel.getLocalPosition();
-    wheel.setLocalPosition(wheelPosition.x,wheel.suspensionBaseY+wheel.suspensionOffset,wheelPosition.z);
+    const baseY=wheel.suspensionBaseY??wheelPosition.y;
+    wheel.setLocalPosition(wheel.baseLocalX??wheelPosition.x,baseY+(wheel.suspensionOffset||0),wheel.baseLocalZ??wheelPosition.z);
     wheel.setLocalEulerAngles(wheelSpinAngle,steer,0);
   });
 
@@ -2068,3 +2123,5 @@ app.on("update", dt => {
 });
 
 app.start();
+activateVehicleModel();
+loadImportedVehicleModels();
