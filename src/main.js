@@ -1651,9 +1651,10 @@ app.on("update", dt => {
   if(forward&&fuel>0)fuel=Math.max(0,fuel-dt*(.018+Math.abs(speed)*.0009));
   if(Math.floor(fuel)!==lastFuelSaved){lastFuelSaved=Math.floor(fuel);try{localStorage.setItem("kxic-fuel",String(fuel))}catch{}}
   if(forward&&fuel>0){
-    speed += (speed < 0 ? 26 : selectedVehicle.acceleration*(nitroActive?1.75:1)) * dt;
+    const engineCondition=1-damage*.0038;
+    speed += (speed < 0 ? 26 : selectedVehicle.acceleration*engineCondition*(nitroActive?1.75:1)) * dt;
   } else if (reverse) {
-    speed -= (speed > 0 ? 25*selectedVehicle.braking : 7.5) * dt;
+    speed -= (speed > 0 ? 25*selectedVehicle.braking*(1-damage*.0025) : 7.5) * dt;
   } else {
     speed *= Math.exp(-(handbrakeActive ? 1.7 : 0.72) * dt);
   }
@@ -1670,7 +1671,7 @@ app.on("update", dt => {
 
   const speedRatio = clamp(Math.abs(speed) / 24, 0, 1);
   const directionSign = Math.sign(speed || 1);
-  const gripFactor = handbrakeActive ? 1.25 : selectedVehicle.grip;
+  const gripFactor = handbrakeActive ? 1.25 : selectedVehicle.grip*(1-damage*.0018);
   heading -= steeringAngle * 0.88 * selectedVehicle.handling * (0.16 + speedRatio * 0.84) * gripFactor * dt * directionSign;
 
   // Steering creates a little lateral movement; normal tyres quickly regain grip.
