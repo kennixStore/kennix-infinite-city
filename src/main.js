@@ -1413,7 +1413,7 @@ function setHorn(active){
 }
 utilityBar.querySelector("#audio-toggle").addEventListener("click",()=>{
  try{
-  if(audioEnabled){audioEnabled=false;engineGain.gain.setTargetAtTime(0,audioContext.currentTime,.08);setHorn(false);utilityBar.querySelector("#audio-toggle").textContent="SOUND: OFF"}
+  if(audioEnabled){audioEnabled=false;engineGain.gain.setTargetAtTime(0,audioContext.currentTime,.08);if(nitroGain)nitroGain.gain.setTargetAtTime(0,audioContext.currentTime,.05);setHorn(false);utilityBar.querySelector("#audio-toggle").textContent="SOUND: OFF"}
   else initialiseVehicleAudio();
  }catch(error){onlineStatus.textContent=error.message}
 });
