@@ -1385,7 +1385,7 @@ function drawMiniMap() {
 let miniMapElapsed = 0;
 
 
-let audioContext=null,engineOscillator=null,engineGain=null,engineFilter=null,hornOscillator=null,hornGain=null,audioEnabled=false;
+let audioContext=null,engineOscillator=null,engineGain=null,engineFilter=null,hornOscillator=null,hornGain=null,nitroOscillator=null,nitroGain=null,audioEnabled=false;
 function initialiseVehicleAudio(){
  const AudioEngine=window.AudioContext||window.webkitAudioContext;
  if(!AudioEngine)throw new Error("This browser does not support game audio.");
@@ -1398,6 +1398,10 @@ function initialiseVehicleAudio(){
   hornOscillator=audioContext.createOscillator();hornOscillator.type="square";
   hornGain=audioContext.createGain();hornGain.gain.value=0;
   hornOscillator.connect(hornGain);hornGain.connect(audioContext.destination);hornOscillator.frequency.value=440;hornOscillator.start();
+  nitroOscillator=audioContext.createOscillator();nitroOscillator.type="sawtooth";
+  nitroGain=audioContext.createGain();nitroGain.gain.value=0;
+  const nitroFilter=audioContext.createBiquadFilter();nitroFilter.type="lowpass";nitroFilter.frequency.value=680;
+  nitroOscillator.connect(nitroFilter);nitroFilter.connect(nitroGain);nitroGain.connect(audioContext.destination);nitroOscillator.start();
  }
  if(audioContext.state==="suspended")audioContext.resume();
  audioEnabled=true;
@@ -1712,7 +1716,11 @@ app.on("update", dt => {
   }else skidMarkTimer=0;
   if(audioEnabled&&audioContext&&engineOscillator){
    const throttleLoad=forward?1:reverse ? 0.62 : 0.28;
-   engineOscillator.frequency.setTargetAtTime(58+Math.abs(speed)*5.2+(forward?selectedVehicle.acceleration*1.1:0),audioContext.currentTime,.08);
+   const engineBase=selectedVehicle.id==="muscle"?48:selectedVehicle.id==="suv"?42:selectedVehicle.id==="hyper"?76:58;
+   const engineWave=selectedVehicle.id==="muscle"?"sawtooth":selectedVehicle.id==="suv"?"triangle":selectedVehicle.id==="hyper"?"square":"sawtooth";
+   engineOscillator.type=engineWave;
+   engineOscillator.frequency.setTargetAtTime(engineBase+Math.abs(speed)*(selectedVehicle.id==="hyper"?6.3:5.2)+(forward?selectedVehicle.acceleration*1.1:0),audioContext.currentTime,.08);
+   if(nitroOscillator&&nitroGain){nitroOscillator.frequency.setTargetAtTime(85+Math.abs(speed)*2.8,audioContext.currentTime,.05);nitroGain.gain.setTargetAtTime(nitroActive?.012:0,audioContext.currentTime,.08);}
    engineFilter.frequency.setTargetAtTime(260+Math.abs(speed)*24,audioContext.currentTime,.1);
    engineGain.gain.setTargetAtTime((gamePaused?0:.018+Math.abs(speed)/Math.max(1,selectedVehicle.maxSpeed)*.035)*throttleLoad,audioContext.currentTime,.1);
   }
