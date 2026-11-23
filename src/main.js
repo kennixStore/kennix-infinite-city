@@ -873,6 +873,8 @@ function buildVehicleModel(vehicle){
   block("Front seat cushion",[side*.39,.68,cabinZ-.12],[.55,.16,.66],seatMat,root);
   const seatBack=block("Front seat backrest",[side*.39,.91,cabinZ+.18],[.55,.62,.17],seatMat,root);
   seatBack.setLocalEulerAngles(-7,0,0);
+  block("Front seat headrest",[side*.39,1.27,cabinZ+.22],[.34,.2,.15],seatMat,root);
+  block("Front seat side bolster",[side*.39,.82,cabinZ-.02],[.58,.42,.12],interiorMat,root);
   block("Rear seat cushion",[side*.36,.67,cabinZ+.66],[.56,.14,.48],seatMat,root);
   block("Rear seat backrest",[side*.36,.87,cabinZ+.84],[.56,.42,.14],seatMat,root);
  }
@@ -881,6 +883,9 @@ function buildVehicleModel(vehicle){
  steeringWheel=block("Steering wheel",[-.43,1.02,cabinZ-.72],[.36,.045,.36],interiorMat,root,"cylinder");
  steeringWheel.setLocalEulerAngles(90,0,0);
  block("Instrument cluster",[0,.91,cabinZ-.68],[.48,.12,.12],interiorMat,root);
+ block("Digital instrument screen",[-.43,.99,cabinZ-.69],[.29,.12,.025],frontSignatureMat,root);
+ block("Centre infotainment display",[0,.86,cabinZ-.23],[.4,.25,.045],glassMat,root);
+ block("Infotainment screen glow",[0,.86,cabinZ-.258],[.31,.16,.012],frontSignatureMat,root);
  if(kind==="suv"){const suvRoof=block("SUV roof",[0,1.48,.05],[width*.82,.13,length*.4],bodyMat,root);paintParts.push(suvRoof);}
  if(kind==="muscle") {
   block("Bonnet power bulge",[0,.73,-1.12],[.72,.22,1.05],trimMat,root);
