@@ -1,0 +1,6 @@
+{
+  "version": 1,
+  "source": "Kenney Car Kit 3.1",
+  "license": "CC0-1.0",
+  "vehicles": ["race.glb", "race-future.glb", "sedan-sports.glb", "suv-luxury.glb", "hatchback-sports.glb", "police.glb", "taxi.glb", "truck.glb", "van.glb"]
+}
