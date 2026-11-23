@@ -926,21 +926,25 @@ function buildVehicleModel(vehicle){
  }
  // Each wheel is a single pivot: tyre, brake disc, rim and spokes now
  // rotate and steer together instead of leaving the alloy details frozen.
- for(const z of [-1.42,1.42]){
+ const tyreDiameter=kind==="suv"?.78:kind==="muscle"?.76:kind==="hyper"?.66:.72;
+ const tyreWidth=kind==="suv"?.39:kind==="muscle"?.36:kind==="hyper"?.29:.33;
+ const wheelZ=length*.33;
+ for(const z of [-wheelZ,wheelZ]){
   for(const side of [-1,1]){
    const wheelX=side*width*.49;
    const wheelPivot=new pc.Entity("Suspended wheel assembly");
    wheelPivot.setLocalPosition(wheelX,.28,z);
    root.addChild(wheelPivot);
-   const tyre=block("Performance tyre",[0,0,0],[.7,.34,.72],trimMat,wheelPivot,"cylinder");
+   const tyre=block("Performance tyre",[0,0,0],[tyreDiameter,tyreWidth,tyreDiameter],trimMat,wheelPivot,"cylinder");
    tyre.setLocalEulerAngles(0,0,90);
-   const rimX=side*.19;
-   block("Machined alloy rim",[rimX,0,0],[.43,.07,.43],chromeMat,wheelPivot,"cylinder").setLocalEulerAngles(0,0,90);
-   block("Brake disc",[side*.145,0,0],[.34,.045,.34],mats.metal,wheelPivot,"cylinder").setLocalEulerAngles(0,0,90);
-   block("Wheel centre cap",[rimX+side*.045,0,0],[.12,.075,.12],mats.paint,wheelPivot,"cylinder").setLocalEulerAngles(0,0,90);
+   const rimX=side*tyreWidth*.56;
+   const rimDiameter=tyreDiameter*.61;
+   block("Machined alloy rim",[rimX,0,0],[rimDiameter,tyreWidth*.22,rimDiameter],chromeMat,wheelPivot,"cylinder").setLocalEulerAngles(0,0,90);
+   block("Brake disc",[side*tyreWidth*.43,0,0],[rimDiameter*.78,.045,rimDiameter*.78],mats.metal,wheelPivot,"cylinder").setLocalEulerAngles(0,0,90);
+   block("Wheel centre cap",[rimX+side*.035,0,0],[.12,.075,.12],mats.paint,wheelPivot,"cylinder").setLocalEulerAngles(0,0,90);
    for(let spoke=0;spoke<5;spoke++){
     const angle=spoke*Math.PI*2/5;
-    const part=block("Five spoke alloy detail",[rimX+side*.055,Math.sin(angle)*.13,Math.cos(angle)*.13],[.045,.19,.055],chromeMat,wheelPivot);
+    const part=block("Five spoke alloy detail",[rimX+side*.04,Math.sin(angle)*rimDiameter*.3,Math.cos(angle)*rimDiameter*.3],[.045,rimDiameter*.44,.055],chromeMat,wheelPivot);
     part.setLocalEulerAngles(angle*180/Math.PI,0,0);
    }
    wheelList.push(wheelPivot);
