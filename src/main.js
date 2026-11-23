@@ -1049,8 +1049,8 @@ function buildVehicleModel(vehicle){
    tyre.setLocalEulerAngles(0,0,90);
    // Raised circumferential tread bars add visible tyre texture without heavy geometry.
    const treadRadius=tyreDiameter*.485;
-   for(let tread=0;tread<16;tread++){
-    const angle=tread*Math.PI*2/16;
+   for(let tread=0;tread<10;tread++){
+    const angle=tread*Math.PI*2/10;
     const treadBar=block("Tyre tread bar",[0,Math.sin(angle)*treadRadius,Math.cos(angle)*treadRadius],[tyreWidth*1.015,.075,.022],tyreTreadMat,wheelPivot);
     treadBar.setLocalEulerAngles(angle*180/Math.PI,0,0);
    }
