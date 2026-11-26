@@ -203,6 +203,32 @@ for (const side of [-1, 1]) {
   }
 }
 
+// Functional-looking traffic signal props make the junctions read as city
+// intersections. These are visual signals for now; traffic AI is separate.
+const signalHousing=makeMat([.018,.024,.03],.25,.42);
+const signalRed=makeMat([.62,.018,.012],.12,.22);
+const signalAmber=makeMat([.8,.31,.018],.12,.22);
+const signalGreen=makeMat([.025,.48,.12],.12,.22);
+for(const material of [signalRed,signalAmber,signalGreen]){
+ material.emissive=material.diffuse.clone().mulScalar(.22);
+ material.update();
+}
+function buildTrafficSignal(x,z,rotation=0){
+ const pole=new pc.Entity("NOVA traffic signal");app.root.addChild(pole);
+ pole.setPosition(x,0,z);pole.setEulerAngles(0,rotation,0);
+ block("Traffic signal pole",[0,3.1,0],[.16,6.2,.16],mats.metal,pole);
+ block("Traffic signal head",[0,5.25,-.12],[.62,1.72,.48],signalHousing,pole);
+ for(const [y,material] of [[5.76,signalRed],[5.25,signalAmber],[4.74,signalGreen]]){
+  block("Traffic signal lens",[0,y,-.385],[.34,.34,.1],material,pole,"sphere");
+ }
+ block("Traffic signal visor",[0,6.18,-.12],[.78,.12,.62],signalHousing,pole);
+}
+for(const junctionZ of [-43,39]){
+ for(const sideX of [-1,1]){
+  buildTrafficSignal(sideX*6.35,junctionZ-7,sideX===1?180:0);
+ }
+}
+
 // Cross streets connect the avenue to the surrounding district.
 for (const junctionZ of [-43, 39]) {
   block("Cross street", [0, -0.035, junctionZ], [118, 0.15, 10], mats.asphalt);
