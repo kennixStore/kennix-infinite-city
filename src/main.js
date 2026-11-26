@@ -2355,6 +2355,15 @@ miniMapPanel.innerHTML = `
     <option value="industrial">INDUSTRIAL EDGE</option>
   </select>`;
 document.querySelector("#game-stage").appendChild(miniMapPanel);
+const mapSizeToggle=document.createElement("button");
+mapSizeToggle.type="button";mapSizeToggle.className="map-size-toggle";
+mapSizeToggle.textContent="MAP +";mapSizeToggle.setAttribute("aria-expanded","false");
+miniMapPanel.querySelector(".minimap-heading").appendChild(mapSizeToggle);
+mapSizeToggle.addEventListener("click",()=>{
+  const expanded=miniMapPanel.classList.toggle("map-expanded");
+  mapSizeToggle.textContent=expanded?"MAP −":"MAP +";
+  mapSizeToggle.setAttribute("aria-expanded",String(expanded));
+});
 const miniMapCanvas = miniMapPanel.querySelector("#city-minimap");
 const miniMapContext = miniMapCanvas.getContext("2d");
 const mapPositionLabel = miniMapPanel.querySelector("#map-position");
