@@ -407,8 +407,24 @@ for(let row=0;row<6;row++){
   block("Rooftop plant room",[x,h+.8,z],[w*.35,1.6,5],mats.metal);
   block("Rooftop service unit",[x+w*.28,h/2+.55,z+5.2],[2.6,1.1,2.1],mats.dark);
 
-  // Selective architectural features break up the repeated block silhouettes.
+  // Varied roof crowns and glass setbacks give the skyline a less repetitive,
+  // more international high-rise profile without expensive extra textures.
   const detailIndex=row*6+col;
+  if(detailIndex%3===0){
+   const crownW=w*(.48+(detailIndex%2)*.08);
+   const crownH=2.4+(detailIndex%4)*.45;
+   block("Stepped tower crown",[x,h+crownH/2,z],[crownW,crownH,12.8],facades[(row+col+1)%facades.length]);
+   for(const face of [-1,1]){
+    block("Crown glass ribbon",[x,h+crownH*.52,z+face*6.46],[crownW*.82,.48,.08],mats.glass);
+    block("Crown metal edge",[x,h+crownH+.08,z+face*6.55],[crownW+.35,.16,.22],mats.metal);
+   }
+  }
+  if(detailIndex%4===1){
+   block("Rooftop architectural mast",[x+w*.28,h+2.2,z],[.16,4.4,.16],mats.metal);
+   block("Rooftop beacon",[x+w*.28,h+4.45,z],[.38,.38,.38],mats.windowLit,"root","sphere");
+  }
+
+  // Selective architectural features break up the repeated block silhouettes.
   if(detailIndex%3!==1){
    const face=detailIndex%2===0?1:-1;
    const faceZ=z+face*11.72;
@@ -2355,7 +2371,9 @@ app.on("update", dt => {
     lateralSpeed*=Math.exp(-3.2*dt);
   }
   car.setPosition(p);
-  car.setEulerAngles(bodyPitch, heading, clamp(-steeringAngle * speedRatio * 0.035, -3, 3));
+  // Keep the vehicle root level so acceleration/braking body animation cannot
+  // rotate the follow-camera reference frame. Suspension still reacts below.
+  car.setEulerAngles(0, heading, 0);
   if(handbrakeActive&&Math.abs(speed)>9){
    skidMarkTimer+=dt;
    if(skidMarkTimer>=.13){skidMarkTimer=0;addSkidMarks(p,forwardX,forwardZ,rightX,rightZ)}
@@ -2699,15 +2717,25 @@ app.on("update", dt => {
   // Third-person framing closer to a modern open-world driving game:
   // keep the vehicle prominent at city speeds, then pull back smoothly on
   // faster roads so the player can read traffic and upcoming turns.
-  const chaseDistance=9.6+speedRatio*4.2;
-  const chaseHeight=4.2+speedRatio*1.25;
+  // Stable third-person chase camera: keep a fixed, low horizon target.
+  // The previous target sat behind the car, so the vehicle could block the
+  // view as speed increased and make the camera appear to tilt toward the sky.
+  const chaseDistance=10.2+speedRatio*1.6;
+  const chaseHeight=4.6+speedRatio*.35;
   const camTarget=cameraMode==="cockpit"
     ?new pc.Vec3(p.x+Math.sin(heading*Math.PI/180)*.55,p.y+1.48,p.z-Math.cos(heading*Math.PI/180)*.25)
     :new pc.Vec3(p.x-Math.sin(heading*Math.PI/180)*chaseDistance,p.y+chaseHeight,p.z+Math.cos(heading*Math.PI/180)*chaseDistance);
-  const camPos=camera.getPosition();camPos.lerp(camPos,camTarget,1-Math.pow(.001,dt));camera.setPosition(camPos);
-  const targetFov=cameraMode==="cockpit"?76:64+speedRatio*8;
+  const camPos=camera.getPosition();
+  camPos.lerp(camPos,camTarget,1-Math.pow(.001,dt));
+  camera.setPosition(camPos);
+  const targetFov=cameraMode==="cockpit"?76:64+speedRatio*5.5;
   camera.camera.fov+=(targetFov-camera.camera.fov)*Math.min(1,dt*2.2);
-  camera.lookAt(p.x+Math.sin(heading*Math.PI/180)*(cameraMode==="cockpit"?12:-3.2),p.y+(cameraMode==="cockpit"?1.35:.7),p.z-Math.cos(heading*Math.PI/180)*(cameraMode==="cockpit"?12:-4.0));
+  // Aim just ahead of the vehicle, never behind it.
+  camera.lookAt(
+    p.x+Math.sin(heading*Math.PI/180)*(cameraMode==="cockpit"?12:3.5),
+    p.y+(cameraMode==="cockpit"?1.35:.95),
+    p.z-Math.cos(heading*Math.PI/180)*(cameraMode==="cockpit"?12:3.5)
+  );
 
   if (speedValue) speedValue.textContent = Math.round(Math.abs(speed) * 3.6).toString().padStart(3, "0");
   if (gearValue) gearValue.textContent = speed > 0.6 ? "D" : speed < -0.6 ? "R" : "N";
