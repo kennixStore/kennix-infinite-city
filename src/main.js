@@ -2780,6 +2780,14 @@ function loadCityArchitecture(){
   loadCityArchitectureAsset("CC0 industrial car repair workshop",
     "https://tevy.dev/models/workshop-building/v2/lod1.glb",
     [{x:-94,z:215,rotation:0}]);
+  // Ground-level street commerce: detailed CC0 food carts and low plastic stools
+  // add believable market activity without replacing the Nigerian stall layout.
+  loadCityArchitectureAsset("CC0 street food stall cart",
+    "https://tevy.dev/models/street-food-stall-cart/v1/lod1.glb",
+    [{x:72,z:-113,rotation:90},{x:108,z:-113,rotation:-90}]);
+  loadCityArchitectureAsset("CC0 low plastic market stools",
+    "https://tevy.dev/models/low-plastic-stool/v1/lod1.glb",
+    [{x:74,z:-110,rotation:0},{x:76,z:-110,rotation:0},{x:104,z:-110,rotation:0},{x:106,z:-110,rotation:0}]);
   // Replace three procedural tower shells with complete authored city buildings.
   loadCityArchitectureAsset("CC0 mixed-use urban tenant building",
     "https://tevy.dev/models/mixed-tenant-block/v1/lod1.glb",
