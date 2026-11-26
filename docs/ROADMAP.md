@@ -33,6 +33,14 @@
 - [x] Procedural vehicle-detail pass: added windscreen panels, side glazing, mirrors, door seams, grille layers, aero trim, alloy rims and brake-disc details to the selectable vehicle silhouettes; NPC traffic cars also gained roof/glass details (still not equivalent to authored high-detail vehicle assets).
 - [x] Refined the garage, HUD, touch controls and build-status presentation; corrected sky-dome face culling and camera render distance (visual runtime verification pending).
 
+## Visual rebuild — highest priority
+- [ ] Retire the primitive box-built city and placeholder vehicle silhouettes from the final presentation; keep them only as temporary greybox/test content.
+- [ ] Establish a photorealistic rendering baseline with high-quality PBR materials, realistic sky/environment lighting, tone mapping, shadows, reflections and atmospheric depth.
+- [ ] Replace the visible city blocks with authored, licensed realistic buildings, street props, vegetation and landmark assets; create a coherent Nigerian-inspired street scene rather than repeating primitive blocks.
+- [ ] Replace all player and traffic placeholder cars with detailed licensed vehicles, correct wheel rigs, interiors, glass, lights and materials.
+- [ ] Add realistic human character assets and animations, then tune third-person camera framing and movement.
+- [ ] Optimise asset sizes, draw calls, shadows and streaming for Android/browser hardware; validate on an actual phone before expanding the world.
+
 ## Still required
 - [ ] Apply migration in Supabase and configure build environment variables.
 - [ ] Deploy Supabase schema, configure credentials, and test account, profile, wallet and cloud-save UI end-to-end.
