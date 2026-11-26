@@ -34,14 +34,12 @@ app.setCanvasResolution(pc.RESOLUTION_AUTO);
 // device-pixel ratios that can overwhelm mobile GPUs.
 app.graphicsDevice.maxPixelRatio = Math.min(window.devicePixelRatio || 1, 1.5);
 app.scene.ambientLight = new pc.Color(0.36, 0.39, 0.45);
-app.scene.toneMapping = pc.TONEMAP_ACES;
-app.scene.gammaCorrection = pc.GAMMA_SRGB;
-// Atmospheric depth separates near streets from the skyline while preserving
-// enough contrast to keep the first district readable.
-app.scene.fog = pc.FOG_LINEAR;
-app.scene.fogColor = new pc.Color(0.62, 0.72, 0.82);
-app.scene.fogStart = 210;
-app.scene.fogEnd = 760;
+// PlayCanvas 2.x stores fog parameters in a read-only FogParams object.
+// Configure its fields rather than assigning the old Engine 1 scene setters.
+app.scene.fog.type = pc.FOG_LINEAR;
+app.scene.fog.color = new pc.Color(0.62, 0.72, 0.82);
+app.scene.fog.start = 210;
+app.scene.fog.end = 760;
 
 const makeMat = (rgb, metalness = 0, roughness = 0.65) => {
   const m = new pc.StandardMaterial();
@@ -1811,6 +1809,9 @@ camera.addComponent("camera", {
   farClip: 1000
 });
 app.root.addChild(camera);
+// In PlayCanvas 2.x tone mapping and gamma correction are configured per camera.
+camera.camera.toneMapping = pc.TONEMAP_ACES;
+camera.camera.gammaCorrection = pc.GAMMA_SRGB;
 // Give the renderer a valid first view before the player presses Start. The
 // update loop is intentionally paused while the opening garage menu is shown.
 camera.setPosition(0, 5.2, 29);
