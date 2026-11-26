@@ -114,10 +114,28 @@ function createSurfaceTexture(kind) {
     ctx.strokeStyle="rgba(35,39,40,.16)";ctx.lineWidth=1;
     for(let y=32;y<256;y+=64){ctx.beginPath();ctx.moveTo(0,y);ctx.lineTo(256,y);ctx.stroke();}
   }else if(kind==="facade"){
-    ctx.strokeStyle="rgba(25,30,34,.22)";ctx.lineWidth=2;
-    for(let x=32;x<256;x+=64){ctx.beginPath();ctx.moveTo(x,0);ctx.lineTo(x,256);ctx.stroke();}
-    ctx.strokeStyle="rgba(220,215,200,.12)";ctx.lineWidth=1;
-    for(let y=42;y<256;y+=64){ctx.beginPath();ctx.moveTo(0,y);ctx.lineTo(256,y);ctx.stroke();}
+    // Layered architectural surface: fine mineral grain, tonal variation,
+    // subtle rain staining and believable panel joints rather than a bright grid.
+    for(let i=0;i<34;i++){
+      const x=rand()*256,w=2+rand()*13,a=.012+rand()*.035;
+      ctx.fillStyle=`rgba(24,29,32,${a})`;ctx.fillRect(x,0,w,256);
+    }
+    for(let i=0;i<90;i++){
+      const x=rand()*256,y=rand()*256,r=3+rand()*22;
+      ctx.fillStyle=`rgba(220,216,205,${.012+rand()*.025})`;
+      ctx.beginPath();ctx.ellipse(x,y,r,r*(.25+rand()*.7),rand()*.4,0,Math.PI*2);ctx.fill();
+    }
+    ctx.strokeStyle="rgba(20,25,29,.24)";ctx.lineWidth=1.4;
+    for(let x=0;x<=256;x+=64){ctx.beginPath();ctx.moveTo(x,0);ctx.lineTo(x,256);ctx.stroke();}
+    ctx.strokeStyle="rgba(235,230,218,.12)";ctx.lineWidth=.8;
+    for(let x=2;x<=256;x+=64){ctx.beginPath();ctx.moveTo(x,0);ctx.lineTo(x,256);ctx.stroke();}
+    ctx.strokeStyle="rgba(22,27,30,.16)";ctx.lineWidth=1;
+    for(let y=48;y<=256;y+=64){ctx.beginPath();ctx.moveTo(0,y);ctx.lineTo(256,y);ctx.stroke();}
+    for(let i=0;i<24;i++){
+      const x=Math.floor(rand()*4)*64+rand()*5,y=rand()*220,len=8+rand()*32;
+      ctx.strokeStyle=`rgba(28,32,34,${.025+rand()*.045})`;ctx.lineWidth=.6+rand()*.8;
+      ctx.beginPath();ctx.moveTo(x,y);ctx.lineTo(x+(rand()-.5)*1.5,y+len);ctx.stroke();
+    }
   }
   const texture=new pc.Texture(app.graphicsDevice,{width:256,height:256,format:pc.PIXELFORMAT_R8_G8_B8_A8,mipmaps:true});
   texture.name="KENNIX "+kind+" surface";texture.addressU=pc.ADDRESS_REPEAT;texture.addressV=pc.ADDRESS_REPEAT;texture.setSource(canvas);
@@ -516,9 +534,11 @@ const districtPalettes=[
 for(const material of districtPalettes){
  applySurface(material,surfaceMaps.facade,2,2);
  applyDetailNormal(material,detailNormals.facade,new pc.Vec2(2,2),.22);
- material.shininess = 22;
- material.clearCoat = .18;
- material.clearCoatGloss = .72;
+ // Matte mineral/concrete response avoids a plastic-looking glossy finish.
+ material.metalness = .04;
+ material.shininess = 13;
+ material.clearCoat = .06;
+ material.clearCoatGloss = .48;
  material.update();
 }
 const marketFabric=makeMat([0.68,0.28,0.09]);
