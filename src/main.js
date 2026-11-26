@@ -413,7 +413,7 @@ for(let row=0;row<6;row++){
   if(detailIndex%3===0){
    const crownW=w*(.48+(detailIndex%2)*.08);
    const crownH=2.4+(detailIndex%4)*.45;
-   block("Stepped tower crown",[x,h+crownH/2,z],[crownW,crownH,12.8],facades[(row+col+1)%facades.length]);
+   block("Stepped tower crown",[x,h+crownH/2,z],[crownW,crownH,12.8],districtPalettes[(row+col+1)%districtPalettes.length]);
    for(const face of [-1,1]){
     block("Crown glass ribbon",[x,h+crownH*.52,z+face*6.46],[crownW*.82,.48,.08],mats.glass);
     block("Crown metal edge",[x,h+crownH+.08,z+face*6.55],[crownW+.35,.16,.22],mats.metal);
@@ -747,6 +747,107 @@ for(const material of skylineMats){
   applySurface(material,surfaceMaps.facade,1.5,2.5);
   applyDetailNormal(material,detailNormals.facade,new pc.Vec2(1.5,2.5),.1);
 }
+
+// Three signature Nova City buildings replace the skipped greybox plots.
+// These are lightweight procedural architectural meshes using the project's
+// existing materials; they are a visual step forward, not imported photoreal assets.
+const landmarkGlass = makeMat([0.035,0.12,0.19],0.62,0.16);
+landmarkGlass.emissive = new pc.Color(0.008,0.018,0.03);
+landmarkGlass.update();
+const landmarkTrim = makeMat([0.055,0.075,0.095],0.72,0.22);
+const landmarkStone = makeMat([0.48,0.49,0.46],0.08,0.78);
+const landmarkWarm = makeMat([0.92,0.57,0.22],0.18,0.3);
+landmarkWarm.emissive = new pc.Color(0.42,0.16,0.035);
+landmarkWarm.update();
+
+function buildNovaLandmark(name, x, z, width, depth, height, style = 0) {
+  const root = new pc.Entity(name);
+  root.setPosition(x, 0, z);
+  app.root.addChild(root);
+
+  const podiumH = style === 1 ? 7 : 8;
+  block(name + " stone podium", [0,podiumH/2,0],
+    [width+3,podiumH,depth+3], landmarkStone, root);
+  block(name + " podium glass frontage", [0,2.5,-depth/2-1.56],
+    [width*.78,3.5,.12], landmarkGlass, root);
+  block(name + " entrance canopy", [0,podiumH-.45,-depth/2-2.25],
+    [width*.54,.28,1.6], landmarkTrim, root);
+  for (const side of [-1,1]) {
+    block(name + " podium corner pier", [side*(width/2+1.35),podiumH/2,-depth/2-1.58],
+      [.42,podiumH,.42], landmarkTrim, root);
+  }
+
+  const towerH = height-podiumH;
+  const towerW = width*(style===2?.82:1);
+  const towerD = depth*(style===1?.84:1);
+  block(name + " glass tower mass", [0,podiumH+towerH/2,0],
+    [towerW,towerH,towerD], landmarkGlass, root);
+
+  const floors = Math.max(4,Math.floor(towerH/3.25));
+  const bays = style===2?3:4;
+  for (let floor=0; floor<floors; floor++) {
+    const y = podiumH+1.55+floor*3.15;
+    if (y > height-1.2) continue;
+    for (const face of [-1,1]) {
+      const faceZ = face*(towerD/2+.075);
+      for (let bay=0; bay<bays; bay++) {
+        const wx = -towerW/2+(bay+.5)*towerW/bays;
+        block(name + " front window frame",[wx,y,faceZ],
+          [towerW/bays*.82,1.92,.12],landmarkTrim,root);
+        block(name + " reflective window",[wx,y,faceZ+face*.075],
+          [towerW/bays*.7,1.62,.055],
+          (floor+bay+style)%7===0?mats.windowLit:landmarkGlass,root);
+      }
+      block(name + " horizontal floor reveal",[0,y-1.18,faceZ],
+        [towerW+.18,.11,.2],landmarkTrim,root);
+    }
+    for (const face of [-1,1]) {
+      const faceX = face*(towerW/2+.075);
+      for (let bay=0; bay<3; bay++) {
+        const wz = -towerD/2+(bay+.5)*towerD/3;
+        block(name + " side window",[faceX,y,wz],
+          [.1,1.65,towerD/3*.7],landmarkGlass,root);
+      }
+    }
+  }
+
+  // Vertical metal fins, recessed corners and a stepped crown break up
+  // the plain rectangular silhouette from every driving approach.
+  for (const face of [-1,1]) {
+    const faceZ=face*(towerD/2+.18);
+    for (let fin=0; fin<=bays; fin++) {
+      const fx=-towerW/2+fin*towerW/bays;
+      block(name + " vertical facade fin",[fx,podiumH+towerH/2,faceZ],
+        [.16,towerH,.28],landmarkTrim,root);
+    }
+    block(name + " crown glass band",[0,height-.9,faceZ],
+      [towerW*.9,.42,.16],landmarkWarm,root);
+  }
+  for (const face of [-1,1]) {
+    const faceX=face*(towerW/2+.18);
+    block(name + " side corner blade",[faceX,podiumH+towerH/2,0],
+      [.28,towerH,towerD*.9],landmarkTrim,root);
+  }
+  block(name + " rooftop crown",[0,height+.65,0],
+    [towerW*.56,1.3,towerD*.58],landmarkTrim,root);
+  block(name + " rooftop beacon",[0,height+2.1,0],
+    [.48,1.6,.48],landmarkWarm,root,"cylinder");
+  if (style===1) {
+    for (let level=0; level<3; level++) {
+      const y=podiumH+5+level*7;
+      block(name + " residential balcony slab",[0,y,-towerD/2-1.05],
+        [towerW*.72,.16,1.1],landmarkStone,root);
+      block(name + " balcony glass rail",[0,y+.48,-towerD/2-1.52],
+        [towerW*.72,.82,.07],landmarkGlass,root);
+    }
+  }
+  return root;
+}
+
+buildNovaLandmark("NOVA FINANCIAL TOWER",-30,-105,23,20,47,0);
+buildNovaLandmark("MARINA RESIDENCES",30,105,23,20,37,1);
+buildNovaLandmark("NOVA EXCHANGE",-150,35,22,19,34,2);
+
 const authoredStreetBuildingSlots = new Set([2,3,6,7,10,11]);
 for (let i = 0; i < 14; i++) {
   const side = i % 2 === 0 ? -1 : 1;
