@@ -347,6 +347,102 @@ for(const z of districtRoads){
     }
   }
 }
+
+// Street-level finishing pass: asphalt edge lines, concrete expansion joints,
+// tactile paving, planters, benches, bins and pedestrian-scale lighting.
+const roadEdgeMat=makeMat([.72,.73,.69],0,.82);
+const tactileMat=makeMat([.78,.62,.32],0,.88);
+const planterMat=makeMat([.16,.2,.19],.12,.78);
+const foliageMat=makeMat([.075,.23,.13],0,.9);
+const benchWood=makeMat([.34,.2,.12],.04,.76);
+const streetLampGlow=makeMat([1,.72,.36],.08,.3);
+streetLampGlow.emissive=new pc.Color(.9,.48,.18);
+streetLampGlow.emissiveIntensity=.8;
+streetLampGlow.update();
+
+function addSidewalkFurniture(x,z,rotation=0){
+ const root=new pc.Entity("NOVA sidewalk furniture cluster");
+ root.setPosition(x,0,z);root.setEulerAngles(0,rotation,0);app.root.addChild(root);
+ // Bench with metal supports and timber slats.
+ for(const sx of [-.72,.72]){
+  block("Bench metal leg",[sx,.28,0],[.12,.56,.58],mats.metal,root);
+ }
+ for(let slat=0;slat<4;slat++){
+  block("Bench timber seat",[0,.59,-.22+slat*.14],[1.65,.09,.12],benchWood,root);
+ }
+ for(let slat=0;slat<3;slat++){
+  block("Bench timber backrest",[0,.91,.35+slat*.13],[1.65,.1,.1],benchWood,root);
+ }
+ // A planted street tree in a raised stone planter.
+ block("Street tree planter",[2.35,.24,0],[1.45,.48,1.45],planterMat,root);
+ block("Planter soil",[2.35,.49,0],[1.18,.08,1.18],mats.ground,root);
+ block("Planter tree trunk",[2.35,1.35,0],[.2,1.7,.2],mats.trunk,root);
+ block("Planter tree crown",[2.35,2.55,0],[1.45,1.55,1.45],foliageMat,root,"sphere");
+ // Waste bin and a short protective bollard.
+ block("Street litter bin",[ -2.15,.48,0],[.48,.92,.48],mats.dark,root);
+ block("Bin lid",[-2.15,.96,0],[.54,.1,.54],mats.metal,root);
+ block("Pedestrian bollard",[-3.05,.43,.15],[.2,.86,.2],mats.metal,root,"cylinder");
+ return root;
+}
+
+function addStreetLamp(x,z,rotation=0,withLight=false){
+ const root=new pc.Entity("NOVA modern street lamp");
+ root.setPosition(x,0,z);root.setEulerAngles(0,rotation,0);app.root.addChild(root);
+ block("Street lamp base",[0,.22,0],[.48,.44,.48],mats.dark,root);
+ block("Tapered street lamp pole",[0,3.35,0],[.16,6.7,.16],mats.metal,root);
+ block("Street lamp outreach arm",[.55,6.55,0],[1.25,.13,.13],mats.metal,root);
+ block("LED street lamp housing",[1.12,6.42,0],[.72,.18,.38],mats.dark,root);
+ block("LED street lamp diffuser",[1.12,6.31,0],[.59,.035,.27],streetLampGlow,root);
+ if(withLight){
+  const light=new pc.Entity("Warm street light");
+  light.addComponent("light",{type:"omni",color:new pc.Color(1,.72,.43),
+   intensity:.55,range:17,castShadows:false});
+  light.setLocalPosition(1.12,6.1,0);root.addChild(light);
+ }
+ return root;
+}
+
+// Main boulevard pavement slabs and tactile warning strips.
+for(const side of [-1,1]){
+ for(let z=-240;z<=240;z+=12){
+  block("Boulevard sidewalk expansion joint",[side*8.7,.137,z],
+   [.018,.012, .12],roadEdgeMat);
+ }
+ for(let z=-230;z<=230;z+=46){
+  addStreetLamp(side*9.45,z,side===1?180:0,Math.abs(z)<100);
+  if(Math.abs(z)>65)addSidewalkFurniture(side*8.9,z+9,side===1?180:0);
+ }
+ for(const junctionZ of [-210,-140,-70,0,70,140,210]){
+  block("Tactile pavement warning strip",[side*8.7,.145,junctionZ],
+   [1.45,.025,.72],tactileMat);
+ }
+}
+
+// Furniture and lamps along the larger north-south district avenues.
+for(const avenueX of [-120,-60,60,120]){
+ for(const side of [-1,1]){
+  for(let z=-210;z<=210;z+=70){
+   addStreetLamp(avenueX+side*9.65,z,side===1?180:0,
+    (avenueX===-60||avenueX===60)&&Math.abs(z)<=70);
+   if(z%140===0)addSidewalkFurniture(avenueX+side*9.05,z+13,side===1?180:0);
+  }
+  for(const z of [-210,-140,-70,0,70,140,210]){
+   block("District tactile paving",[avenueX+side*9.1,.145,z],
+    [.72,.025,1.45],tactileMat);
+  }
+ }
+}
+
+// Low-rise pedestrian bollards protect selected corners and shopfront edges.
+for(const x of [-120,-60,60,120]){
+ for(const z of [-140,-70,70,140]){
+  for(const side of [-1,1]){
+   block("Corner pedestrian bollard",[x+side*7.8,.48,z+8.1],
+    [.22,.96,.22],mats.metal,app.root,"cylinder");
+  }
+ }
+}
+
 const districtPalettes=[
   makeMat([0.22,0.27,0.33]),makeMat([0.34,0.29,0.23]),
   makeMat([0.16,0.25,0.29]),makeMat([0.31,0.33,0.34])
