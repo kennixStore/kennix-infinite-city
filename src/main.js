@@ -551,6 +551,10 @@ const industrialPaint=makeMat([0.34,0.37,0.39],.45,.4);
 const photorealisticBuildingReplacements=new Set(["-30,-105","30,105","-150,35"]);
 const cityBuildingPlaceholders = new Map();
 const novaLandmarkRoots = new Map();
+const solidBuildingColliders = [];
+function registerBuildingCollider(x,z,width,depth){
+  solidBuildingColliders.push({minX:x-width/2,maxX:x+width/2,minZ:z-depth/2,maxZ:z+depth/2});
+}
 
 function buildDistrictBuilding(row,col,x,z,w,h,depth){
  const style=(row*3+col)%5;
@@ -636,6 +640,7 @@ function buildDistrictBuilding(row,col,x,z,w,h,depth){
    block("Office crown blade",[side*w*.37,h+2.1,0],[.22,4.2,.24],mats.metal,root);
   }
  }
+ registerBuildingCollider(x,z,w+2.2,depth+2);
  cityBuildingPlaceholders.set(String(x)+","+String(z),root);
  return root;
 }
@@ -1035,6 +1040,7 @@ function buildNovaLandmark(name, x, z, width, depth, height, style = 0) {
         [towerW*.72,.82,.07],landmarkGlass,root);
     }
   }
+  registerBuildingCollider(x,z,width+3,depth+3);
   return root;
 }
 
@@ -2670,8 +2676,8 @@ function updateVirtualWheel(e){
   const rect=steeringWheelControl.getBoundingClientRect();
   const centerX=rect.left+rect.width/2;
   const radius=rect.width*.43;
-  wheelSteeringInput=Math.max(-1,Math.min(1,(centerX-e.clientX)/radius));
-  steeringWheelControl.style.setProperty("--wheel-turn",(-wheelSteeringInput*135)+"deg");
+  wheelSteeringInput=Math.max(-1,Math.min(1,(e.clientX-centerX)/radius));
+  steeringWheelControl.style.setProperty("--wheel-turn",(wheelSteeringInput*135)+"deg");
   steeringWheelControl.setAttribute("aria-valuenow",String(Math.round(wheelSteeringInput*100)));
 }
 steeringWheelControl.addEventListener("pointerdown",e=>{e.preventDefault();steeringWheelControl.setPointerCapture(e.pointerId);updateVirtualWheel(e)});
@@ -2769,7 +2775,8 @@ app.on("update", dt => {
   const targetBodyPitch = clamp(-longitudinalAcceleration*.16,-3,3);
   bodyPitch += (targetBodyPitch-bodyPitch)*Math.min(1,dt*5);
 
-  const steerInput = steeringMode==="wheel" ? wheelSteeringInput : (left ? 1 : 0) - (right ? 1 : 0);
+  // Positive input means steer right; negative input means steer left.
+  const steerInput = steeringMode==="wheel" ? wheelSteeringInput : (right ? 1 : 0) - (left ? 1 : 0);
   // Progressive steering response: smooth at speed, still manoeuvrable when parking.
   const targetSteering = steerInput * 34;
   steeringAngle += (targetSteering - steeringAngle) * (1-Math.exp(-dt*12));
@@ -2779,7 +2786,7 @@ app.on("update", dt => {
   const gripFactor = handbrakeActive ? 1.12 : selectedVehicle.grip*(1-damage*.0018);
   const highSpeedStability=1-.32*speedRatio;
   // More useful steering at low speeds, with stability building as speed rises.
-  heading -= steeringAngle * 0.94 * selectedVehicle.handling * (0.42 + speedRatio * 0.58) * gripFactor * highSpeedStability * dt * directionSign;
+  heading += steeringAngle * 0.94 * selectedVehicle.handling * (0.42 + speedRatio * 0.58) * gripFactor * highSpeedStability * dt * directionSign;
 
   // Small tyre slip under load, then progressive grip recovery.
   lateralSpeed += steerInput * speedRatio * (handbrakeActive ? 4.4 : .82) * directionSign * dt;
@@ -2795,9 +2802,24 @@ app.on("update", dt => {
   const nextX = p.x + (forwardX * speed + rightX * lateralSpeed) * dt;
   const nextZ = p.z + (forwardZ * speed + rightZ * lateralSpeed) * dt;
 
-  // Road-edge contact reduces speed and sideways momentum instead of allowing clipping.
-  p.x=clamp(nextX,-158,158);
-  p.z=clamp(nextZ,-258,258);
+  // Static building footprint collision. Resolve axes independently so the
+  // vehicle stops at walls but can still slide along them.
+  const vehicleRadius=1.65;
+  const collidesAt=(x,z)=>{
+    for(const box of solidBuildingColliders){
+      const nearestX=clamp(x,box.minX,box.maxX);
+      const nearestZ=clamp(z,box.minZ,box.maxZ);
+      const dx=x-nearestX,dz=z-nearestZ;
+      if(dx*dx+dz*dz<vehicleRadius*vehicleRadius)return true;
+    }
+    return false;
+  };
+  const boundedX=clamp(nextX,-158,158),boundedZ=clamp(nextZ,-258,258);
+  const canMoveX=!collidesAt(boundedX,p.z);
+  const canMoveZ=!collidesAt(canMoveX?boundedX:p.x,boundedZ);
+  if(canMoveX)p.x=boundedX;
+  if(canMoveZ)p.z=boundedZ;
+  if(!canMoveX||!canMoveZ){speed*=.22;lateralSpeed*=.18;}
   const onMainAvenue=Math.abs(p.x)<7.8;
   const onCrossStreet=playerCrossRoads.some(road=>Math.abs(p.z-road.z)<7.8&&Math.abs(p.x)<road.halfWidth);
   const onSideAvenue=[-120,-60,60,120].some(x=>Math.abs(p.x-x)<7.8);
@@ -2808,7 +2830,7 @@ app.on("update", dt => {
   car.setPosition(p);
   // Keep the vehicle root level so acceleration/braking body animation cannot
   // rotate the follow-camera reference frame. Suspension still reacts below.
-  car.setEulerAngles(0, heading, 0);
+  car.setEulerAngles(0, -heading, 0);
   if(handbrakeActive&&Math.abs(speed)>9){
    skidMarkTimer+=dt;
    if(skidMarkTimer>=.13){skidMarkTimer=0;addSkidMarks(p,forwardX,forwardZ,rightX,rightZ)}
@@ -3248,6 +3270,8 @@ function loadPhotorealisticPedestrians(){
   });
 }
 function loadCityArchitectureAsset(name,url,placements){
+  // Keep replacement buildings solid even while their optional GLB is loading.
+  for(const spot of placements)registerBuildingCollider(spot.x,spot.z,24,22);
   app.assets.loadFromUrl(url,"container",(error,asset)=>{
     if(error || !asset?.resource){
       console.warn("KENNIX architecture asset unavailable:",name,error);
