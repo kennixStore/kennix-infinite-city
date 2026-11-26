@@ -2379,6 +2379,39 @@ app.on("update", dt => {
   }
 });
 
+// CC0 modular architectural facade asset from tevy.dev. This is a real,
+// authored PBR building module (not a procedural box); it is streamed from its
+// pinned public GLB URL so the repository does not need to vendor binary files.
+// Asset: Stone Facade Module v2, 12 x 18.87 x 1.52 m, 12,910 triangles, 3 LODs.
+// License: CC0 1.0 — https://creativecommons.org/publicdomain/zero/1.0/
+function loadStoneFacadeModules(){
+  const facadeUrl="https://tevy.dev/models/facade-stone-module/v2/lod0.glb";
+  app.assets.loadFromUrl(facadeUrl,"container",(error,asset)=>{
+    if(error || !asset?.resource){
+      console.warn("KENNIX architecture asset unavailable; keeping district fallback:",error);
+      return;
+    }
+    const placements=[
+      {x:-27.2,z:-175,rotation:90},
+      {x:27.2,z:-175,rotation:-90},
+      {x:-27.2,z:-105,rotation:90},
+      {x:27.2,z:-105,rotation:-90},
+      {x:-27.2,z:105,rotation:90},
+      {x:27.2,z:105,rotation:-90}
+    ];
+    for(const spot of placements){
+      const facade=asset.resource.instantiateRenderEntity();
+      facade.name="CC0 scanned-detail stone facade";
+      app.root.addChild(facade);
+      facade.setPosition(spot.x,0,spot.z);
+      facade.setEulerAngles(0,spot.rotation,0);
+      facade.enabled=true;
+    }
+    console.info("KENNIX CC0 architectural facade modules loaded:",placements.length);
+  });
+}
+
 app.start();
 activateVehicleModel();
 loadImportedVehicleModels();
+loadStoneFacadeModules();
