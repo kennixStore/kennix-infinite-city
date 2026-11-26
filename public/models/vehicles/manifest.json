@@ -1,6 +1,12 @@
 {
   "version": 1,
-  "source": "Kenney Car Kit 3.1",
+  "source": "3DAssets.dev Car Park and Road Vehicle Fleet",
   "license": "CC0-1.0",
-  "vehicles": ["race.glb", "race-future.glb", "sedan-sports.glb", "suv-luxury.glb", "hatchback-sports.glb", "police.glb", "taxi.glb", "truck.glb", "van.glb"]
+  "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
+  "vehicles": [
+    "sport-coupe.glb",
+    "sedan.glb",
+    "suv.glb",
+    "mid-engine-sports.glb"
+  ]
 }
