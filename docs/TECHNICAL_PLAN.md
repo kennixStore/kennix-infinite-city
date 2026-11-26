@@ -1,7 +1,7 @@
 # Technical Plan
 
 ## Engine and client
-The browser client uses PlayCanvas Engine with Vite. The offline game includes a procedural NOVA CITY grid, four primitive-built vehicle silhouettes, touch/keyboard driving, traffic and pedestrian prototypes, basic police pursuit and three local campaign objectives.
+The current browser client uses PlayCanvas Engine with Vite. Its procedural NOVA CITY grid and primitive-built vehicle silhouettes are greybox prototypes only. The agreed final presentation is near-photorealistic GTA V-style third-person gameplay. The rebuild must replace visible placeholder geometry with licensed realistic environment, vehicle and character assets, physically based materials, cinematic lighting and a performance-aware streaming strategy. Existing driving, traffic, mission and online systems should be retained only where they support that target.
 
 ## Online service layer
 The repository includes an in-game Supabase account UI, email/password registration and sign-in, password recovery/update, profile display-name update, session persistence, per-player cloud saves, balance reads and authenticated KX transfers. Configure `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY` as build environment variables. Never put a Supabase service-role key in browser code.
@@ -10,6 +10,13 @@ Apply `supabase/migrations/202611220001_online_accounts_and_kx.sql` in the Supab
 
 ## Multiplayer
 Supabase Realtime is wired to a casual online city-room prototype with presence and remote vehicle snapshots. It can support presence, lobbies and casual room state, but it is not an authoritative simulation server. Ranked real-time racing still requires a dedicated authoritative game server, input validation, race-result verification, matchmaking, rate limits and anti-cheat. Do not award KX based on client-submitted race results.
+
+## Visual rebuild requirements
+- Treat the current primitive city and primitive cars as temporary greybox content, not final art.
+- Establish the realistic lighting/material/camera pipeline before expanding the map.
+- Import only assets with verified commercial-use permissions; prefer CC0 or explicitly compatible licences.
+- Use detailed authored vehicle rigs and realistic environment/character assets, then profile them on Android.
+- Do not describe the game as photorealistic until the assets are integrated and verified in actual gameplay.
 
 ## Production requirements
 - Deploy and test the Supabase migration and configure environment variables.
