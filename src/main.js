@@ -145,7 +145,7 @@ function applyDetailNormal(material,texture,tiling= new pc.Vec2(1,1),strength=.3
  material.bumpiness=strength;
  material.update();
 }
-applyDetailNormal(mats.asphalt,detailNormals.asphalt,new pc.Vec2(2,72),.28);
+applyDetailNormal(mats.asphalt,detailNormals.asphalt,new pc.Vec2(2,72),.34);
 applyDetailNormal(mats.concrete,detailNormals.concrete,new pc.Vec2(2,64),.2);
 
  
@@ -166,8 +166,9 @@ function loadPbrTexture(url, apply){
 loadPbrTexture("/textures/pbr/road_Color.jpg",texture=>{
   mats.asphalt.diffuseMap=texture;
   mats.asphalt.diffuseMapTiling=new pc.Vec2(4,88);
-  mats.asphalt.metalness=.025;
-  mats.asphalt.shininess=17;
+  // Slightly damp asphalt finish: tighter highlights catch headlights and street lamps.
+  mats.asphalt.metalness=.065;
+  mats.asphalt.shininess=34;
   mats.asphalt.update();
 });
 loadPbrTexture("/textures/pbr/road_NormalGL.jpg",texture=>{
