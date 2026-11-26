@@ -20,7 +20,15 @@ window.addEventListener("error",event=>{
 });
 window.addEventListener("unhandledrejection",event=>{
  const reason=event.reason;
- showRuntimeNotice("GAME STARTUP ERROR",reason?.message||String(reason||"A background task failed."));
+ const message=reason?.message||String(reason||"A background task failed.");
+ // Basis-compressed texture variants are optional. If a model has no Basis
+ // decoder available, PlayCanvas can continue with its regular texture data;
+ // do not misreport this asset warning as a fatal game-startup failure.
+ if(message.includes("Basis module not found") && message.includes("basis texture variant will not be loaded")){
+  console.warn("KENNIX optional Basis texture variant skipped; continuing with the regular texture fallback.",message);
+  return;
+ }
+ showRuntimeNotice("GAME STARTUP ERROR",message);
 });
 const app = new pc.Application(canvas, {
   graphicsDeviceOptions: { antialias: true, alpha: false },
