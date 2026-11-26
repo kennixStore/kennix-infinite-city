@@ -38,3 +38,7 @@ The Phase 1 product decisions are recorded in [docs/PHASE_1_FOUNDATION.md](docs/
 
 ## Build
 `npm install` then `npm run check` and `npm run build`.
+
+
+## Phase 2 world and experience design
+The approved Nova City district plan, transport roadmap, character direction, story/economy/combat/health goals, hybrid driving standard, visual production priorities and zero-cost constraints are recorded in [docs/PHASE_2_WORLD_AND_EXPERIENCE_DESIGN.md](docs/PHASE_2_WORLD_AND_EXPERIENCE_DESIGN.md). These are design targets, not claims that the features are already implemented.
