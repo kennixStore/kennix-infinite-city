@@ -2701,6 +2701,11 @@ function loadCityArchitecture(){
   loadCityArchitectureAsset("CC0 detailed downtown storefront",
     "https://tevy.dev/models/storefront-module/v2/lod1.glb",
     [{x:150,z:-35,rotation:0},{x:150,z:35,rotation:180}]);
+  // Industrial Edge: replace an additional generic workshop-sized plot with
+  // a complete authored repair garage. CC0 1.0, pinned v2, mobile LOD1.
+  loadCityArchitectureAsset("CC0 industrial car repair workshop",
+    "https://tevy.dev/models/workshop-building/v2/lod1.glb",
+    [{x:-94,z:215,rotation:0}]);
 }
 
 app.start();
