@@ -1952,71 +1952,71 @@ function activateVehicleModel(){
  activeVehicleExhaustFlames=current.exhaustFlames;
 }
 function loadImportedVehicleModels(){
- fetch("/models/vehicles/manifest.json",{cache:"no-store"}).then(response=>{
-  if(!response.ok) return null;
-  return response.json();
- }).then(manifest=>{
-  if(!manifest||manifest.version!==1||!manifest.vehicles)return;
-  importedVehiclesReady=true;
-  for(const [id,filename] of Object.entries(importedVehicleFiles)){
-   if(!manifest.vehicles.includes(filename)||!vehicleModels[id])continue;
-   app.assets.loadFromUrl("/models/vehicles/"+filename,"container",(err,asset)=>{
-    if(err||!asset?.resource){console.warn("Optional vehicle model unavailable:",filename,err||"empty asset");return;}
-    const model=vehicleModels[id];
-    if(model.importedRoot)return;
-    const imported=asset.resource.instantiateRenderEntity();
-    imported.name="KENNIX imported "+id;
-    imported.setLocalScale(0.9,0.9,0.9);
-    imported.setLocalEulerAngles(0,180,0);
-    imported.setLocalPosition(0,0,0);
-    car.addChild(imported);
-    // Match the actual front/rear node names used by the imported GLB assets.
-    const wheelNames=["wheel-front-left","wheel-front-right","wheel-rear-left","wheel-rear-right"];
-    const importedWheels=wheelNames.map((name,index)=>imported.findByName(name)||imported.findByName(["wheel-front-left","wheel-front-right","wheel-back-left","wheel-back-right"][index])).filter(Boolean);
-    model.importedSteeringWheel=imported.findByName("steering");
-    if(importedWheels.length===4){
-     importedWheels.forEach(wheel=>{
-      const p=wheel.getLocalPosition();
-      wheel.suspensionBaseY=p.y;
-      wheel.suspensionOffset=0;
-      wheel.suspensionVelocity=0;
-      wheel.baseLocalX=p.x;
-      wheel.baseLocalZ=p.z;
-     });
-     model.importedWheels=importedWheels;
-    }
-    model.importedRoot=imported;
-    model.importedMaterials=[];
-    imported.findComponents("render").forEach(component=>{
-     component.castShadows=true;
-     component.receiveShadows=true;
-     component.meshInstances.forEach(instance=>{
-      if(!instance.material)return;
-      const material=instance.material.clone();
-      // Keep the source material's texture, roughness, metalness and base colour.
-      // Only recognised exterior-paint materials are recoloured by the garage.
-      const materialName=String(material.name||"").toLowerCase();
-      material.kennixPaintable=/(body|paint|exterior|car.?color|vehicle.?color)/.test(materialName);
-      if(material.kennixPaintable){
-       // Automotive clear-coat creates tighter lacquer highlights on painted panels.
-       material.clearCoat=.82;
-       material.clearCoatGloss=.92;
-      }
-      material.kennixBaseDiffuse=material.diffuse?.clone?.()||new pc.Color(1,1,1);
-      instance.material=material;
-      instance.castShadow=true;
-      instance.receiveShadow=true;
-      model.importedMaterials.push(material);
-     });
+ importedVehiclesReady=true;
+ for(const [id,url] of Object.entries(importedVehicleFiles)){
+  if(!vehicleModels[id])continue;
+  app.assets.loadFromUrl(url,"container",(err,asset)=>{
+   if(err||!asset?.resource){
+    console.warn("CC0 realistic vehicle unavailable; keeping detailed fallback:",url,err||"empty asset");
+    return;
+   }
+   const model=vehicleModels[id];
+   if(model.importedRoot)return;
+   const imported=asset.resource.instantiateRenderEntity();
+   imported.name="KENNIX realistic CC0 "+id;
+   // Source models are authored in metres, with the front facing +Z.
+   // The driving chassis uses -Z as forward, so rotate the model once.
+   imported.setLocalScale(.9,.9,.9);
+   imported.setLocalEulerAngles(0,180,0);
+   imported.setLocalPosition(0,0,0);
+   car.addChild(imported);
+
+   // Preserve the authored wheel pivots so the game can animate all four tyres.
+   const wheelNames=["wheel_FL","wheel_FR","wheel_RL","wheel_RR"];
+   const importedWheels=wheelNames.map(name=>imported.findByName(name)).filter(Boolean);
+   model.importedSteeringWheel=imported.findByName("steering_wheel")||imported.findByName("steering");
+   if(importedWheels.length===4){
+    importedWheels.forEach(wheel=>{
+     const p=wheel.getLocalPosition();
+     wheel.suspensionBaseY=p.y;
+     wheel.suspensionOffset=0;
+     wheel.suspensionVelocity=0;
+     wheel.baseLocalX=p.x;
+     wheel.baseLocalZ=p.z;
     });
-    const catalogPaint=vehicleCatalog.find(vehicle=>vehicle.id===id)?.paint||[.2,.2,.2];
-    applyImportedPaint(model,selectedVehicle.id===id?selectedPaint:catalogPaint);
-    model.root.enabled=false;
-    activateVehicleModel();
-    console.info("Loaded realistic CC0 vehicle:",filename);
+    model.importedWheels=importedWheels;
+   }else{
+    console.warn("Vehicle wheel pivots incomplete; retaining procedural wheel animation:",id,importedWheels.length);
+   }
+
+   model.importedRoot=imported;
+   model.importedMaterials=[];
+   imported.findComponents("render").forEach(component=>{
+    component.castShadows=true;
+    component.receiveShadows=true;
+    component.meshInstances.forEach(instance=>{
+     if(!instance.material)return;
+     const material=instance.material.clone();
+     const materialName=String(material.name||"").toLowerCase();
+     material.kennixPaintable=/(body|paint|exterior|car.?color|vehicle.?color|shell)/.test(materialName);
+     if(material.kennixPaintable){
+      material.clearCoat=.84;
+      material.clearCoatGloss=.94;
+     }
+     material.kennixBaseDiffuse=material.diffuse?.clone?.()||new pc.Color(1,1,1);
+     instance.material=material;
+     instance.castShadow=true;
+     instance.receiveShadow=true;
+     model.importedMaterials.push(material);
+    });
    });
-  }
- }).catch(error=>console.warn("Optional vehicle manifest unavailable; using procedural vehicles.",error));
+   const catalogPaint=vehicleCatalog.find(vehicle=>vehicle.id===id)?.paint||[.2,.2,.2];
+   applyImportedPaint(model,selectedVehicle.id===id?selectedPaint:catalogPaint);
+   model.root.enabled=false;
+   activateVehicleModel();
+   console.info("Loaded realistic CC0 vehicle:",id,url);
+  });
+ }
 }
 function applyImportedPaint(model,rgb){
  if(!model?.importedMaterials)return;
