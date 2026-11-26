@@ -2328,10 +2328,10 @@ const refuelButton=document.createElement("button");refuelButton.className="refu
 let fuel=100;try{fuel=Math.max(0,Math.min(100,Number(localStorage.getItem("kxic-fuel")??100)))}catch{}
 let lastFuelSaved=Math.floor(fuel);
 refuelButton.addEventListener("click",()=>{if(fuel<99.5){fuel=100;lastFuelSaved=100;try{localStorage.setItem("kxic-fuel","100")}catch{}fuelLabel.textContent="FUEL 100%";refuelButton.textContent="TANK FULL"}});
-const utilityBar=document.createElement("div");utilityBar.className="utility-bar";utilityBar.innerHTML='<button id="garage-open">GARAGE</button><button id="camera-toggle">CAMERA: CHASE</button><button id="audio-toggle">SOUND: OFF</button><button id="horn-button">HORN</button><button id="pause-toggle">PAUSE</button>';document.querySelector("#game-stage").appendChild(utilityBar);
+const utilityBar=document.createElement("div");utilityBar.className="utility-bar";utilityBar.innerHTML='<button id="garage-open">GARAGE</button><button id="camera-toggle">VIEW: FOLLOW CAR</button><button id="audio-toggle">SOUND: OFF</button><button id="horn-button">HORN</button><button id="pause-toggle">PAUSE</button>';document.querySelector("#game-stage").appendChild(utilityBar);
 utilityBar.querySelector("#garage-open").addEventListener("click",()=>showGarage("CITY GARAGE","Select a vehicle, choose paint and repair damage."));
 utilityBar.querySelector("#pause-toggle").addEventListener("click",()=>gamePaused?hideGarage():showGarage("PAUSED","Take a break or return to the garage."));
-utilityBar.querySelector("#camera-toggle").addEventListener("click",e=>{cameraMode=cameraMode==="chase"?"cockpit":"chase";e.currentTarget.textContent="CAMERA: "+cameraMode.toUpperCase()});
+utilityBar.querySelector("#camera-toggle").addEventListener("click",e=>{cameraMode=cameraMode==="chase"?"close":"chase";e.currentTarget.textContent=cameraMode==="chase"?"VIEW: FOLLOW CAR":"VIEW: CLOSE CAR"});
 
 // Live open-world minimap with tap-to-set waypoint navigation.
 const mapLandmarks = [
@@ -2646,7 +2646,7 @@ setPlayerPaint(selectedPaint);refreshGarage();showGarage();
 const steeringModeButton=controls.querySelector(".steering-mode");
 const steeringWheelControl=controls.querySelector(".steering-wheel-control");
 const steeringArrows=controls.querySelector(".steering-arrows");
-let steeringMode="wheel",wheelSteeringInput=0;
+let steeringMode="arrows",wheelSteeringInput=0;
 function setSteeringMode(mode){
   steeringMode=mode;
   steeringModeButton.textContent=mode==="wheel"?"STEERING: WHEEL":"STEERING: ARROWS";
@@ -2685,7 +2685,7 @@ controls.querySelectorAll("button[data-control]").forEach(button => {
   button.addEventListener("pointercancel", release);
   button.addEventListener("lostpointercapture", release);
 });
-setSteeringMode("wheel");
+setSteeringMode("arrows");
 
 let speed = 0;                 // metres per second; forward is negative Z
 let lateralSpeed = 0;          // sideways slip, damped by tyre grip
@@ -2762,14 +2762,15 @@ app.on("update", dt => {
 
   const steerInput = steeringMode==="wheel" ? wheelSteeringInput : (left ? 1 : 0) - (right ? 1 : 0);
   // Progressive steering response: smooth at speed, still manoeuvrable when parking.
-  const targetSteering = steerInput * 27;
-  steeringAngle += (targetSteering - steeringAngle) * (1-Math.exp(-dt*9));
+  const targetSteering = steerInput * 34;
+  steeringAngle += (targetSteering - steeringAngle) * (1-Math.exp(-dt*12));
 
-  const speedRatio = clamp(Math.abs(speed) / 28, 0, 1);
+  const speedRatio = clamp(Math.abs(speed) / 30, 0, 1);
   const directionSign = Math.sign(speed || 1);
-  const gripFactor = handbrakeActive ? 1.18 : selectedVehicle.grip*(1-damage*.0018);
-  const highSpeedStability=1-.28*speedRatio;
-  heading -= steeringAngle * 0.82 * selectedVehicle.handling * (0.22 + speedRatio * 0.78) * gripFactor * highSpeedStability * dt * directionSign;
+  const gripFactor = handbrakeActive ? 1.12 : selectedVehicle.grip*(1-damage*.0018);
+  const highSpeedStability=1-.32*speedRatio;
+  // More useful steering at low speeds, with stability building as speed rises.
+  heading -= steeringAngle * 0.94 * selectedVehicle.handling * (0.42 + speedRatio * 0.58) * gripFactor * highSpeedStability * dt * directionSign;
 
   // Small tyre slip under load, then progressive grip recovery.
   lateralSpeed += steerInput * speedRatio * (handbrakeActive ? 4.4 : .82) * directionSign * dt;
@@ -3145,25 +3146,25 @@ app.on("update", dt => {
   // Stable third-person chase camera: keep a fixed, low horizon target.
   // The previous target sat behind the car, so the vehicle could block the
   // view as speed increased and make the camera appear to tilt toward the sky.
-  const chaseDistance=10.8+speedRatio*2.0;
-  const chaseHeight=4.25+speedRatio*.55;
+  // Both selectable views remain outside the vehicle so the player can
+  // always see the car. CLOSE is a nearer chase angle, not cockpit view.
+  const closeView=cameraMode==="close";
+  const chaseDistance=closeView?7.6+speedRatio*.8:10.8+speedRatio*2.0;
+  const chaseHeight=closeView?3.35+speedRatio*.25:4.25+speedRatio*.55;
   const headingSin=Math.sin(heading*Math.PI/180),headingCos=Math.cos(heading*Math.PI/180);
-  const camTarget=cameraMode==="cockpit"
-    ?new pc.Vec3(p.x+headingSin*.55,p.y+1.48,p.z-headingCos*.25)
-    :new pc.Vec3(p.x-headingSin*chaseDistance,p.y+chaseHeight,p.z+headingCos*chaseDistance);
+  const camTarget=new pc.Vec3(p.x-headingSin*chaseDistance,p.y+chaseHeight,p.z+headingCos*chaseDistance);
   const camPos=camera.getPosition();
-  const cameraFollowRate=cameraMode==="cockpit"?11:5.8+speedRatio*1.8;
+  const cameraFollowRate=closeView?7.2+speedRatio*1.2:5.8+speedRatio*1.8;
   camPos.lerp(camPos,camTarget,1-Math.exp(-cameraFollowRate*dt));
   camera.setPosition(camPos);
-  const targetFov=cameraMode==="cockpit"?74:63+speedRatio*4.5;
+  const targetFov=closeView?61:63+speedRatio*4.5;
   camera.camera.fov+=(targetFov-camera.camera.fov)*(1-Math.exp(-2.4*dt));
-  // Smooth the look target separately so quick steering cannot whip the horizon.
   cameraAimTarget.set(
-    p.x+headingSin*(cameraMode==="cockpit"?12:5.2),
-    p.y+(cameraMode==="cockpit"?1.35:1.05),
-    p.z-headingCos*(cameraMode==="cockpit"?12:5.2)
+    p.x+headingSin*(closeView?4.2:5.2),
+    p.y+(closeView?.95:1.05),
+    p.z-headingCos*(closeView?4.2:5.2)
   );
-  smoothedCameraAim.lerp(smoothedCameraAim,cameraAimTarget,1-Math.exp(-(cameraMode==="cockpit"?12:7.2)*dt));
+  smoothedCameraAim.lerp(smoothedCameraAim,cameraAimTarget,1-Math.exp(-7.2*dt));
   camera.lookAt(smoothedCameraAim);
 
   if (speedValue) speedValue.textContent = Math.round(Math.abs(speed) * 3.6).toString().padStart(3, "0");
