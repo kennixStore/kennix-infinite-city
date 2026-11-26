@@ -696,9 +696,11 @@ const brakeLamps = [];
 for (const x of [-0.68, 0.68]) {
   brakeLamps.push(block("Brake lamp", [x, 0.68, 2.18], [0.38, 0.18, 0.07], brakeLampMaterial, car));
 }
+const headlightBeams = [];
 for (const x of [-0.62, 0.62]) {
   const beam = new pc.Entity("Headlight beam");
   beam.setLocalPosition(x, 0.72, -2.08);
+  beam.setLocalEulerAngles(90, 0, 0);
   beam.addComponent("light", {
     type: "spot",
     color: new pc.Color(1, 0.91, 0.72),
@@ -709,6 +711,7 @@ for (const x of [-0.62, 0.62]) {
     castShadows: false
   });
   car.addChild(beam);
+  headlightBeams.push(beam);
 }
 const brakeGlow = new pc.Entity("Brake light glow");
 brakeGlow.setLocalPosition(0, 0.8, 2.2);
@@ -922,6 +925,13 @@ function updateWorldLighting(dt){
  worldTime=(worldTime+dt/cycleDuration)%1;
  const daylight=clamp((Math.sin((worldTime-.25)*Math.PI*2)+.18)/1.18,0,1);
  const night=1-daylight;
+ for(const beam of headlightBeams){
+  beam.enabled=night>.12;
+  beam.light.intensity=night*2.4;
+ }
+ mats.headlight.emissive=new pc.Color(.9,.82,.62);
+ mats.headlight.emissiveIntensity=night*.7;
+ mats.headlight.update();
  mats.windowLit.emissiveIntensity=night*.85;
  mats.windowLit.update();
  const blend=(a,b,t)=>new pc.Color(a.r+(b.r-a.r)*t,a.g+(b.g-a.g)*t,a.b+(b.b-a.b)*t);
