@@ -2006,13 +2006,13 @@ app.on("update", dt => {
   });
   // The cockpit steering wheel follows the same smoothed steering input as the front tyres.
   if(activeSteeringWheel){
-   if(activeSteeringWheelImported) activeSteeringWheel.setLocalEulerAngles(steeringAngle*2.8,0,0);
+   if(activeSteeringWheelImported) activeSteeringWheel.setLocalEulerAngles(0,0,steeringAngle*2.8);
    else activeSteeringWheel.setLocalEulerAngles(90,0,steeringAngle*2.8);
   }
   activeVehicleWheels.forEach((wheel,index)=>{
     const isFront=index<2;
     const isLeft=index%2===0;
-    const steer=isFront ? steeringAngle*.55 : 0;
+    const steer=isFront ? steeringAngle*.55*(activeSteeringWheelImported?-1:1) : 0;
     // Chassis pitch and cornering load each suspension corner independently.
     const pitchLoad=bodyPitch*(isFront?-1:1)*.012;
     const cornerLoad=steeringAngle*speedRatio*(isLeft?1:-1)*.0009;
