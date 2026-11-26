@@ -206,10 +206,10 @@ for (const side of [-1, 1]) {
 // Functional-looking traffic signal props make the junctions read as city
 // intersections. These are visual signals for now; traffic AI is separate.
 const signalHousing=makeMat([.018,.024,.03],.25,.42);
-const signalRed=makeMat([.62,.018,.012],.12,.22);
+const signalLensRed=makeMat([.62,.018,.012],.12,.22);
 const signalAmber=makeMat([.8,.31,.018],.12,.22);
-const signalGreen=makeMat([.025,.48,.12],.12,.22);
-for(const material of [signalRed,signalAmber,signalGreen]){
+const signalLensGreen=makeMat([.025,.48,.12],.12,.22);
+for(const material of [signalLensRed,signalAmber,signalLensGreen]){
  material.emissive=material.diffuse.clone().mulScalar(.22);
  material.update();
 }
@@ -218,7 +218,7 @@ function buildTrafficSignal(x,z,rotation=0){
  pole.setPosition(x,0,z);pole.setEulerAngles(0,rotation,0);
  block("Traffic signal pole",[0,3.1,0],[.16,6.2,.16],mats.metal,pole);
  block("Traffic signal head",[0,5.25,-.12],[.62,1.72,.48],signalHousing,pole);
- for(const [y,material] of [[5.76,signalRed],[5.25,signalAmber],[4.74,signalGreen]]){
+ for(const [y,material] of [[5.76,signalLensRed],[5.25,signalAmber],[4.74,signalLensGreen]]){
   block("Traffic signal lens",[0,y,-.385],[.34,.34,.1],material,pole,"sphere");
  }
  block("Traffic signal visor",[0,6.18,-.12],[.78,.12,.62],signalHousing,pole);
