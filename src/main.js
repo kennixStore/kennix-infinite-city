@@ -421,7 +421,7 @@ for(let row=0;row<6;row++){
   }
   if(detailIndex%4===1){
    block("Rooftop architectural mast",[x+w*.28,h+2.2,z],[.16,4.4,.16],mats.metal);
-   block("Rooftop beacon",[x+w*.28,h+4.45,z],[.38,.38,.38],mats.windowLit,"root","sphere");
+   block("Rooftop beacon",[x+w*.28,h+4.45,z],[.38,.38,.38],mats.windowLit,app.root,"sphere");
   }
 
   // Selective architectural features break up the repeated block silhouettes.
