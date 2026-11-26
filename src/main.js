@@ -1242,10 +1242,18 @@ function loadImportedVehicleModels(){
     model.importedRoot=imported;
     model.importedMaterials=[];
     imported.findComponents("render").forEach(component=>{
+     component.castShadows=true;
+     component.receiveShadows=true;
      component.meshInstances.forEach(instance=>{
       if(!instance.material)return;
       const material=instance.material.clone();
+      // Keep the source material's texture, roughness, metalness and base colour.
+      // Only recognised exterior-paint materials are recoloured by the garage.
+      const materialName=String(material.name||"").toLowerCase();
+      material.kennixPaintable=/(body|paint|exterior|car.?color|vehicle.?color)/.test(materialName);
+      material.kennixBaseDiffuse=material.diffuse?.clone?.()||new pc.Color(1,1,1);
       instance.material=material;
+      instance.castShadow=true;
       model.importedMaterials.push(material);
      });
     });
@@ -1262,7 +1270,11 @@ function applyImportedPaint(model,rgb){
  if(!model?.importedMaterials)return;
  const tint=new pc.Color(rgb[0],rgb[1],rgb[2]);
  model.importedMaterials.forEach(material=>{
-  material.diffuse=tint.clone();
+  if(!material.kennixPaintable)return;
+  // Multiply the requested colour by the model's authored base colour rather
+  // than replacing it, preserving painted highlights and material variation.
+  const base=material.kennixBaseDiffuse||new pc.Color(1,1,1);
+  material.diffuse=new pc.Color(base.r*tint.r,base.g*tint.g,base.b*tint.b);
   material.update();
  });
 }
