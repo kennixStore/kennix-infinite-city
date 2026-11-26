@@ -2384,34 +2384,55 @@ app.on("update", dt => {
 // pinned public GLB URL so the repository does not need to vendor binary files.
 // Asset: Stone Facade Module v2, 12 x 18.87 x 1.52 m, 12,910 triangles, 3 LODs.
 // License: CC0 1.0 — https://creativecommons.org/publicdomain/zero/1.0/
-function loadStoneFacadeModules(){
-  const facadeUrl="https://tevy.dev/models/facade-stone-module/v2/lod0.glb";
-  app.assets.loadFromUrl(facadeUrl,"container",(error,asset)=>{
+function loadCityArchitectureAsset(name,url,placements){
+  app.assets.loadFromUrl(url,"container",(error,asset)=>{
     if(error || !asset?.resource){
-      console.warn("KENNIX architecture asset unavailable; keeping district fallback:",error);
+      console.warn("KENNIX architecture asset unavailable:",name,error);
       return;
     }
-    const placements=[
-      {x:-27.2,z:-175,rotation:90},
-      {x:27.2,z:-175,rotation:-90},
-      {x:-27.2,z:-105,rotation:90},
-      {x:27.2,z:-105,rotation:-90},
-      {x:-27.2,z:105,rotation:90},
-      {x:27.2,z:105,rotation:-90}
-    ];
     for(const spot of placements){
-      const facade=asset.resource.instantiateRenderEntity();
-      facade.name="CC0 scanned-detail stone facade";
-      app.root.addChild(facade);
-      facade.setPosition(spot.x,0,spot.z);
-      facade.setEulerAngles(0,spot.rotation,0);
-      facade.enabled=true;
+      const entity=asset.resource.instantiateRenderEntity();
+      entity.name=name;
+      app.root.addChild(entity);
+      entity.setPosition(spot.x,spot.y||0,spot.z);
+      entity.setEulerAngles(0,spot.rotation||0,0);
+      if(spot.scale) entity.setLocalScale(spot.scale,spot.scale,spot.scale);
+      entity.enabled=true;
     }
-    console.info("KENNIX CC0 architectural facade modules loaded:",placements.length);
+    console.info("KENNIX CC0 architecture loaded:",name,placements.length);
   });
+}
+function loadCityArchitecture(){
+  // Modular limestone facade, CC0 1.0. LOD1 keeps the repeated street modules
+  // light enough for mobile while preserving windows, cornices and fire stairs.
+  loadCityArchitectureAsset(
+    "CC0 stone facade module",
+    "https://tevy.dev/models/facade-stone-module/v2/lod1.glb",
+    [
+      {x:-27.2,z:-175,rotation:90},{x:27.2,z:-175,rotation:-90},
+      {x:-27.2,z:-105,rotation:90},{x:27.2,z:-105,rotation:-90},
+      {x:-27.2,z:105,rotation:90},{x:27.2,z:105,rotation:-90}
+    ]
+  );
+  // Full apartment blocks sit inside the outer 60 m city blocks, not on roads.
+  // LOD1 is 20,050 triangles / 451 KB per building.
+  loadCityArchitectureAsset(
+    "CC0 detailed six-storey apartment block",
+    "https://tevy.dev/models/apartment-block/v2/lod1.glb",
+    [
+      {x:-90,z:-175},{x:90,z:-175},
+      {x:-90,z:175},{x:90,z:175}
+    ]
+  );
+  // A recognisable large commercial building anchors the market-side district.
+  loadCityArchitectureAsset(
+    "CC0 supermarket building",
+    "https://tevy.dev/models/supermarket-shell/v2/lod1.glb",
+    [{x:-90,z:-105,rotation:0}]
+  );
 }
 
 app.start();
 activateVehicleModel();
 loadImportedVehicleModels();
-loadStoneFacadeModules();
+loadCityArchitecture();
