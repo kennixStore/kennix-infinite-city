@@ -256,3 +256,42 @@ footer span{letter-spacing:.16em}
 
 /* Compact navigation map on phones so it doesn't cover the driving view. */
 @media(max-width:600px){.minimap-panel{width:108px!important;padding:5px!important}.minimap-heading strong{font-size:8px}#city-minimap{width:94px;height:94px;margin:auto}.minimap-readout{font-size:7px;padding:4px 1px}#map-destination{font-size:7px;padding:5px 3px}.steering-arrows button{width:62px!important;height:62px!important;font-size:24px!important;border-radius:16px!important}}
+
+/* Clean mobile driving HUD: keep the road visible and controls familiar. */
+@media(max-width:600px){
+  .game-header{min-height:40px;padding:7px 10px}
+  .brand{font-size:12px;letter-spacing:.12em}
+  .brand span{font-size:8px;letter-spacing:.16em}
+  .game-header .status,footer,.scene-label{display:none!important}
+  .hud-speed{right:10px;bottom:10px;min-width:76px;padding:7px 9px;opacity:.9}
+  .utility-bar{top:8px;left:8px;right:8px;justify-content:flex-start;gap:4px;max-width:calc(100% - 16px)}
+  .utility-bar button{min-height:27px;padding:5px 7px;font-size:7px;letter-spacing:.04em}
+  .minimap-panel{top:44px!important;right:8px!important;width:82px!important;padding:4px!important;border-radius:50%!important}
+  .minimap-heading{margin:0!important;justify-content:center}
+  .minimap-heading strong{display:none}
+  .minimap-heading #map-clear,.minimap-readout,#map-destination{display:none!important}
+  .map-size-toggle{display:block!important;width:100%;height:16px!important;padding:0!important;border:0!important;background:transparent!important;color:#e7c783!important;font-size:7px!important;line-height:16px!important}
+  #city-minimap{width:72px!important;height:72px!important;margin:0 auto!important}
+  .minimap-panel:not(.map-expanded){height:91px;overflow:hidden}
+  .minimap-panel.map-expanded{width:142px!important;border-radius:10px!important}
+  .minimap-panel.map-expanded .minimap-heading{justify-content:space-between;margin:0 2px 4px!important}
+  .minimap-panel.map-expanded .minimap-heading strong{display:block}
+  .minimap-panel.map-expanded .minimap-heading #map-clear{display:block!important}
+  .minimap-panel.map-expanded .minimap-readout,.minimap-panel.map-expanded #map-destination{display:grid!important}
+  .minimap-panel.map-expanded #city-minimap{width:116px!important;height:116px!important}
+  .touch-controls{inset:auto 9px 10px!important;align-items:end}
+  .steering-panel{gap:3px}
+  .steering-mode{height:18px!important;padding:0 5px!important;font-size:6px!important;opacity:.7}
+  .steering-arrows button{width:54px!important;height:54px!important;font-size:20px!important}
+  .pedals{display:flex;gap:5px;align-items:end}
+  .pedals button{width:53px!important;height:53px!important;padding:3px!important;font-size:8px!important;border-radius:12px!important}
+  .pedals button[data-control="handbrake"],
+  .pedals button[data-control="nitro"],
+  .pedals button[data-control="signal-left"],
+  .pedals button[data-control="signal-right"],
+  .pedals button[data-control="hazards"]{display:none!important}
+  .fuel-status,.nitro-status,.cycle-status,.mission-status{display:none!important}
+  .race-status:empty,.wanted-label:empty,.mission-title-label:empty{display:none!important}
+  .race-status,.wanted-label,.mission-title-label{font-size:8px!important;padding:4px 7px!important}
+}
+.map-size-toggle{display:none}
