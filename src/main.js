@@ -2636,18 +2636,35 @@ function loadCityArchitectureAsset(name,url,placements){
   });
 }
 function loadMovingTrafficModels(){
-  const fleet=["sedan.glb","suv.glb","sport-coupe.glb","mid-engine-sports.glb"];
+  // Detailed CC0 vehicles with full bodywork and interiors; mobile LOD1.
+  const fleet=[
+    {name:"Family Sedan",url:"https://tevy.dev/models/family-sedan/v1/lod1.glb"},
+    {name:"Mid-Size SUV",url:"https://tevy.dev/models/suv/v1/lod1.glb"},
+    {name:"Muscle Car",url:"https://tevy.dev/models/muscle-car/v1/lod1.glb"},
+    {name:"Family Minivan",url:"https://tevy.dev/models/family-minivan/v1/lod1.glb"}
+  ];
+  const loaded=new Map();
   traffic.forEach((item,index)=>{
-    const filename=fleet[index%fleet.length];
-    app.assets.loadFromUrl("/models/vehicles/"+filename,"container",(error,asset)=>{
-      if(error||!asset?.resource){console.warn("Moving traffic model unavailable:",filename,error);return;}
-      const model=asset.resource.instantiateRenderEntity();
-      model.name="Imported moving traffic "+filename;
+    const info=fleet[index%fleet.length];
+    if(!loaded.has(info.url)){
+      loaded.set(info.url,new Promise(resolve=>{
+        app.assets.loadFromUrl(info.url,"container",(error,asset)=>{
+          if(error||!asset?.resource){
+            console.warn("CC0 traffic model unavailable:",info.name,error);
+            resolve(null);
+          }else resolve(asset.resource);
+        });
+      }));
+    }
+    loaded.get(info.url).then(resource=>{
+      if(!resource||!item.entity||item.entity._destroyed)return;
+      const model=resource.instantiateRenderEntity();
+      model.name="CC0 moving traffic "+info.name;
       item.entity.addChild(model);
       model.setLocalPosition(0,0,0);
       model.setLocalScale(1,1,1);
       model.enabled=true;
-      item.fallbackVisuals.enabled=false;
+      if(item.fallbackVisuals)item.fallbackVisuals.enabled=false;
     });
   });
 }
