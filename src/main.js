@@ -492,17 +492,19 @@ function parkedCar(x,z,colorIndex,facing=0,modelType="sport"){
   const vehicle=new pc.Entity("Parked city vehicle");
   vehicle.setPosition(x,.08,z);vehicle.setEulerAngles(0,facing,0);app.root.addChild(vehicle);
   const paint=parkedMats[colorIndex%parkedMats.length];
-  const fallback=block("Parked car fallback body",[0,.48,0],[1.75,.48,3.5],paint,vehicle);
-  block("Parked car fallback cabin",[0,.83,.15],[1.42,.48,1.65],mats.glass,vehicle);
+  const fallback=new pc.Entity("Parked vehicle fallback");
+  vehicle.addChild(fallback);
+  block("Parked car fallback body",[0,.48,0],[1.75,.48,3.5],paint,fallback);
+  block("Parked car fallback cabin",[0,.83,.15],[1.42,.48,1.65],mats.glass,fallback);
   for(const side of [-1,1])for(const end of [-1,1]){
-    block("Parked car fallback wheel",[side*.88,.25,end*1.08],[.22,.48,.62],mats.trim,vehicle,"cylinder");
+    block("Parked car fallback wheel",[side*.88,.25,end*1.08],[.22,.48,.62],mats.trim,fallback,"cylinder");
   }
   parkedVehicleRequests.push({vehicle,paint,fallback,modelType});
 }
-parkedCar(-11.2, -29, 0, 90);
-parkedCar(11.2, -17, 1, -90);
-parkedCar(-11.2, 8, 2, 90);
-parkedCar(11.2, 57, 0, -90);
+parkedCar(-11.2, -29, 0, 90, "sport");
+parkedCar(11.2, -17, 1, -90, "sedan");
+parkedCar(-11.2, 8, 2, 90, "suv");
+parkedCar(11.2, 57, 0, -90, "sedan");
 
 // Street furniture adds a human scale to the first playable boulevard.
 const streetPropMetal=makeMat([.16,.2,.23],.55,.35);
