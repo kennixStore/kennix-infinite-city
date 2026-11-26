@@ -144,6 +144,48 @@ function applyDetailNormal(material,texture,tiling= new pc.Vec2(1,1),strength=.3
 applyDetailNormal(mats.asphalt,detailNormals.asphalt,new pc.Vec2(2,72),.28);
 applyDetailNormal(mats.concrete,detailNormals.concrete,new pc.Vec2(2,64),.2);
 
+ 
+// Load higher-resolution CC0 PBR scans. Procedural maps above remain as
+// immediate fallbacks if a texture is unavailable or the player is offline.
+function loadPbrTexture(url, apply){
+  app.assets.loadFromUrl(url,"texture",(err,asset)=>{
+    if(err || !asset?.resource){
+      console.warn("KENNIX PBR texture unavailable; keeping procedural fallback:",url,err);
+      return;
+    }
+    const texture=asset.resource;
+    texture.addressU=pc.ADDRESS_REPEAT;
+    texture.addressV=pc.ADDRESS_REPEAT;
+    apply(texture);
+  });
+}
+loadPbrTexture("/textures/pbr/road_Color.jpg",texture=>{
+  mats.asphalt.diffuseMap=texture;
+  mats.asphalt.diffuseMapTiling=new pc.Vec2(4,88);
+  mats.asphalt.metalness=.025;
+  mats.asphalt.shininess=17;
+  mats.asphalt.update();
+});
+loadPbrTexture("/textures/pbr/road_NormalGL.jpg",texture=>{
+  mats.asphalt.normalMap=texture;
+  mats.asphalt.normalMapTiling=new pc.Vec2(4,88);
+  mats.asphalt.bumpiness=.42;
+  mats.asphalt.update();
+});
+loadPbrTexture("/textures/pbr/concrete_Color.jpg",texture=>{
+  mats.concrete.diffuseMap=texture;
+  mats.concrete.diffuseMapTiling=new pc.Vec2(3,68);
+  mats.concrete.metalness=0;
+  mats.concrete.shininess=8;
+  mats.concrete.update();
+});
+loadPbrTexture("/textures/pbr/concrete_NormalGL.jpg",texture=>{
+  mats.concrete.normalMap=texture;
+  mats.concrete.normalMapTiling=new pc.Vec2(3,68);
+  mats.concrete.bumpiness=.28;
+  mats.concrete.update();
+});
+
 function block(name, pos, size, mat, parent = app.root, shape = "box") {
   const e = new pc.Entity(name);
   e.addComponent("render", { type: shape, material: mat });
