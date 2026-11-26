@@ -2695,6 +2695,12 @@ function loadCityArchitecture(){
   loadCityArchitectureAsset("CC0 neighbourhood grocery shop",
     "https://tevy.dev/models/village-shop/v2/lod1.glb",
     [{x:-150,z:105,rotation:0}]);
+  // Ground-level commercial frontage: replace an empty roadside block with
+  // a detailed, authored shop facade rather than another procedural box.
+  // CC0 1.0, pinned v2; the module is 12 m wide and 6 m tall.
+  loadCityArchitectureAsset("CC0 detailed downtown storefront",
+    "https://tevy.dev/models/storefront-module/v2/lod1.glb",
+    [{x:150,z:-35,rotation:0},{x:150,z:35,rotation:180}]);
 }
 
 app.start();
