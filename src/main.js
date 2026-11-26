@@ -283,6 +283,63 @@ for (const side of [-1, 1]) {
   }
 }
 
+// Street-surface realism pass: cast-iron access covers, repaired asphalt,
+// reflective lane studs and subtle tyre-polish zones. These sit almost flush
+// with the road and use restrained real-world materials rather than bright props.
+const castIronMat=makeMat([.105,.12,.13],.72,.48);
+const castIronEdge=makeMat([.19,.21,.22],.78,.4);
+const roadRepairDark=makeMat([.052,.058,.063],0,.96);
+const roadRepairMid=makeMat([.085,.09,.095],0,.94);
+const roadStudMat=makeMat([.82,.72,.43],.18,.28);
+roadStudMat.emissive=new pc.Color(.12,.095,.045);
+roadStudMat.emissiveIntensity=.12;
+roadStudMat.update();
+
+// Flush circular utility covers placed away from the pedestrian crossings.
+for(const [x,z] of [[-6.05,-185],[6.05,-112],[-6.05,-8],[6.05,108],[-6.05,184]]){
+ block("Cast iron manhole rim",[x,.055,z],[.92,.065,.92],castIronEdge,app.root,"cylinder");
+ block("Cast iron manhole cover",[x,.092,z],[.78,.035,.78],castIronMat,app.root,"cylinder");
+ for(let slot=0;slot<4;slot++){
+  const angle=slot*Math.PI/2;
+  const groove=block("Manhole cover grip slot",
+   [x+Math.cos(angle)*.22,.112,z+Math.sin(angle)*.22],
+   [.22,.008,.035],mats.dark);
+  groove.setEulerAngles(0,-angle,0);
+ }
+}
+
+// Small raised reflective road markers sit beside lane lines, not as oversized
+// decorative studs. Spacing is deliberately sparse for mobile draw-call budget.
+for(const side of [-1,1]){
+ for(let z=-216;z<=216;z+=36){
+  if(Math.abs(z+43)<18||Math.abs(z-39)<18)continue;
+  block("Reflective lane marker",[side*4.9,.073,z],[.18,.035,.24],roadStudMat);
+ }
+}
+
+// Asphalt repairs vary slightly in tone and shape so the carriageway does not
+// read as a perfectly clean computer-generated slab.
+const repairPatches=[
+ [-2.8,-158,1.5,3.8], [2.2,-91,1.15,2.6],
+ [-1.7,-18,1.35,2.1], [3.1,82,1.2,3.1],
+ [-2.5,151,1.6,2.8], [1.9,218,1.1,2.2],
+ [2.9,-204,1.05,1.9], [-3.4,32,1.0,1.7]
+];
+repairPatches.forEach((p,index)=>{
+ const patch=block("Worn asphalt repair patch",
+  [p[0],.046,p[1]],[p[2],.012,p[3]],index%2?roadRepairMid:roadRepairDark);
+ patch.setEulerAngles(0,(index%3-1)*.035,0);
+});
+
+// Slightly polished tyre paths approaching the two main junctions.
+const tyreWearMat=makeMat([.063,.069,.074],0,.98);
+for(const z of [-43,39]){
+ for(const side of [-1,1]){
+  block("Subtle tyre-polished asphalt",
+   [side*2.55,.045,z-8],[.22,.009,11.5],tyreWearMat);
+ }
+}
+
 // Functional-looking traffic signal props make the junctions read as city
 // intersections. These are visual signals for now; traffic AI is separate.
 const signalHousing=makeMat([.018,.024,.03],.25,.42);
