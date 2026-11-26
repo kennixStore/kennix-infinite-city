@@ -134,3 +134,13 @@ Use only assets with verified licences permitting the intended use, including co
 - A successful GitHub build/deployment is not proof that the browser runtime works.
 - Test actual gameplay on Android after each meaningful control/rendering change.
 - Label planned, prototype and tested features honestly.
+
+
+## 14. First implementation pass — 26 November 2026
+
+The first practical visual/driving pass has been committed separately from the design decisions:
+- Chase-camera framing now aims ahead of the vehicle, uses a lower/steadier speed response and avoids using chassis pitch/roll on the vehicle root. The root stays level while the suspension animation remains separate.
+- Six plain roadside building placeholders along the first boulevard are now skipped and replaced by six instances of the verified CC0 Apartment Block v2 model from tevy.dev, at mobile LOD1 and reduced scale. The original CC0 asset page documents its authored balconies, brick/rendered facade, shopfronts, roof plant and lit windows.
+- A small number of procedural skyline roof crowns and rooftop details add silhouette variation.
+
+**Important verification limit:** GitHub build/deploy success does not prove the camera feels correct on the actual phone or that remote GLB assets load in the live browser. The next acceptance test is to accelerate on the main avenue and confirm the camera keeps the car and road in frame, then visually confirm the six authored buildings appear. If the buildings still show as plain placeholders, inspect the browser's asset-load errors and vendor a compatible CC0 model locally rather than assuming the remote import succeeded.
