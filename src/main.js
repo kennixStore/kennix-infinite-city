@@ -466,103 +466,109 @@ for(const material of districtPalettes){
 }
 const marketFabric=makeMat([0.68,0.28,0.09]);
 const industrialPaint=makeMat([0.34,0.37,0.39],.45,.4);
-// Selected plots use complete authored buildings instead of temporary block shells.
+// International-metropolis architecture pass.
+// Each plot now uses a distinct building massing instead of one repeated box.
+// Imported CC0 buildings replace these procedural fallbacks only after they load.
 const photorealisticBuildingReplacements=new Set(["-30,-105","30,105","-150,35"]);
-// Buildings sit within the blocks, leaving the avenue grid clear for driving.
+const cityBuildingPlaceholders = new Map();
+const novaLandmarkRoots = new Map();
+
+function buildDistrictBuilding(row,col,x,z,w,h,depth){
+ const style=(row*3+col)%5;
+ const root=new pc.Entity("NOVA international district building");
+ root.setPosition(x,0,z);
+ app.root.addChild(root);
+ const base=districtPalettes[(row+col)%districtPalettes.length];
+ const accent=districtPalettes[(row+col+1)%districtPalettes.length];
+ const towerH=Math.max(18,h-5);
+ const floors=Math.max(5,Math.floor(towerH/3.25));
+
+ // A broad, glazed ground-floor podium makes the building meet the street.
+ block("Architectural retail podium",[0,2.45,0],[w+2.2,4.9,depth+2],base,root);
+ for(const face of [-1,1]){
+  const front=face*(depth/2+1.04);
+  block("Podium curtain wall",[0,2.45,front],[w*.78,3.25,.1],mats.glass,root);
+  for(let bay=-1;bay<=1;bay++){
+   block("Podium structural pier",[bay*w*.34,2.45,front+face*.08],[.28,4.4,.3],mats.metal,root);
+  }
+  block("Podium canopy",[0,4.85,front+face*.75],[w*.82,.18,1.45],accent,root);
+  block("Podium sign band",[0,4.15,front+face*.16],[w*.68,.24,.12],mats.paint,root);
+ }
+
+ // Five different skyline profiles: glass slab, stepped tower, residences,
+ // finned office, and an offset mixed-use tower.
+ if(style===1){
+  block("Stepped tower lower volume",[0,4.9+towerH*.36,0],[w,towerH*.72,depth],base,root);
+  block("Stepped tower upper volume",[w*.07,4.9+towerH*.78,0],[w*.78,towerH*.28,depth*.82],accent,root);
+ }else if(style===4){
+  block("Offset mixed use lower tower",[-w*.08,4.9+towerH*.43,0],[w*.88,towerH*.86,depth],base,root);
+  block("Offset mixed use upper tower",[w*.13,4.9+towerH*.87,depth*.04],[w*.62,towerH*.2,depth*.72],accent,root);
+ }else{
+  const towerWidth=style===2?w*.9:w;
+  block("International tower mass",[0,4.9+towerH/2,0],[towerWidth,towerH,depth],base,root);
+ }
+
+ // Recessed glass ribbons and vertical mullions create a real facade rhythm.
+ for(const face of [-1,1]){
+  const faceZ=face*(depth/2+.09);
+  for(let floor=1;floor<=floors;floor++){
+   const y=4.9+floor*3.05;
+   if(y>h+1)continue;
+   block("Continuous glazed floor ribbon",[0,y,faceZ],[w*.88,1.62,.11],
+     (floor+row+col)%7===0?mats.windowLit:mats.glass,root);
+   block("Facade slab reveal",[0,y-1.02,faceZ+face*.06],[w+.18,.13,.2],accent,root);
+  }
+  for(let bay=0;bay<=4;bay++){
+   const fx=-w*.46+bay*w*.23;
+   block("Full height architectural mullion",[fx,4.9+towerH/2,faceZ+face*.08],
+     [.16,towerH,.25],mats.metal,root);
+  }
+  if(style===2){
+   for(let floor=2;floor<=floors;floor+=2){
+    const y=4.9+floor*3.05;
+    if(y>h-1)continue;
+    block("Residential balcony slab",[0,y,faceZ+face*.72],[w*.72,.16,1.25],accent,root);
+    block("Residential balcony glass rail",[0,y+.48,faceZ+face*1.31],[w*.72,.78,.07],mats.glass,root);
+   }
+  }
+ }
+ for(const face of [-1,1]){
+  const faceX=face*(w/2+.08);
+  for(let floor=1;floor<=floors;floor+=2){
+   const y=4.9+floor*3.05;
+   if(y>h)continue;
+   block("Side elevation window band",[faceX,y,0],[.1,1.42,depth*.72],mats.glass,root);
+  }
+  block("Tower corner blade",[face*(w/2-.18),4.9+towerH/2,0],[.32,towerH,.38],accent,root);
+ }
+
+ // Distinctive rooflines, plant rooms and planted terraces.
+ if(style===1||style===4){
+  block("Setback roof terrace",[0,h-.35,0],[w*.56,.7,depth*.58],mats.concrete,root);
+ }else{
+  block("Sculpted tower crown",[0,h+.28,0],[w*.62,.56,depth*.68],accent,root);
+ }
+ block("Rooftop mechanical penthouse",[0,h+1.25,0],[w*.28,1.9,depth*.32],mats.metal,root);
+ for(const side of [-1,1]){
+  block("Rooftop service screen",[side*w*.24,h+.75,0],[.16,1.1,depth*.58],mats.dark,root);
+ }
+ if(style===3){
+  for(const side of [-1,1]){
+   block("Office crown blade",[side*w*.37,h+2.1,0],[.22,4.2,.24],mats.metal,root);
+  }
+ }
+ cityBuildingPlaceholders.set(String(x)+","+String(z),root);
+ return root;
+}
+
 for(let row=0;row<6;row++){
  for(let col=0;col<6;col++){
   const x=-180+col*60+30, z=-210+35+row*70;
   if(photorealisticBuildingReplacements.has(String(x)+","+String(z))) continue;
   if(Math.abs(x)<22) continue;
-  const h=12+((row*7+col*11)%5)*5, w=22+((row+col)%3)*5;
-  block("NOVA CITY district block",[x,h/2,z],[w,h,23],districtPalettes[(row+col)%4]);
-  // Fully positioned facade pieces are separate world entities, so building scale
-  // never stretches the detail meshes or creates doubled coordinates.
-  for(const face of [-1,1]){
-   const faceZ=z+face*11.58;
-   for(let floor=1;floor<Math.floor(h/3.2);floor++){
-    const y=floor*3;
-    for(let bay=0;bay<3;bay++){
-     const wx=x-w/2-0.06+(bay+0.5)*w/3;
-     const glass=(floor+bay+row)%5===0?mats.windowLit:mats.glass;
-     block("District tower window frame",[wx,y,faceZ],[2.18,1.62,.09],mats.dark);
-     block("District tower window",[wx,y,faceZ+face*.055],[1.94,1.38,.06],glass);
-    }
-    block("Facade floor band",[x,y-1.0,faceZ],[w+.25,.09,.22],mats.metal);
-   }
-   // Architectural pilasters, window sills and a roof cornice add depth
-   // to the street-facing elevations without changing the building footprint.
-   for(const pierX of [x-w*.46,x+w*.46]){
-    block("Facade vertical pilaster",[pierX,h/2,faceZ+face*.13],[.42,h,.34],mats.concrete);
-   }
-   for(let floor=1;floor<Math.floor(h/3.2);floor++){
-    const sillY=floor*3-.83;
-    block("Window sill",[x,sillY,faceZ+face*.12],[w*.88,.12,.28],mats.metal);
-   }
-   block("Roofline facade cornice",[x,h-.12,faceZ+face*.14],[w+.65,.32,.48],mats.concrete);
-   block("Ground floor shopfront",[x,1.55,faceZ],[w*.72,2.4,.16],mats.glass);
-   block("Shop fascia",[x,2.95,faceZ+face*.12],[w*.78,.28,.32],mats.paint);
-  }
-  for(const side of [-1,1]){
-   const faceX=x+side*(w/2+.06);
-   for(let floor=1;floor<Math.floor(h/3.2);floor++){
-    for(let bay=0;bay<3;bay++){
-     const wz=z-7+bay*7;
-     block("Side elevation window",[faceX,floor*3,wz],[.09,1.38,1.9],mats.glass);
-    }
-   }
-   block("Building corner pier",[x+side*(w/2-.18),h/2,z],[.34,h,.34],mats.metal);
-  }
-  block("Rooftop plant room",[x,h+.8,z],[w*.35,1.6,5],mats.metal);
-  block("Rooftop service unit",[x+w*.28,h/2+.55,z+5.2],[2.6,1.1,2.1],mats.dark);
-
-  // Varied roof crowns and glass setbacks give the skyline a less repetitive,
-  // more international high-rise profile without expensive extra textures.
-  const detailIndex=row*6+col;
-  if(detailIndex%3===0){
-   const crownW=w*(.48+(detailIndex%2)*.08);
-   const crownH=2.4+(detailIndex%4)*.45;
-   block("Stepped tower crown",[x,h+crownH/2,z],[crownW,crownH,12.8],districtPalettes[(row+col+1)%districtPalettes.length]);
-   for(const face of [-1,1]){
-    block("Crown glass ribbon",[x,h+crownH*.52,z+face*6.46],[crownW*.82,.48,.08],mats.glass);
-    block("Crown metal edge",[x,h+crownH+.08,z+face*6.55],[crownW+.35,.16,.22],mats.metal);
-   }
-  }
-  if(detailIndex%4===1){
-   block("Rooftop architectural mast",[x+w*.28,h+2.2,z],[.16,4.4,.16],mats.metal);
-   block("Rooftop beacon",[x+w*.28,h+4.45,z],[.38,.38,.38],mats.windowLit,app.root,"sphere");
-  }
-
-  // Selective architectural features break up the repeated block silhouettes.
-  if(detailIndex%3!==1){
-   const face=detailIndex%2===0?1:-1;
-   const faceZ=z+face*11.72;
-   const balconyY=Math.min(h-2.1,6.1+(detailIndex%2)*2.8);
-   block("Projecting balcony slab",[x-w*.18,balconyY,faceZ+face*.58],[w*.42,.18,1.25],mats.concrete);
-   block("Balcony front rail",[x-w*.18,balconyY+.55,faceZ+face*1.18],[w*.42,.9,.09],mats.metal);
-   for(const railX of [x-w*.18-w*.21,x-w*.18+w*.21]){
-    block("Balcony side rail",[railX,balconyY+.55,faceZ+face*.58],[.09,.9,1.15],mats.metal);
-   }
-  }
-  if(detailIndex%4===0){
-   const signFace=detailIndex%2===0?1:-1;
-   const signZ=z+signFace*11.82;
-   const signMat=detailIndex%8===0?marketFabric:mats.paint;
-   block("Vertical illuminated shop sign",[x+w*.34,3.1,signZ+signFace*.2],[1.05,3.5,.22],signMat);
-   block("Shop sign lettering panel",[x+w*.34,3.1,signZ+signFace*.34],[.72,2.75,.06],mats.windowLit);
-  }
-  if(detailIndex%5===0){
-   block("Roof antenna mast",[x-w*.3,h+2.5,z],[.12,5,.12],mats.metal);
-   block("Roof antenna crossbar",[x-w*.3,h+3.7,z],[1.1,.1,.1],mats.metal);
-  }
-  if(detailIndex%2===0){
-   const awningFace=detailIndex%4===0?-1:1;
-   const awningZ=z+awningFace*11.95;
-   block("Storefront canopy",[x,3.05,awningZ+awningFace*.62],[w*.76,.18,1.3],detailIndex%4===0?marketFabric:industrialPaint);
-   for(let stripe=-2;stripe<=2;stripe++){
-    block("Canopy valance detail",[x+stripe*w*.13,2.88,awningZ+awningFace*1.22],[.12,.24,.06],mats.windowLit);
-   }
-  }
+  const h=30+((row*7+col*11)%7)*6;
+  const w=22+((row+col)%3)*5;
+  buildDistrictBuilding(row,col,x,z,w,h,23);
  }
 }
 // District landmarks give the first city map recognisable destinations.
@@ -953,9 +959,9 @@ function buildNovaLandmark(name, x, z, width, depth, height, style = 0) {
   return root;
 }
 
-buildNovaLandmark("NOVA FINANCIAL TOWER",-30,-105,23,20,47,0);
-buildNovaLandmark("MARINA RESIDENCES",30,105,23,20,37,1);
-buildNovaLandmark("NOVA EXCHANGE",-150,35,22,19,34,2);
+novaLandmarkRoots.set("-30,-105",buildNovaLandmark("NOVA FINANCIAL TOWER",-30,-105,23,20,47,0));
+novaLandmarkRoots.set("30,105",buildNovaLandmark("MARINA RESIDENCES",30,105,23,20,37,1));
+novaLandmarkRoots.set("-150,35",buildNovaLandmark("NOVA EXCHANGE",-150,35,22,19,34,2));
 
 const authoredStreetBuildingSlots = new Set([2,3,6,7,10,11]);
 for (let i = 0; i < 14; i++) {
@@ -3041,6 +3047,11 @@ function loadCityArchitectureAsset(name,url,placements){
       entity.setEulerAngles(0,spot.rotation||0,0);
       if(spot.scale) entity.setLocalScale(spot.scale,spot.scale,spot.scale);
       entity.enabled=true;
+      const key=String(spot.x)+","+String(spot.z);
+      const placeholder=cityBuildingPlaceholders.get(key);
+      if(placeholder) placeholder.enabled=false;
+      const landmark=novaLandmarkRoots.get(key);
+      if(landmark) landmark.enabled=false;
     }
     console.info("KENNIX CC0 architecture loaded:",name,placements.length);
   });
