@@ -354,6 +354,16 @@ for(let row=0;row<6;row++){
     }
     block("Facade floor band",[x,y-1.0,faceZ],[w+.25,.09,.22],mats.metal);
    }
+   // Architectural pilasters, window sills and a roof cornice add depth
+   // to the street-facing elevations without changing the building footprint.
+   for(const pierX of [x-w*.46,x+w*.46]){
+    block("Facade vertical pilaster",[pierX,h/2,faceZ+face*.13],[.42,h,.34],mats.concrete);
+   }
+   for(let floor=1;floor<Math.floor(h/3.2);floor++){
+    const sillY=floor*3-.83;
+    block("Window sill",[x,sillY,faceZ+face*.12],[w*.88,.12,.28],mats.metal);
+   }
+   block("Roofline facade cornice",[x,h-.12,faceZ+face*.14],[w+.65,.32,.48],mats.concrete);
    block("Ground floor shopfront",[x,1.55,faceZ],[w*.72,2.4,.16],mats.glass);
    block("Shop fascia",[x,2.95,faceZ+face*.12],[w*.78,.28,.32],mats.paint);
   }
