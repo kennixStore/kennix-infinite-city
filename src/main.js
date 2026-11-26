@@ -2620,6 +2620,42 @@ app.on("update", dt => {
 // pinned public GLB URL so the repository does not need to vendor binary files.
 // Asset: Stone Facade Module v2, 12 x 18.87 x 1.52 m, 12,910 triangles, 3 LODs.
 // License: CC0 1.0 — https://creativecommons.org/publicdomain/zero/1.0/
+function loadPhotorealisticPedestrians(){
+  // CC0 rigged full-body people; lower LOD keeps mobile downloads lighter.
+  const people=[
+    {name:"Casual Walker",url:"https://tevy.dev/models/casual-walker/v1/lod1.glb"},
+    {name:"Hiker",url:"https://tevy.dev/models/hiker/v1/lod1.glb"},
+    {name:"Dog Walker",url:"https://tevy.dev/models/dog-walker/v1/lod1.glb"},
+    {name:"Road Worker",url:"https://tevy.dev/models/road-worker/v1/lod1.glb"}
+  ];
+  const resources=new Map();
+  pedestrians.forEach((person,index)=>{
+    const info=people[index%people.length];
+    if(!resources.has(info.url)){
+      resources.set(info.url,new Promise(resolve=>{
+        app.assets.loadFromUrl(info.url,"container",(error,asset)=>{
+          if(error||!asset?.resource){
+            console.warn("CC0 pedestrian model unavailable:",info.name,error);
+            resolve(null);
+          }else resolve(asset.resource);
+        });
+      }));
+    }
+    resources.get(info.url).then(resource=>{
+      if(!resource||!person.entity||person.entity._destroyed)return;
+      const model=resource.instantiateRenderEntity();
+      model.name="CC0 realistic pedestrian - "+info.name;
+      model.setLocalPosition(0,0,0);
+      model.setLocalEulerAngles(0,180,0);
+      model.setLocalScale(1,1,1);
+      person.entity.addChild(model);
+      for(const child of person.entity.children){
+        if(child!==model)child.enabled=false;
+      }
+      person.realisticModel=model;
+    });
+  });
+}
 function loadCityArchitectureAsset(name,url,placements){
   app.assets.loadFromUrl(url,"container",(error,asset)=>{
     if(error || !asset?.resource){
@@ -2745,3 +2781,4 @@ loadCityArchitecture();
 loadParkedVehicleModels();
 loadMovingTrafficModels();
 loadSpecialTrafficModels();
+loadPhotorealisticPedestrians();
