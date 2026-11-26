@@ -1033,6 +1033,17 @@ const shopGlassMat=makeMat([.045,.105,.14],.42,.19);
 shopGlassMat.clearCoat=.72;
 shopGlassMat.clearCoatGloss=.92;
 shopGlassMat.update();
+const shopInteriorMat=makeMat([.16,.14,.12],.02,.92);
+const shopShelfMat=makeMat([.23,.21,.18],.04,.78);
+const shopCounterMat=makeMat([.29,.27,.23],.08,.7);
+const shopProductMats=[
+ makeMat([.34,.27,.19],0,.84),makeMat([.19,.25,.24],0,.82),
+ makeMat([.42,.39,.31],0,.84),makeMat([.25,.22,.2],0,.84)
+];
+const shopWarmGlass=makeMat([.46,.32,.19],0,.7);
+shopWarmGlass.emissive=new pc.Color(.12,.065,.028);
+shopWarmGlass.emissiveIntensity=.3;
+shopWarmGlass.update();
 
 function addDetailedShopfront(side,faceX,z,width,index){
  const outward=side;
@@ -1040,6 +1051,29 @@ function addDetailedShopfront(side,faceX,z,width,index){
  // Recessed dark backing gives the glazing depth instead of a flat blue panel.
  block("Recessed retail frontage",[faceX+outward*.045,1.78,z],
   [.12,3.25,frontageWidth],shopFrameMat);
+ // A shadowed, softly lit shop interior sits behind the glazing. Low shelves,
+ // a checkout counter and muted product packages provide real-world scale.
+ block("Retail interior back wall",[faceX-outward*2.65,1.72,z],
+  [.12,3.15,7.65],shopInteriorMat);
+ block("Warm shop interior ceiling",[faceX-outward*1.42,3.25,z],
+  [2.35,.12,7.5],shopWarmGlass);
+ for(const shelfZ of [-3.25,3.25]){
+  block("Retail wall shelving",[faceX-outward*2.05,1.55,z+shelfZ],
+   [.82,2.1,.16],shopShelfMat);
+  for(let level=0;level<3;level++){
+   block("Retail shelf ledge",[faceX-outward*1.58,.82+level*.58,z+shelfZ],
+    [.92,.075,.66],shopCounterMat);
+   for(let item=0;item<3;item++){
+    block("Muted retail product display",
+     [faceX-outward*(1.55+.07*(item%2)),1.02+level*.58,z+shelfZ-.22+item*.22],
+     [.32,.28,.14],shopProductMats[(index+item+level)%shopProductMats.length]);
+   }
+  }
+ }
+ block("Retail checkout counter",[faceX-outward*1.35,1.02,z],
+  [1.05,.92,2.05],shopCounterMat);
+ block("Checkout counter top",[faceX-outward*1.35,1.51,z],
+  [1.18,.08,2.18],shopStoneMat);
  // Stone or rendered piers divide the glazing into realistic structural bays.
  for(const offset of [-4.05,0,4.05]){
   block("Shopfront masonry pier",[faceX+outward*.12,1.78,z+offset],
