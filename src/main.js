@@ -928,15 +928,61 @@ createTrafficCar(207.45,145,-1,3,9,"x");
 // Additional real-scale traffic assets: CC0 models from tevy.dev.
 // These are detailed authored assets with PBR materials, not low-poly placeholders.
 // The renderer is 3D internally; the target presentation remains photorealistic.
+function createSpecialTrafficFallback(type,parent){
+ const root=new pc.Entity("Temporary "+type+" vehicle fallback");
+ parent.addChild(root);
+ const paint=type==="bus"?makeMat([.78,.78,.72],.12,.48):
+  type==="minibus"?makeMat([.82,.72,.24],.08,.5):
+  type==="taxi"?makeMat([.86,.72,.12],.12,.42):makeMat([.12,.15,.17],.22,.38);
+ const glass=makeMat([.025,.075,.105],.18,.22);
+ const rubber=mats.trim,chrome=mats.metal;
+ const wheels=[];
+ if(type==="bus"||type==="minibus"){
+  const length=type==="bus"?8.4:4.2,width=type==="bus"?2.35:1.82,height=type==="bus"?2.85:2.05;
+  block("Fallback chassis",[0,.38,0],[width*.94,.42,length*.96],rubber,root);
+  block("Fallback body",[0,height*.48,0],[width,height*.72,length],paint,root);
+  block("Fallback window band",[0,height*.72,-.02],[width+.015,height*.25,length*.78],glass,root);
+  block("Fallback roof",[0,height*.88,0],[width*.98,.16,length*.98],paint,root);
+  block("Fallback front glass",[0,height*.7,-length*.49],[width*.78,height*.25,.045],glass,root);
+  for(const side of [-1,1]){
+   for(const end of (type==="bus"?[-.34,.34]:[-.31,.31])){
+    const wheel=block("Fallback tyre",[side*(width*.51),.36,end*length],[.25,.66,.72],rubber,root,"cylinder");
+    wheel.setLocalEulerAngles(0,0,90);wheels.push(wheel);
+   }
+  }
+ }else if(type==="motorcycle"){
+  block("Fallback motorcycle frame",[0,.82,0],[.28,.32,1.18],chrome,root);
+  block("Fallback fuel tank",[0,1.12,-.08],[.62,.48,.72],paint,root);
+  block("Fallback seat",[0,1.22,.48],[.48,.16,.66],rubber,root);
+  block("Fallback front fork",[0,.78,-.78],[.12,.78,.12],chrome,root);
+  for(const z of [-.88,.82]){
+   const wheel=block("Fallback motorcycle tyre",[0,.38,z],[.2,.76,.76],rubber,root,"cylinder");
+   wheel.setLocalEulerAngles(0,0,90);wheels.push(wheel);
+  }
+  block("Fallback handlebar",[0,1.42,-.72],[1.02,.08,.08],chrome,root);
+ }else{
+  block("Fallback taxi chassis",[0,.28,0],[1.62,.22,4.1],rubber,root);
+  block("Fallback taxi body",[0,.55,0],[1.82,.58,4.2],paint,root);
+  block("Fallback taxi cabin",[0,.98,.12],[1.52,.72,2.05],glass,root);
+  block("Fallback taxi roof",[0,1.36,.12],[1.42,.12,1.8],paint,root);
+  block("Fallback taxi bonnet",[0,.82,-1.48],[1.7,.16,1.15],paint,root);
+  for(const side of [-1,1])for(const z of [-1.32,1.32]){
+   const wheel=block("Fallback taxi tyre",[side*.91,.28,z],[.22,.48,.58],rubber,root,"cylinder");
+   wheel.setLocalEulerAngles(0,0,90);wheels.push(wheel);
+  }
+ }
+ return {root,wheels};
+}
 function addSpecialTraffic(type,x,z,direction,speed,axis="z"){
- const entity=new pc.Entity(type==="bus"?"City bus traffic":type==="minibus"?"Commercial minibus traffic":"Motorcycle traffic");
+ const entity=new pc.Entity(type==="bus"?"City bus traffic":type==="minibus"?"Commercial minibus traffic":type==="taxi"?"Taxi traffic":"Motorcycle traffic");
  entity.setPosition(axis==="z"?x:z,.06,axis==="z"?z:x);
  const yaw=axis==="z"?(direction>0?180:0):(direction>0?90:-90);
  entity.setEulerAngles(0,yaw,0);
  app.root.addChild(entity);
+ const fallback=createSpecialTrafficFallback(type,entity);
  const item={
-  entity,fallbackVisuals:null,direction,cruiseSpeed:speed,currentSpeed:speed,
-  hitCooldown:0,brakeLamps:[],wheels:[],wheelSpin:0,braking:false,
+  entity,fallbackVisuals:fallback.root,direction,cruiseSpeed:speed,currentSpeed:speed,
+  hitCooldown:0,brakeLamps:[],wheels:fallback.wheels,wheelSpin:0,braking:false,
   axis,turnAt:null,turnDirection:1,turns:1,specialType:type
  };
  traffic.push(item);
@@ -994,6 +1040,7 @@ function loadSpecialTrafficModels(){
    model.setLocalPosition(0,0,0);
    model.setLocalScale(info.scale,info.scale,info.scale);
    model.enabled=true;
+   if(item.fallbackVisuals)item.fallbackVisuals.enabled=false;
   });
  }
 }
