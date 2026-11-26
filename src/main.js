@@ -1258,13 +1258,13 @@ function buildVehicleModel(vehicle){
 }
 for(const v of vehicleCatalog) vehicleModels[v.id]=buildVehicleModel(v);
 
-// Optional Kenney CC0 vehicle containers. The procedural models remain the safe
+// Optional realistic CC0 vehicle containers. The procedural models remain the safe
 // fallback until public/models/vehicles/manifest.json and its GLB files are present.
 const importedVehicleFiles = {
- sport: "race.glb",
- muscle: "sedan-sports.glb",
- suv: "suv-luxury.glb",
- hyper: "race-future.glb"
+ sport: "sport-coupe.glb",
+ muscle: "sedan.glb",
+ suv: "suv.glb",
+ hyper: "mid-engine-sports.glb"
 };
 let importedVehiclesReady = false;
 function activateVehicleModel(){
@@ -1296,7 +1296,7 @@ function loadImportedVehicleModels(){
     if(model.importedRoot)return;
     const imported=asset.resource.instantiateRenderEntity();
     imported.name="KENNIX imported "+id;
-    imported.setLocalScale(1.5,1.5,1.5);
+    imported.setLocalScale(0.9,0.9,0.9);
     imported.setLocalEulerAngles(0,180,0);
     imported.setLocalPosition(0,0,0);
     car.addChild(imported);
@@ -1335,7 +1335,7 @@ function loadImportedVehicleModels(){
     applyImportedPaint(model,selectedVehicle.id===id?selectedPaint:catalogPaint);
     model.root.enabled=false;
     activateVehicleModel();
-    console.info("Loaded Kenney CC0 vehicle:",filename);
+    console.info("Loaded realistic CC0 vehicle:",filename);
    });
   }
  }).catch(error=>console.warn("Optional vehicle manifest unavailable; using procedural vehicles.",error));
