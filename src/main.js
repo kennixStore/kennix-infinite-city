@@ -586,7 +586,16 @@ const facades = [
   makeMat([0.18, 0.23, 0.29]),
   makeMat([0.39, 0.4, 0.39])
 ];
-for(const material of facades)applySurface(material,surfaceMaps.facade,2,2);
+for(const material of facades){
+  applySurface(material,surfaceMaps.facade,2,2);
+  applyDetailNormal(material,detailNormals.facade,new pc.Vec2(2,2),.14);
+}
+// Give distant skyline buildings the same subtle facade relief so the city
+// keeps consistent material response as the camera looks toward the horizon.
+for(const material of skylineMats){
+  applySurface(material,surfaceMaps.facade,1.5,2.5);
+  applyDetailNormal(material,detailNormals.facade,new pc.Vec2(1.5,2.5),.1);
+}
 for (let i = 0; i < 14; i++) {
   const side = i % 2 === 0 ? -1 : 1;
   const row = Math.floor(i / 2);
