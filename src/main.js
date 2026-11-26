@@ -4,6 +4,24 @@ import { backendConfigured, createPlayerAccount, signInPlayer, signOutPlayer, ge
 import { joinCityRoom } from "./multiplayer.js";
 
 const canvas = document.querySelector("#application");
+// On-device diagnostics: surface WebGL/runtime failures directly in the game
+// instead of leaving players with an unexplained empty canvas.
+const runtimeNotice=document.createElement("div");
+runtimeNotice.id="runtime-notice";
+runtimeNotice.setAttribute("role","status");
+runtimeNotice.innerHTML="<strong>KENNIX is starting…</strong><span>Preparing Nova City.</span>";
+document.querySelector("#game-stage")?.appendChild(runtimeNotice);
+function showRuntimeNotice(title,detail){
+ runtimeNotice.innerHTML="<strong>"+String(title).replace(/[<>]/g,"")+"</strong><span>"+String(detail).replace(/[<>]/g,"")+"</span>";
+ runtimeNotice.classList.add("visible");
+}
+window.addEventListener("error",event=>{
+ showRuntimeNotice("GAME ERROR",event.message||"A browser error stopped the game. Refresh and try again.");
+});
+window.addEventListener("unhandledrejection",event=>{
+ const reason=event.reason;
+ showRuntimeNotice("GAME STARTUP ERROR",reason?.message||String(reason||"A background task failed."));
+});
 const app = new pc.Application(canvas, {
   graphicsDeviceOptions: { antialias: true, alpha: false },
   mouse: new pc.Mouse(canvas),
@@ -2878,6 +2896,17 @@ function loadCityArchitecture(){
 }
 
 app.start();
+let firstRenderSeen=false;
+app.on("postrender",()=>{
+ if(firstRenderSeen)return;
+ firstRenderSeen=true;
+ runtimeNotice.classList.remove("visible");
+});
+setTimeout(()=>{
+ if(!firstRenderSeen&&!runtimeNotice.classList.contains("visible")){
+  showRuntimeNotice("3D VIEW NOT READY","The page loaded, but the 3D scene has not rendered. Please refresh once; if it stays blank, send us this screen.");
+ }
+},10000);
 activateVehicleModel();
 loadImportedVehicleModels();
 loadCityArchitecture();
