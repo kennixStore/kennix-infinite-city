@@ -935,6 +935,28 @@ const skyTexture=new pc.Texture(app.graphicsDevice,{width:1024,height:512,format
 skyTexture.name="KENNIX NOVA CITY atmospheric sky";skyTexture.addressU=pc.ADDRESS_REPEAT;skyTexture.addressV=pc.ADDRESS_CLAMP_TO_EDGE;skyTexture.setSource(skyCanvas);
 const skyMaterial=new pc.StandardMaterial();skyMaterial.diffuse=new pc.Color(1,1,1);skyMaterial.emissive=new pc.Color(.94,.97,1);skyMaterial.emissiveMap=skyTexture;skyMaterial.emissiveIntensity=.9;skyMaterial.cull=pc.CULLFACE_FRONT;skyMaterial.update();skyDome.render.meshInstances[0].material=skyMaterial;
 
+// Real-world image-based lighting: a CC0 city HDRI adds natural reflected
+// colour and broad environmental highlights to vehicle paint, glass and metal.
+// Keep the animated sky dome for the day/night cycle; use the HDRI as the
+// physically based reflection and ambient-light source only.
+const cityEnvironmentUrl="https://dl.polyhaven.org/file/ph-assets/HDRIs/hdr/2k/sunset_jhbcentral_2k.hdr";
+app.assets.loadFromUrl(cityEnvironmentUrl,"texture",(error,asset)=>{
+ if(error||!asset?.resource){
+  console.warn("KENNIX city HDR environment unavailable; using local lighting.",error);
+  return;
+ }
+ try{
+  const lighting=pc.EnvLighting.generateLightingSource(asset.resource);
+  const atlas=pc.EnvLighting.generateAtlas(lighting,{});
+  lighting.destroy();
+  app.scene.envAtlas=atlas;
+  app.scene.skyboxIntensity=.72;
+  console.info("Loaded CC0 Johannesburg city HDR reflections from Poly Haven.");
+ }catch(environmentError){
+  console.warn("KENNIX HDR environment conversion failed; keeping local lighting.",environmentError);
+ }
+});
+
 // A visible warm sun disk sits low over the distant skyline.
 const sunCoreMaterial=makeMat([1,.72,.34],0,.3);
 sunCoreMaterial.emissive=new pc.Color(1,.58,.22);sunCoreMaterial.emissiveIntensity=1.4;sunCoreMaterial.update();
@@ -1417,6 +1439,11 @@ function loadImportedVehicleModels(){
       // Only recognised exterior-paint materials are recoloured by the garage.
       const materialName=String(material.name||"").toLowerCase();
       material.kennixPaintable=/(body|paint|exterior|car.?color|vehicle.?color)/.test(materialName);
+      if(material.kennixPaintable){
+       // Automotive clear-coat creates tighter lacquer highlights on painted panels.
+       material.clearCoat=.82;
+       material.clearCoatGloss=.92;
+      }
       material.kennixBaseDiffuse=material.diffuse?.clone?.()||new pc.Color(1,1,1);
       instance.material=material;
       instance.castShadow=true;
@@ -1448,6 +1475,9 @@ function setPlayerPaint(rgb){
  selectedPaint=rgb;
  const model=vehicleModels[selectedVehicle.id];
  const paint=makeMat(rgb,.78,.2);
+ paint.clearCoat=.88;
+ paint.clearCoatGloss=.94;
+ paint.update();
  model.paintParts.forEach(part=>part.render.material=paint);
  applyImportedPaint(model,rgb);
  selectedVehicle.paint=rgb;
