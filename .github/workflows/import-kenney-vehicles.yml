@@ -1,4 +1,4 @@
-name: Import realistic CC0 vehicle models
+name: Import CC0 vehicles and PBR textures
 
 on:
   push:
@@ -13,13 +13,13 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
-  import-vehicles:
+  import-assets:
     runs-on: ubuntu-latest
     steps:
       - name: Check out repository
         uses: actions/checkout@v4
 
-      - name: Download original realistic CC0 vehicles
+      - name: Download CC0 vehicle models
         run: |
           set -euo pipefail
           mkdir -p public/models/vehicles
@@ -27,22 +27,38 @@ jobs:
           curl -fL --retry 3 "https://cdn.3dassets.dev/assets/32490/v1/model.glb" -o public/models/vehicles/sedan.glb
           curl -fL --retry 3 "https://cdn.3dassets.dev/assets/32500/v1/model.glb" -o public/models/vehicles/suv.glb
           curl -fL --retry 3 "https://cdn.3dassets.dev/assets/32495/v1/model.glb" -o public/models/vehicles/mid-engine-sports.glb
-          for file in public/models/vehicles/*.glb; do
-            test -s "$file"
-            printf '%s: ' "$file"
-            wc -c < "$file"
-          done
+          for file in public/models/vehicles/*.glb; do test -s "$file"; done
 
-      - name: Commit realistic vehicles
+      - name: Download CC0 scanned PBR road and concrete maps
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/road /tmp/concrete public/textures/pbr
+          curl -fL --retry 3 "https://ambientcg.com/get?file=Road015A_1K-JPG.zip" -o /tmp/road.zip
+          curl -fL --retry 3 "https://ambientcg.com/get?file=Concrete049_1K-JPG.zip" -o /tmp/concrete.zip
+          unzip -q /tmp/road.zip -d /tmp/road
+          unzip -q /tmp/concrete.zip -d /tmp/concrete
+          road_color="$(find /tmp/road -type f -iname '*_Color.jpg' | head -n 1)"
+          road_normal="$(find /tmp/road -type f -iname '*_NormalGL.jpg' | head -n 1)"
+          concrete_color="$(find /tmp/concrete -type f -iname '*_Color.jpg' | head -n 1)"
+          concrete_normal="$(find /tmp/concrete -type f -iname '*_NormalGL.jpg' | head -n 1)"
+          test -s "$road_color" && test -s "$road_normal"
+          test -s "$concrete_color" && test -s "$concrete_normal"
+          cp "$road_color" public/textures/pbr/road_Color.jpg
+          cp "$road_normal" public/textures/pbr/road_NormalGL.jpg
+          cp "$concrete_color" public/textures/pbr/concrete_Color.jpg
+          cp "$concrete_normal" public/textures/pbr/concrete_NormalGL.jpg
+          ls -lh public/textures/pbr
+
+      - name: Commit CC0 vehicles and PBR textures
         run: |
           set -euo pipefail
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add public/models/vehicles/*.glb
+          git add public/models/vehicles/*.glb public/textures/pbr/*.jpg
           if git diff --cached --quiet; then
-            echo "Vehicle assets are already up to date."
+            echo "Assets already up to date."
             exit 0
           fi
-          git commit -m "Add realistic CC0 road vehicles [skip ci]"
+          git commit -m "Add CC0 vehicles and scanned PBR surface maps [skip ci]"
           git pull --rebase origin main
           git push
