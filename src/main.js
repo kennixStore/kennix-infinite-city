@@ -951,7 +951,9 @@ spawnSpecialTraffic("minibus",-5.25,202,-1,8.5);
 spawnSpecialTraffic("motorcycle",-1.15,-184,1,10.5);
 spawnSpecialTraffic("motorcycle",1.15,184,-1,10.2);
 spawnSpecialTraffic("motorcycle",-1.15,-236,1,9.8);
-spawnSpecialTraffic("motorcycle",1.15,236,-1,10.0);\nspawnSpecialTraffic("taxi",-8.85,-214,1,8.1);\nspawnSpecialTraffic("taxi",8.85,214,-1,8.3);
+spawnSpecialTraffic("motorcycle",1.15,236,-1,10.0);
+spawnSpecialTraffic("taxi",-8.85,-214,1,8.1);
+spawnSpecialTraffic("taxi",8.85,214,-1,8.3);
 function loadSpecialTrafficModels(){
  const modelInfo={
   // Verified pinned CC0 1.0 assets; LOD1 balances detail and mobile download size.
