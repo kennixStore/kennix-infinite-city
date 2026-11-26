@@ -785,35 +785,37 @@ function createTrafficCar(laneX, startZ, direction, paintIndex, cruiseSpeed, axi
   npc.setPosition(axis === "z" ? laneX : startZ, 0.08, axis === "z" ? startZ : laneX);
   if(axis === "x") npc.setEulerAngles(0,direction>0?90:-90,0);
   app.root.addChild(npc);
+  const fallbackVisuals=new pc.Entity("Traffic fallback visuals");
+  npc.addChild(fallbackVisuals);
   const paint = trafficPaints[paintIndex % trafficPaints.length];
-  block("Traffic underbody", [0, .22, 0], [1.48, .18, 2.9], mats.dark, npc);
-  block("Traffic body", [0, 0.48, 0], [1.72, 0.48, 3.45], paint, npc);
-  block("Traffic bonnet", [0,.75,-1.12],[1.58,.12,1.12],paint,npc);
-  block("Traffic cabin", [0, 0.83, 0.18], [1.38, 0.46, 1.62], mats.glass, npc);
-  block("Traffic roof", [0,1.09,.18],[1.2,.1,1.08],paint,npc);
+  block("Traffic underbody", [0, .22, 0], [1.48, .18, 2.9], mats.dark, fallbackVisuals);
+  block("Traffic body", [0, 0.48, 0], [1.72, 0.48, 3.45], paint, fallbackVisuals);
+  block("Traffic bonnet", [0,.75,-1.12],[1.58,.12,1.12],paint,fallbackVisuals);
+  block("Traffic cabin", [0, 0.83, 0.18], [1.38, 0.46, 1.62], mats.glass, fallbackVisuals);
+  block("Traffic roof", [0,1.09,.18],[1.2,.1,1.08],paint,fallbackVisuals);
   block("Traffic windscreen", [0,.91,-.67],[1.18,.32,.06],mats.glass,npc).setLocalEulerAngles(-18,0,0);
   block("Traffic rear glass", [0,.91,.98],[1.16,.3,.06],mats.glass,npc).setLocalEulerAngles(18,0,0);
   const brakeLamps = [];
   const wheels = [];
   for (const side of [-1, 1]) {
-    block("Traffic headlight", [side * 0.55, 0.52, -1.74], [0.26, 0.12, 0.06], mats.headlight, npc);
+    block("Traffic headlight", [side * 0.55, 0.52, -1.74], [0.26, 0.12, 0.06], mats.headlight, fallbackVisuals);
     brakeLamps.push(block("Traffic tail brake light", [side * 0.55, 0.52, 1.74], [0.26, 0.12, 0.06], mats.red, npc));
     for (const end of [-1, 1]) {
-      const tyre = block("Traffic tyre", [side * 0.87, 0.25, end * 1.05], [0.22, 0.46, 0.58], mats.trim, npc, "cylinder");
+      const tyre = block("Traffic tyre", [side * 0.87, 0.25, end * 1.05], [0.22, 0.46, 0.58], mats.trim, fallbackVisuals, "cylinder");
       tyre.setLocalEulerAngles(0, 0, 90);
       wheels.push(tyre);
-      block("Traffic alloy hub",[side*.99,.25,end*1.05],[.25,.22,.22],mats.metal,npc,"cylinder").setLocalEulerAngles(0,0,90);
+      block("Traffic alloy hub",[side*.99,.25,end*1.05],[.25,.22,.22],mats.metal,fallbackVisuals,"cylinder").setLocalEulerAngles(0,0,90);
     }
   }
   for(const side of [-1,1]){
-    block("Traffic door handle",[side*.87,.67,.05],[.035,.05,.22],mats.metal,npc);
-    block("Traffic wing mirror",[side*.75,.98,-.58],[.22,.12,.24],paint,npc);
+    block("Traffic door handle",[side*.87,.67,.05],[.035,.05,.22],mats.metal,fallbackVisuals);
+    block("Traffic wing mirror",[side*.75,.98,-.58],[.22,.12,.24],paint,fallbackVisuals);
   }
   const travelStart=startZ;
   const junctions=axis==="z"?districtRoads:[-120,-60,60,120];
   const upcoming=junctions.filter(value=>(value-travelStart)*direction>8).sort((a,b)=>Math.abs(a-travelStart)-Math.abs(b-travelStart));
   const plannedTurn=upcoming.length&&Math.random()<0.42?upcoming[0]:null;
-  traffic.push({entity:npc,direction,cruiseSpeed,currentSpeed:cruiseSpeed,hitCooldown:0,brakeLamps,wheels,wheelSpin:0,braking:false,axis,turnAt:plannedTurn,turnDirection:Math.random()<0.5?1:-1,turns:0});
+  traffic.push({entity:npc,fallbackVisuals,direction,cruiseSpeed,currentSpeed:cruiseSpeed,hitCooldown:0,brakeLamps,wheels,wheelSpin:0,braking:false,axis,turnAt:plannedTurn,turnDirection:Math.random()<0.5?1:-1,turns:0});
   npc.setEulerAngles(0,axis==="z"?(direction>0?180:0):(direction>0?90:-90),0);
 }
 createTrafficCar(-2.55, -57, 1, 0, 10);
@@ -2401,6 +2403,22 @@ function loadCityArchitectureAsset(name,url,placements){
     console.info("KENNIX CC0 architecture loaded:",name,placements.length);
   });
 }
+function loadMovingTrafficModels(){
+  const fleet=["sedan.glb","suv.glb","sport-coupe.glb","mid-engine-sports.glb"];
+  traffic.forEach((item,index)=>{
+    const filename=fleet[index%fleet.length];
+    app.assets.loadFromUrl("/models/vehicles/"+filename,"container",(error,asset)=>{
+      if(error||!asset?.resource){console.warn("Moving traffic model unavailable:",filename,error);return;}
+      const model=asset.resource.instantiateRenderEntity();
+      model.name="Imported moving traffic "+filename;
+      item.entity.addChild(model);
+      model.setLocalPosition(0,0,0);
+      model.setLocalScale(1,1,1);
+      model.enabled=true;
+      item.fallbackVisuals.enabled=false;
+    });
+  });
+}
 function loadParkedVehicleModels(){
   const files={sport:"sport-coupe.glb",sedan:"sedan.glb",suv:"suv.glb"};
   for(const request of parkedVehicleRequests){
@@ -2452,3 +2470,4 @@ activateVehicleModel();
 loadImportedVehicleModels();
 loadCityArchitecture();
 loadParkedVehicleModels();
+loadMovingTrafficModels();
