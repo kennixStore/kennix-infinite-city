@@ -1056,9 +1056,15 @@ function addDetailedShopfront(side,faceX,z,width,index){
  }
  block("Shop entrance glazed door",[faceX+outward*.16,1.58,z],
   [.07,2.22,1.18],shopGlassMat);
- block("Shop entrance door frame",[faceX+outward*.22,1.58,z],
-  [.08,2.35,1.3],shopFrameMat);
- block("Shop door handle",[faceX+outward*.28,1.55,z-.39],
+ for(const doorSide of [-1,1]){
+  block("Shop door vertical aluminium frame",
+   [faceX+outward*.23,1.58,z+doorSide*.64],[.1,2.38,.09],shopFrameMat);
+ }
+ block("Shop door upper aluminium frame",[faceX+outward*.23,2.77,z],
+  [.1,.1,1.36],shopFrameMat);
+ block("Shop door lower kick plate",[faceX+outward*.23,.55,z],
+  [.1,.18,1.36],shopFrameMat);
+ block("Shop door handle",[faceX+outward*.29,1.55,z-.39],
   [.045,.38,.045],mats.metal);
  // Continuous fascia and a modest metal canopy above the entrance.
  block("Retail sign fascia",[faceX+outward*.17,3.55,z],
