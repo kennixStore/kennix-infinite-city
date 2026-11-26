@@ -1,0 +1,49 @@
+name: Import Kenney vehicle models
+
+on:
+  push:
+    paths:
+      - ".github/workflows/import-kenney-vehicles.yml"
+
+permissions:
+  contents: write
+
+jobs:
+  import-vehicles:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Download official Kenney Car Kit 3.1
+        run: |
+          set -euo pipefail
+          curl -fL --retry 3 "https://kenney.nl/media/pages/assets/car-kit/1a312ec241-1775131960/kenney_car-kit.zip" -o /tmp/kenney-car-kit.zip
+          unzip -q /tmp/kenney-car-kit.zip -d /tmp/kenney-car-kit
+
+      - name: Install the nine game vehicle models
+        run: |
+          set -euo pipefail
+          mkdir -p public/models/vehicles
+          for model in race.glb race-future.glb sedan-sports.glb suv-luxury.glb hatchback-sports.glb police.glb taxi.glb truck.glb van.glb; do
+            source_file="$(find /tmp/kenney-car-kit -type f -name "$model" -print -quit)"
+            if [ -z "$source_file" ]; then
+              echo "Missing expected Kenney model: $model"
+              exit 1
+            fi
+            cp "$source_file" "public/models/vehicles/$model"
+            test -s "public/models/vehicles/$model"
+          done
+          test -s public/models/vehicles/manifest.json
+          test -s public/models/vehicles/KENNEY-LICENSE.txt
+          echo "Installed model files:"
+          ls -lh public/models/vehicles/*.glb
+
+      - name: Commit models to the repository
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add public/models/vehicles/*.glb
+          git commit -m "Add nine Kenney vehicle models [skip ci]"
+          git push
