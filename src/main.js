@@ -480,27 +480,24 @@ for(let i=0;i<24;i++){
  }
 }
 
-// A few parked vehicles give the first district a sense of scale and life.
+// Parked vehicles use the same detailed CC0 GLB fleet as the player garage.
+// If a model fails to load, a low-cost fallback keeps the street populated.
 const parkedMats = [
   makeMat([0.42, 0.055, 0.035], 0.45, 0.3),
   makeMat([0.12, 0.2, 0.28], 0.55, 0.25),
   makeMat([0.48, 0.48, 0.44], 0.35, 0.3)
 ];
-function parkedCar(x, z, colorIndex, facing = 0) {
-  const vehicle = new pc.Entity("Parked city vehicle");
-  vehicle.setPosition(x, 0.08, z);
-  vehicle.setEulerAngles(0, facing, 0);
-  app.root.addChild(vehicle);
-  const paint = parkedMats[colorIndex % parkedMats.length];
-  block("Parked car body", [0, 0.48, 0], [1.75, 0.48, 3.5], paint, vehicle);
-  block("Parked car cabin", [0, 0.83, 0.15], [1.42, 0.48, 1.65], mats.glass, vehicle);
-  for (const side of [-1, 1]) for (const end of [-1, 1]) {
-    block("Parked car wheel", [side * 0.88, 0.25, end * 1.08], [0.22, 0.48, 0.62], mats.trim, vehicle, "cylinder");
+const parkedVehicleRequests=[];
+function parkedCar(x,z,colorIndex,facing=0,modelType="sport"){
+  const vehicle=new pc.Entity("Parked city vehicle");
+  vehicle.setPosition(x,.08,z);vehicle.setEulerAngles(0,facing,0);app.root.addChild(vehicle);
+  const paint=parkedMats[colorIndex%parkedMats.length];
+  const fallback=block("Parked car fallback body",[0,.48,0],[1.75,.48,3.5],paint,vehicle);
+  block("Parked car fallback cabin",[0,.83,.15],[1.42,.48,1.65],mats.glass,vehicle);
+  for(const side of [-1,1])for(const end of [-1,1]){
+    block("Parked car fallback wheel",[side*.88,.25,end*1.08],[.22,.48,.62],mats.trim,vehicle,"cylinder");
   }
-  for (const side of [-1, 1]) {
-    block("Parked car headlamp", [side * 0.58, 0.52, -1.77], [0.28, 0.12, 0.06], mats.headlight, vehicle);
-    block("Parked car tail lamp", [side * 0.58, 0.52, 1.77], [0.28, 0.12, 0.06], mats.red, vehicle);
-  }
+  parkedVehicleRequests.push({vehicle,paint,fallback,modelType});
 }
 parkedCar(-11.2, -29, 0, 90);
 parkedCar(11.2, -17, 1, -90);
@@ -2402,6 +2399,22 @@ function loadCityArchitectureAsset(name,url,placements){
     console.info("KENNIX CC0 architecture loaded:",name,placements.length);
   });
 }
+function loadParkedVehicleModels(){
+  const files={sport:"sport-coupe.glb",sedan:"sedan.glb",suv:"suv.glb"};
+  for(const request of parkedVehicleRequests){
+    const filename=files[request.modelType]||files.sedan;
+    app.assets.loadFromUrl("/models/vehicles/"+filename,"container",(error,asset)=>{
+      if(error||!asset?.resource){console.warn("Parked GLB unavailable:",filename,error);return;}
+      const model=asset.resource.instantiateRenderEntity();
+      model.name="Imported parked "+request.modelType;
+      request.vehicle.addChild(model);
+      model.setLocalPosition(0,0,0);
+      model.setLocalScale(1,1,1);
+      model.enabled=true;
+      request.fallback.enabled=false;
+    });
+  }
+}
 function loadCityArchitecture(){
   // CC0 1.0 models from tevy.dev. Pinned versions and mobile LODs.
   loadCityArchitectureAsset("CC0 stone facade module",
@@ -2436,3 +2449,4 @@ app.start();
 activateVehicleModel();
 loadImportedVehicleModels();
 loadCityArchitecture();
+loadParkedVehicleModels();
