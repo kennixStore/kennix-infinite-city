@@ -333,10 +333,13 @@ for(const material of districtPalettes){
 }
 const marketFabric=makeMat([0.68,0.28,0.09]);
 const industrialPaint=makeMat([0.34,0.37,0.39],.45,.4);
+// Selected plots use complete authored buildings instead of temporary block shells.
+const photorealisticBuildingReplacements=new Set(["-30,-105","30,105","-150,35"]);
 // Buildings sit within the blocks, leaving the avenue grid clear for driving.
 for(let row=0;row<6;row++){
  for(let col=0;col<6;col++){
   const x=-180+col*60+30, z=-210+35+row*70;
+  if(photorealisticBuildingReplacements.has(String(x)+","+String(z))) continue;
   if(Math.abs(x)<22) continue;
   const h=12+((row*7+col*11)%5)*5, w=22+((row+col)%3)*5;
   block("NOVA CITY district block",[x,h/2,z],[w,h,23],districtPalettes[(row+col)%4]);
@@ -2723,6 +2726,16 @@ function loadCityArchitecture(){
   loadCityArchitectureAsset("CC0 industrial car repair workshop",
     "https://tevy.dev/models/workshop-building/v2/lod1.glb",
     [{x:-94,z:215,rotation:0}]);
+  // Replace three procedural tower shells with complete authored city buildings.
+  loadCityArchitectureAsset("CC0 mixed-use urban tenant building",
+    "https://tevy.dev/models/mixed-tenant-block/v1/lod1.glb",
+    [{x:-30,z:-105,rotation:0}]);
+  loadCityArchitectureAsset("CC0 narrow multi-storey city building",
+    "https://tevy.dev/models/pencil-building/v1/lod1.glb",
+    [{x:30,z:105,rotation:0}]);
+  loadCityArchitectureAsset("CC0 school building",
+    "https://tevy.dev/models/school-building/v1/lod1.glb",
+    [{x:-150,z:35,rotation:90}]);
 }
 
 app.start();
