@@ -468,8 +468,16 @@ for(let bay=0;bay<3;bay++){
 for(let i=0;i<24;i++){
  const z=-225+i*19;
  const side=i%2?1:-1;
- block("NOVA boulevard lamp",[side*9,4,z],[.14,8,.14],mats.metal);
- block("Boulevard lamp head",[side*8.3,7.8,z],[1.2,.18,.25],mats.windowLit);
+ block("NOVA boulevard lamp base",[side*9,.22,z],[.48,.44,.48],mats.dark);
+ block("NOVA boulevard lamp",[side*9,4.05,z],[.14,8.1,.14],mats.metal);
+ block("Boulevard lamp arm",[side*8.62,7.78,z],[.82,.13,.13],mats.metal);
+ block("Boulevard lamp head",[side*8.18,7.72,z],[1.18,.2,.34],mats.windowLit);
+ block("Boulevard lamp diffuser",[side*8.18,7.59,z],[.92,.045,.24],mats.white);
+ // Reflective bollards protect the pavement edge and add street scale.
+ if(i%2===0){
+  block("Reflective pavement bollard",[side*7.95,.48,z+5],[.2,.92,.2],mats.metal);
+  block("Bollard reflective band",[side*7.95,.67,z+5],[.205,.16,.205],mats.white);
+ }
 }
 
 // A few parked vehicles give the first district a sense of scale and life.
