@@ -1021,6 +1021,62 @@ novaLandmarkRoots.set("30,105",buildNovaLandmark("MARINA RESIDENCES",30,105,23,2
 novaLandmarkRoots.set("-150,35",buildNovaLandmark("NOVA EXCHANGE",-150,35,22,19,34,2));
 
 const authoredStreetBuildingSlots = new Set([2,3,6,7,10,11]);
+
+// Restrained architectural finishes for the close-up commercial street.
+// Dark aluminium frames, recessed glazing, solid sign fascias and weather
+// canopies create believable shopfront proportions without toy-like colours.
+const shopFrameMat=makeMat([.075,.09,.105],.68,.34);
+const shopStoneMat=makeMat([.39,.4,.38],.04,.84);
+const shopSignMat=makeMat([.12,.14,.15],.18,.72);
+const shopCanopyMat=makeMat([.22,.25,.27],.12,.7);
+const shopGlassMat=makeMat([.045,.105,.14],.42,.19);
+shopGlassMat.clearCoat=.72;
+shopGlassMat.clearCoatGloss=.92;
+shopGlassMat.update();
+
+function addDetailedShopfront(side,faceX,z,width,index){
+ const outward=side;
+ const frontageWidth=8.1;
+ // Recessed dark backing gives the glazing depth instead of a flat blue panel.
+ block("Recessed retail frontage",[faceX+outward*.045,1.78,z],
+  [.12,3.25,frontageWidth],shopFrameMat);
+ // Stone or rendered piers divide the glazing into realistic structural bays.
+ for(const offset of [-4.05,0,4.05]){
+  block("Shopfront masonry pier",[faceX+outward*.12,1.78,z+offset],
+   [.25,3.5,.34],shopStoneMat);
+ }
+ // Two fixed glazed display windows and one glazed entrance door.
+ for(const offset of [-2.55,2.55]){
+  block("Retail display glass",[faceX+outward*.13,1.72,z+offset],
+   [.055,2.48,2.55],shopGlassMat);
+  block("Retail display lower kick panel",[faceX+outward*.17,.43,z+offset],
+   [.08,.24,2.48],shopFrameMat);
+  block("Retail display transom",[faceX+outward*.17,3.05,z+offset],
+   [.08,.12,2.58],shopFrameMat);
+ }
+ block("Shop entrance glazed door",[faceX+outward*.16,1.58,z],
+  [.07,2.22,1.18],shopGlassMat);
+ block("Shop entrance door frame",[faceX+outward*.22,1.58,z],
+  [.08,2.35,1.3],shopFrameMat);
+ block("Shop door handle",[faceX+outward*.28,1.55,z-.39],
+  [.045,.38,.045],mats.metal);
+ // Continuous fascia and a modest metal canopy above the entrance.
+ block("Retail sign fascia",[faceX+outward*.17,3.55,z],
+  [.22,.58,8.0],shopSignMat);
+ block("Retail canopy support",[faceX+outward*.62,3.22,z],
+  [1.08,.13,8.25],shopCanopyMat);
+ block("Retail canopy underside",[faceX+outward*1.12,3.13,z],
+  [.08,.07,8.0],shopFrameMat);
+ // Subtle sign-panel divisions imply tenant signage while keeping the art neutral.
+ for(const offset of [-2.65,0,2.65]){
+  block("Shop fascia inset panel",[faceX+outward*.295,3.56,z+offset],
+   [.035,.31,2.25],shopCanopyMat);
+ }
+ // Shallow stone sill protects the glazing from street splash.
+ block("Shopfront stone sill",[faceX+outward*.19,.18,z],
+  [.38,.16,8.2],shopStoneMat);
+}
+
 for (let i = 0; i < 14; i++) {
   const side = i % 2 === 0 ? -1 : 1;
   const row = Math.floor(i / 2);
@@ -1028,18 +1084,27 @@ for (let i = 0; i < 14; i++) {
   const width = 8 + (i % 3) * 2.5;
   const height = 12 + ((i * 7) % 18);
   const x = side * (14.8 + width / 2);
-  // Selected roadside plots use full authored CC0 buildings loaded below.
   if(authoredStreetBuildingSlots.has(i)) continue;
-  const building = block("District building", [x, height / 2, z], [width, height, 13], facades[i % facades.length]);
+  const building = block("District commercial building", [x, height / 2, z], [width, height, 13], facades[i % facades.length]);
   const faceX = side * (14.8 + 0.08);
   for (let floor = 1; floor < Math.floor(height / 3.2); floor++) {
     for (let bay = 0; bay < 3; bay++) {
       const wz = z - 4 + bay * 4;
-      block("Building window", [faceX, floor * 3.1, wz], [0.08, 1.45, 2.1], (floor + bay + i) % 4 === 0 ? mats.windowLit : mats.glass);
+      const windowY=floor*3.1;
+      block("Recessed upper-storey window surround",[faceX+side*.055,windowY,wz],
+       [.13,1.72,2.38],shopFrameMat);
+      block("Upper-storey reflective glazing",[faceX+side*.13,windowY,wz],
+       [.045,1.42,2.08],(floor+bay+i)%5===0?mats.windowLit:shopGlassMat);
+      block("Upper-storey projecting sill",[faceX+side*.18,windowY-.86,wz],
+       [.32,.12,2.48],shopStoneMat);
+      block("Upper-storey head trim",[faceX+side*.16,windowY+.87,wz],
+       [.2,.1,2.45],shopCanopyMat);
     }
   }
-  block("Shopfront", [faceX, 1.25, z], [0.12, 2.25, 5.8], mats.glass);
-  block("Roof feature", [x, height + 0.55, z], [width * 0.45, 1.1, 4], mats.metal);
+  addDetailedShopfront(side,faceX,z,width,i);
+  // Flat parapet and a recessed rooftop service screen finish the silhouette.
+  block("Commercial roof parapet",[x,height+.28,z],[width+.25,.56,13.25],shopStoneMat);
+  block("Rooftop service screen",[x,height+.82,z],[width*.62,.52,8.2],shopFrameMat);
 }
 
 // Street lamps and provisional tree slots along both sidewalks.
