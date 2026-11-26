@@ -1,4 +1,4 @@
-name: Import Kenney vehicle models
+name: Import realistic CC0 vehicle models
 
 on:
   push:
@@ -15,35 +15,25 @@ jobs:
       - name: Check out repository
         uses: actions/checkout@v4
 
-      - name: Download official Kenney Car Kit 3.1
-        run: |
-          set -euo pipefail
-          curl -fL --retry 3 "https://kenney.nl/media/pages/assets/car-kit/1a312ec241-1775131960/kenney_car-kit.zip" -o /tmp/kenney-car-kit.zip
-          unzip -q /tmp/kenney-car-kit.zip -d /tmp/kenney-car-kit
-
-      - name: Install the nine game vehicle models
+      - name: Download original realistic CC0 vehicles
         run: |
           set -euo pipefail
           mkdir -p public/models/vehicles
-          for model in race.glb race-future.glb sedan-sports.glb suv-luxury.glb hatchback-sports.glb police.glb taxi.glb truck.glb van.glb; do
-            source_file="$(find /tmp/kenney-car-kit -type f -name "$model" -print -quit)"
-            if [ -z "$source_file" ]; then
-              echo "Missing expected Kenney model: $model"
-              exit 1
-            fi
-            cp "$source_file" "public/models/vehicles/$model"
-            test -s "public/models/vehicles/$model"
+          curl -fL --retry 3 "https://cdn.3dassets.dev/assets/32488/v1/model.glb" -o public/models/vehicles/sport-coupe.glb
+          curl -fL --retry 3 "https://cdn.3dassets.dev/assets/32490/v1/model.glb" -o public/models/vehicles/sedan.glb
+          curl -fL --retry 3 "https://cdn.3dassets.dev/assets/32500/v1/model.glb" -o public/models/vehicles/suv.glb
+          curl -fL --retry 3 "https://cdn.3dassets.dev/assets/32495/v1/model.glb" -o public/models/vehicles/mid-engine-sports.glb
+          for file in public/models/vehicles/*.glb; do
+            test -s "$file"
+            printf '%s: ' "$file"
+            wc -c < "$file"
           done
-          test -s public/models/vehicles/manifest.json
-          test -s public/models/vehicles/KENNEY-LICENSE.txt
-          echo "Installed model files:"
-          ls -lh public/models/vehicles/*.glb
 
-      - name: Commit models to the repository
+      - name: Commit realistic vehicles
         run: |
           set -euo pipefail
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add public/models/vehicles/*.glb
-          git commit -m "Add nine Kenney vehicle models [skip ci]"
+          git commit -m "Add realistic CC0 road vehicles [skip ci]"
           git push
