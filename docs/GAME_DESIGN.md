@@ -1,7 +1,10 @@
 # Game Design — KENNIX: INFINITE CITY
 
 ## Identity
-An original browser-first 3D open-world action, driving, racing and adventure game. Visual target: cinematic city environments and detailed vehicles. Broad genre inspiration is acceptable; copied maps, characters, logos, artwork, missions, music, code or distinctive sequences are not.
+An original open-world action, driving, racing and adventure game. The agreed visual target is a GTA V-style third-person camera with near-photorealistic, real-world presentation: believable city streets, detailed vehicles, natural human characters, realistic materials, lighting, weather and reflections. 3D is the underlying rendering technology, not the desired cartoon/stylised appearance. Broad genre inspiration is acceptable; copied maps, characters, logos, artwork, missions, music, code or distinctive sequences are not.
+
+## Visual rebuild decision
+The current procedural city and primitive-built cars are temporary greybox placeholders, not the target art style. Stop spending development time polishing those primitive shapes as if they were final assets. Rebuild the visible world around licensed, high-quality authored or scanned assets, realistic PBR materials, cinematic camera composition and performance-aware level streaming. Keep gameplay systems only where they remain useful. Any asset must have a verified licence that permits the intended commercial use; free/CC0 assets are preferred.
 
 ## Agreed gameplay direction
 - Open-world exploration, endless racing and mission-based racing.
