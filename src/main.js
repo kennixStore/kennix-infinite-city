@@ -972,6 +972,7 @@ function saveGarage(){localStorage.setItem("kxic-garage",JSON.stringify({vehicle
 const vehicleModels = {};
 let activeVehicleWheels = [];
 let activeSteeringWheel = null;
+let activeSteeringWheelImported = false;
 let activeVehicleIndicators = [];
 let activeVehicleReverseLamps = [];
 let activeVehicleExhaustFlames = [];
@@ -1327,7 +1328,8 @@ function activateVehicleModel(){
  }
  const current=vehicleModels[selectedVehicle.id];
  activeVehicleWheels=current.importedWheels||current.wheels;
- activeSteeringWheel=current.steeringWheel;
+ activeSteeringWheel=current.importedSteeringWheel||current.steeringWheel;
+ activeSteeringWheelImported=!!current.importedSteeringWheel;
  activeVehicleIndicators=current.indicators;
  activeVehicleReverseLamps=current.reverseLamps;
  activeVehicleExhaustFlames=current.exhaustFlames;
@@ -1351,8 +1353,10 @@ function loadImportedVehicleModels(){
     imported.setLocalEulerAngles(0,180,0);
     imported.setLocalPosition(0,0,0);
     car.addChild(imported);
-    const wheelNames=["wheel-front-left","wheel-front-right","wheel-back-left","wheel-back-right"];
-    const importedWheels=wheelNames.map(name=>imported.findByName(name)).filter(Boolean);
+    // Match the actual front/rear node names used by the imported GLB assets.
+    const wheelNames=["wheel-front-left","wheel-front-right","wheel-rear-left","wheel-rear-right"];
+    const importedWheels=wheelNames.map((name,index)=>imported.findByName(name)||imported.findByName(["wheel-front-left","wheel-front-right","wheel-back-left","wheel-back-right"][index])).filter(Boolean);
+    model.importedSteeringWheel=imported.findByName("steering");
     if(importedWheels.length===4){
      importedWheels.forEach(wheel=>{
       const p=wheel.getLocalPosition();
@@ -2001,7 +2005,10 @@ app.on("update", dt => {
     lamp.render.material=shouldBlink&&indicatorLit?indicatorOnMaterial:indicatorOffMaterial;
   });
   // The cockpit steering wheel follows the same smoothed steering input as the front tyres.
-  if(activeSteeringWheel) activeSteeringWheel.setLocalEulerAngles(90,0,steeringAngle*2.8);
+  if(activeSteeringWheel){
+   if(activeSteeringWheelImported) activeSteeringWheel.setLocalEulerAngles(steeringAngle*2.8,0,0);
+   else activeSteeringWheel.setLocalEulerAngles(90,0,steeringAngle*2.8);
+  }
   activeVehicleWheels.forEach((wheel,index)=>{
     const isFront=index<2;
     const isLeft=index%2===0;
