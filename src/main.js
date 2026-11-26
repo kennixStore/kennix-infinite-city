@@ -52,6 +52,10 @@ const mats = {
   red: makeMat([0.65, 0.025, 0.018]),
   headlight: makeMat([0.85, 0.83, 0.62])
 };
+// Warm interior lights become visibly emissive after sunset.
+mats.windowLit.emissive = new pc.Color(1, 0.58, 0.27);
+mats.windowLit.emissiveIntensity = 0;
+mats.windowLit.update();
 
  
 // Procedural, tileable surface maps add material detail without large external downloads.
@@ -918,6 +922,8 @@ function updateWorldLighting(dt){
  worldTime=(worldTime+dt/cycleDuration)%1;
  const daylight=clamp((Math.sin((worldTime-.25)*Math.PI*2)+.18)/1.18,0,1);
  const night=1-daylight;
+ mats.windowLit.emissiveIntensity=night*.85;
+ mats.windowLit.update();
  const blend=(a,b,t)=>new pc.Color(a.r+(b.r-a.r)*t,a.g+(b.g-a.g)*t,a.b+(b.b-a.b)*t);
  app.scene.ambientLight=blend(nightAmbient,dayAmbient,daylight);
  app.scene.fogColor=blend(nightFog,dayFog,daylight);
