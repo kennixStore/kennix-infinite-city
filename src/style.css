@@ -237,3 +237,13 @@ footer span{letter-spacing:.16em}
  #map-destination{padding:5px 3px;font-size:6px}
 }
 @media(max-width:380px){.minimap-panel{width:120px;top:58px}.minimap-readout{font-size:5px}}
+
+
+/* Landscape-first mobile play. The browser attempts a real orientation lock
+   after the player starts; this prompt covers browsers that deny the lock. */
+.orientation-prompt{display:none;position:fixed;inset:0;z-index:9999;place-items:center;padding:28px;background:rgba(3,7,12,.97);text-align:center}
+.orientation-prompt.visible{display:grid}
+.orientation-card{display:grid;justify-items:center;gap:14px;max-width:300px;padding:26px;border:1px solid rgba(216,173,91,.55);border-radius:18px;background:#0c1420;box-shadow:0 18px 60px #0009}
+.orientation-icon{font-size:54px;line-height:1;color:#d8ad5b;transform:rotate(90deg)}
+.orientation-card strong{color:#f5e5c2;font-size:14px;letter-spacing:.16em}
+.orientation-card small{color:#aab4c1;font-size:12px;line-height:1.6}
