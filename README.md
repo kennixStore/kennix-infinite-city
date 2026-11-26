@@ -28,7 +28,7 @@ An original browser-first 3D open-world driving and action game prototype built 
 Never expose a Supabase service-role key in the browser. The KX transfer RPC is not a cash-out feature.
 
 ## Honest production status
-The account and KX database foundation is code-complete but not deployed or security-tested. The client service module is present but not yet connected to in-game account screens. Realtime presence alone is not a secure multiplayer simulation. Vehicles remain procedural low-poly meshes, the city is not yet streamed, and police/story systems are prototypes. Browser runtime and Android testing remain outstanding.
+The account and KX database foundation is code-complete but not deployed or security-tested. The client service module is present but not yet connected to in-game account screens. Realtime presence alone is not a secure multiplayer simulation. The player-vehicle importer can load optional Kenney CC0 GLB models when the nine files listed in `public/models/vehicles/manifest.json` are present. Imported materials now retain their authored textures and surface properties; garage tint is applied only to materials whose names identify them as exterior paint. Imported render components are configured to cast and receive shadows. The nine GLB files are not yet present in the repository, so the game continues to use procedural vehicle fallbacks until they are uploaded. The city remains a hand-built prototype rather than a streamed photorealistic world, and police/story systems are prototypes. Browser runtime and Android testing remain outstanding.
 
 ## Build
 `npm install` then `npm run check` and `npm run build`.
