@@ -76,6 +76,15 @@ const mats = {
   red: makeMat([0.65, 0.025, 0.018]),
   headlight: makeMat([0.85, 0.83, 0.62])
 };
+// Architectural glazing uses a polished clear-coat finish so window panes
+// catch tighter highlights from the sun and sky instead of reading as flat blue.
+mats.glass.metalness = 0.48;
+mats.glass.shininess = 112;
+mats.glass.clearCoat = 0.92;
+mats.glass.clearCoatGloss = 0.98;
+mats.glass.specular = new pc.Color(0.78, 0.88, 1);
+mats.glass.update();
+
 // Warm interior lights become visibly emissive after sunset.
 mats.windowLit.emissive = new pc.Color(1, 0.58, 0.27);
 mats.windowLit.emissiveIntensity = 0;
@@ -449,7 +458,11 @@ const districtPalettes=[
 ];
 for(const material of districtPalettes){
  applySurface(material,surfaceMaps.facade,2,2);
- applyDetailNormal(material,detailNormals.facade,new pc.Vec2(2,2),.16);
+ applyDetailNormal(material,detailNormals.facade,new pc.Vec2(2,2),.22);
+ material.shininess = 22;
+ material.clearCoat = .18;
+ material.clearCoatGloss = .72;
+ material.update();
 }
 const marketFabric=makeMat([0.68,0.28,0.09]);
 const industrialPaint=makeMat([0.34,0.37,0.39],.45,.4);
@@ -988,7 +1001,8 @@ sun.addComponent("light", {
   castShadows: true,
   shadowResolution: 2048,
   shadowType: pc.SHADOW_PCF3_32F,
-  shadowDistance: 190,
+  // Extend the useful shadow range across more of the playable downtown.
+  shadowDistance: 230,
   numCascades: 2,
   cascadeBlend: 0.15
 });
@@ -1574,7 +1588,11 @@ function buildVehicleModel(vehicle){
  const root=new pc.Entity(vehicle.id+" detailed vehicle model");car.addChild(root);
  const bodyMat=makeMat(vehicle.paint,.78,.2), trimMat=makeMat([.018,.022,.028],.45,.25);
  bodyMat.clearCoat=.72;bodyMat.clearCoatGloss=.88;bodyMat.useMetalness=true;bodyMat.update();
- const glassMat=makeMat([.025,.095,.14],.5,.12), chromeMat=makeMat([.38,.42,.46],.85,.18);
+ const glassMat=makeMat([.025,.095,.14],.52,.1), chromeMat=makeMat([.38,.42,.46],.85,.18);
+ glassMat.clearCoat=.96;
+ glassMat.clearCoatGloss=.99;
+ glassMat.specular=new pc.Color(.82,.91,1);
+ glassMat.update();
  const lampMat=makeMat([.9,.78,.48],.1,.15);lampMat.emissive=new pc.Color(.55,.38,.12);lampMat.update();
  const frontSignatureMat=makeMat([.82,.9,1],.08,.18);frontSignatureMat.emissive=new pc.Color(.72,.82,1);frontSignatureMat.update();
  const rearSignatureMat=makeMat([.72,.018,.012],.08,.2);rearSignatureMat.emissive=new pc.Color(.58,.008,.004);rearSignatureMat.update();
@@ -1977,6 +1995,7 @@ function loadImportedVehicleModels(){
       material.kennixBaseDiffuse=material.diffuse?.clone?.()||new pc.Color(1,1,1);
       instance.material=material;
       instance.castShadow=true;
+      instance.receiveShadow=true;
       model.importedMaterials.push(material);
      });
     });
