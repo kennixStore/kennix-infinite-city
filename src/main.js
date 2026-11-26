@@ -747,6 +747,7 @@ for(const material of skylineMats){
   applySurface(material,surfaceMaps.facade,1.5,2.5);
   applyDetailNormal(material,detailNormals.facade,new pc.Vec2(1.5,2.5),.1);
 }
+const authoredStreetBuildingSlots = new Set([2,3,6,7,10,11]);
 for (let i = 0; i < 14; i++) {
   const side = i % 2 === 0 ? -1 : 1;
   const row = Math.floor(i / 2);
@@ -754,6 +755,8 @@ for (let i = 0; i < 14; i++) {
   const width = 8 + (i % 3) * 2.5;
   const height = 12 + ((i * 7) % 18);
   const x = side * (14.8 + width / 2);
+  // Selected roadside plots use full authored CC0 buildings loaded below.
+  if(authoredStreetBuildingSlots.has(i)) continue;
   const building = block("District building", [x, height / 2, z], [width, height, 13], facades[i % facades.length]);
   const faceX = side * (14.8 + 0.08);
   for (let floor = 1; floor < Math.floor(height / 3.2); floor++) {
@@ -2886,7 +2889,14 @@ function loadCityArchitecture(){
     ]);
   loadCityArchitectureAsset("CC0 detailed six-storey apartment block",
     "https://tevy.dev/models/apartment-block/v2/lod1.glb",
-    [{x:-90,z:-175},{x:90,z:-175},{x:-90,z:175},{x:90,z:175}]);
+    [
+      {x:-90,z:-175},{x:90,z:-175},{x:-90,z:175},{x:90,z:175},
+      // Six authored apartment facades replace the plain roadside shells
+      // in the first playable boulevard, close enough to be clearly visible.
+      {x:-20,z:-48,scale:.55,rotation:180},{x:20,z:-48,scale:.55},
+      {x:-20,z:-10,scale:.55,rotation:180},{x:20,z:-10,scale:.55},
+      {x:-20,z:28,scale:.55,rotation:180},{x:20,z:28,scale:.55}
+    ]);
   loadCityArchitectureAsset("CC0 supermarket building",
     "https://tevy.dev/models/supermarket-shell/v2/lod1.glb",
     [{x:-90,z:-105,rotation:0}]);
