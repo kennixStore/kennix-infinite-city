@@ -666,7 +666,7 @@ parkedCar(11.2, 57, 0, -90, "sedan");
 
 // Street furniture adds a human scale to the first playable boulevard.
 const streetPropMetal=makeMat([.16,.2,.23],.55,.35);
-const benchWood=makeMat([.32,.2,.11],.05,.72);
+const busStopBenchWood=makeMat([.32,.2,.11],.05,.72);
 function buildBusStop(x,z,side){
  const stop=new pc.Entity("NOVA CITY bus shelter");app.root.addChild(stop);stop.setPosition(x,0,z);
  block("Bus shelter platform",[0,.08,0],[3.8,.16,2.1],mats.concrete,stop);
@@ -676,7 +676,7 @@ function buildBusStop(x,z,side){
  }
  block("Shelter roof",[0,2.72,0],[4,.16,2.2],streetPropMetal,stop);
  block("Shelter route sign",[0,2.05,-.94],[1.25,.55,.08],mats.paint,stop);
- block("Bus stop bench",[0,.62,.48],[2.25,.12,.48],benchWood,stop);
+ block("Bus stop bench",[0,.62,.48],[2.25,.12,.48],busStopBenchWood,stop);
  for(const sx of [-.9,.9])block("Bench leg",[sx,.34,.48],[.08,.56,.08],streetPropMetal,stop);
  block("Bus stop pole",[side*1.9,1.55,-.85],[.09,3.1,.09],streetPropMetal,stop);
  block("Bus stop sign",[side*1.9,2.75,-.85],[.58,.7,.08],mats.paint,stop);
@@ -684,8 +684,8 @@ function buildBusStop(x,z,side){
 buildBusStop(-11.2,-55,-1);buildBusStop(11.2,52,1);
 function buildStreetBench(x,z,rotation=0){
  const bench=new pc.Entity("NOVA CITY public bench");app.root.addChild(bench);bench.setPosition(x,.0,z);bench.setEulerAngles(0,rotation,0);
- block("Bench seat",[0,.62,0],[1.9,.12,.52],benchWood,bench);
- block("Bench back",[0,1.02,.22],[1.9,.62,.12],benchWood,bench);
+ block("Bench seat",[0,.62,0],[1.9,.12,.52],busStopBenchWood,bench);
+ block("Bench back",[0,1.02,.22],[1.9,.62,.12],busStopBenchWood,bench);
  for(const sx of [-.72,.72])block("Bench support",[sx,.32,0],[.09,.64,.42],streetPropMetal,bench);
 }
 buildStreetBench(78,-107,0);buildStreetBench(102,-107,0);
