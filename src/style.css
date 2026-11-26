@@ -335,3 +335,8 @@ footer span{letter-spacing:.16em}
  .pedals button{width:55px!important;height:54px!important;font-size:8px!important}
  .hud-speed{right:8px!important;bottom:8px!important}
 }
+
+/* Keep the steering-mode switch accessible on the clean driving HUD. */
+.steering-mode{display:block!important;pointer-events:auto!important;position:relative!important;z-index:8!important;height:25px!important;padding:0 8px!important;font-size:8px!important}
+.steering-wheel-control{pointer-events:auto!important;touch-action:none!important}
+.steering-arrows{pointer-events:auto!important}
