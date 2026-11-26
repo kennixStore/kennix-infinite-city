@@ -922,6 +922,61 @@ createTrafficCar(67.45,145,-1,2,8.3,"x");
 createTrafficCar(212.55,-145,1,1,10.2,"x");
 createTrafficCar(207.45,145,-1,3,9,"x");
 
+// Additional real-scale traffic assets: CC0 models from tevy.dev.
+// These are detailed authored assets with PBR materials, not low-poly placeholders.
+// The renderer is 3D internally; the target presentation remains photorealistic.
+function addSpecialTraffic(type,x,z,direction,speed,axis="z"){
+ const entity=new pc.Entity(type==="bus"?"City bus traffic":type==="minibus"?"Commercial minibus traffic":"Motorcycle traffic");
+ entity.setPosition(axis==="z"?x:z,.06,axis==="z"?z:x);
+ const yaw=axis==="z"?(direction>0?180:0):(direction>0?90:-90);
+ entity.setEulerAngles(0,yaw,0);
+ app.root.addChild(entity);
+ const item={
+  entity,fallbackVisuals:null,direction,cruiseSpeed:speed,currentSpeed:speed,
+  hitCooldown:0,brakeLamps:[],wheels:[],wheelSpin:0,braking:false,
+  axis,turnAt:null,turnDirection:1,turns:1,specialType:type
+ };
+ traffic.push(item);
+ return item;
+}
+const specialTrafficRequests=[];
+function spawnSpecialTraffic(type,x,z,direction,speed,axis="z"){
+ const item=addSpecialTraffic(type,x,z,direction,speed,axis);
+ specialTrafficRequests.push(item);
+}
+spawnSpecialTraffic("bus",-5.25,-226,1,7.2);
+spawnSpecialTraffic("bus",5.25,226,-1,7.0);
+spawnSpecialTraffic("minibus",5.25,-202,1,8.8);
+spawnSpecialTraffic("minibus",-5.25,202,-1,8.5);
+spawnSpecialTraffic("motorcycle",-1.15,-184,1,10.5);
+spawnSpecialTraffic("motorcycle",1.15,184,-1,10.2);
+spawnSpecialTraffic("motorcycle",-1.15,-236,1,9.8);
+spawnSpecialTraffic("motorcycle",1.15,236,-1,10.0);
+function loadSpecialTrafficModels(){
+ const modelInfo={
+  bus:{url:"https://tevy.dev/models/city-bus/v1/lod1.glb",scale:1},
+  minibus:{url:"https://tevy.dev/models/kei-van/v1/lod1.glb",scale:1},
+  motorcycle:{url:"https://tevy.dev/models/sport-motorcycle/v1/lod1.glb",scale:1}
+ };
+ for(const item of specialTrafficRequests){
+  const info=modelInfo[item.specialType];
+  app.assets.loadFromUrl(info.url,"container",(error,asset)=>{
+   if(error||!asset?.resource){
+    console.warn("CC0 special traffic model unavailable:",item.specialType,error);
+    item.entity.destroy();
+    const index=traffic.indexOf(item);if(index>=0)traffic.splice(index,1);
+    return;
+   }
+   const model=asset.resource.instantiateRenderEntity();
+   model.name="CC0 "+item.specialType+" traffic model";
+   item.entity.addChild(model);
+   model.setLocalPosition(0,0,0);
+   model.setLocalScale(info.scale,info.scale,info.scale);
+   model.enabled=true;
+  });
+ }
+}
+
 // Pedestrian figures with simple looping walk cycles along the sidewalks.
 const skinTones=[
  makeMat([.24,.105,.055],.02,.88),makeMat([.38,.18,.095],.02,.86),
@@ -2643,3 +2698,4 @@ loadImportedVehicleModels();
 loadCityArchitecture();
 loadParkedVehicleModels();
 loadMovingTrafficModels();
+loadSpecialTrafficModels();
