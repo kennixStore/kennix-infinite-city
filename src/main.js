@@ -78,10 +78,12 @@ const mats = {
 };
 // Architectural glazing uses a polished clear-coat finish so window panes
 // catch tighter highlights from the sun and sky instead of reading as flat blue.
-mats.glass.metalness = 0.48;
-mats.glass.shininess = 112;
-mats.glass.clearCoat = 0.92;
-mats.glass.clearCoatGloss = 0.98;
+// Glass is a dielectric surface: restrained tint and clear highlights,
+ // rather than a metallic blue/plastic finish.
+mats.glass.metalness = 0.02;
+mats.glass.shininess = 76;
+mats.glass.clearCoat = 0.58;
+mats.glass.clearCoatGloss = 0.9;
 mats.glass.specular = new pc.Color(0.78, 0.88, 1);
 mats.glass.update();
 
@@ -218,8 +220,8 @@ loadPbrTexture("/textures/pbr/road_Color.jpg",texture=>{
   mats.asphalt.diffuseMap=texture;
   mats.asphalt.diffuseMapTiling=new pc.Vec2(4,88);
   // Slightly damp asphalt finish: tighter highlights catch headlights and street lamps.
-  mats.asphalt.metalness=.065;
-  mats.asphalt.shininess=34;
+  mats.asphalt.metalness=.018;
+  mats.asphalt.shininess=20;
   mats.asphalt.update();
 });
 loadPbrTexture("/textures/pbr/road_NormalGL.jpg",texture=>{
@@ -1188,13 +1190,13 @@ for (const side of [-1, 1]) {
 const sun = new pc.Entity("Afternoon sun");
 sun.addComponent("light", {
   type: "directional",
-  color: new pc.Color(1, 0.88, 0.74),
-  intensity: 1.3,
+  color: new pc.Color(1, 0.94, 0.84),
+  intensity: 1.15,
   castShadows: true,
   shadowResolution: 2048,
   shadowType: pc.SHADOW_PCF3_32F,
   // Extend the useful shadow range across more of the playable downtown.
-  shadowDistance: 230,
+  shadowDistance: 175,
   numCascades: 2,
   cascadeBlend: 0.15
 });
@@ -1779,7 +1781,7 @@ for(const child of [...car.children]){
 function buildVehicleModel(vehicle){
  const root=new pc.Entity(vehicle.id+" detailed vehicle model");car.addChild(root);
  const bodyMat=makeMat(vehicle.paint,.78,.2), trimMat=makeMat([.018,.022,.028],.45,.25);
- bodyMat.clearCoat=.72;bodyMat.clearCoatGloss=.88;bodyMat.useMetalness=true;bodyMat.update();
+ bodyMat.metalness=.28;bodyMat.shininess=58;bodyMat.clearCoat=.84;bodyMat.clearCoatGloss=.94;bodyMat.useMetalness=true;bodyMat.update();
  const glassMat=makeMat([.025,.095,.14],.52,.1), chromeMat=makeMat([.38,.42,.46],.85,.18);
  glassMat.clearCoat=.96;
  glassMat.clearCoatGloss=.99;
@@ -2253,6 +2255,9 @@ camera.camera.gammaCorrection = pc.GAMMA_SRGB;
 // update loop is intentionally paused while the opening garage menu is shown.
 camera.setPosition(0, 5.2, 29);
 camera.lookAt(0, 0.9, 19);
+// Persistent camera aim prevents frame-to-frame snapping during sharp turns.
+const smoothedCameraAim = new pc.Vec3(0, 0.9, 19);
+const cameraAimTarget = new pc.Vec3();
 
 const keys = new Set();
 const held = new Set();
@@ -3140,22 +3145,26 @@ app.on("update", dt => {
   // Stable third-person chase camera: keep a fixed, low horizon target.
   // The previous target sat behind the car, so the vehicle could block the
   // view as speed increased and make the camera appear to tilt toward the sky.
-  const chaseDistance=10.2+speedRatio*1.6;
-  const chaseHeight=4.6+speedRatio*.35;
+  const chaseDistance=10.8+speedRatio*2.0;
+  const chaseHeight=4.25+speedRatio*.55;
+  const headingSin=Math.sin(heading*Math.PI/180),headingCos=Math.cos(heading*Math.PI/180);
   const camTarget=cameraMode==="cockpit"
-    ?new pc.Vec3(p.x+Math.sin(heading*Math.PI/180)*.55,p.y+1.48,p.z-Math.cos(heading*Math.PI/180)*.25)
-    :new pc.Vec3(p.x-Math.sin(heading*Math.PI/180)*chaseDistance,p.y+chaseHeight,p.z+Math.cos(heading*Math.PI/180)*chaseDistance);
+    ?new pc.Vec3(p.x+headingSin*.55,p.y+1.48,p.z-headingCos*.25)
+    :new pc.Vec3(p.x-headingSin*chaseDistance,p.y+chaseHeight,p.z+headingCos*chaseDistance);
   const camPos=camera.getPosition();
-  camPos.lerp(camPos,camTarget,1-Math.pow(.001,dt));
+  const cameraFollowRate=cameraMode==="cockpit"?11:5.8+speedRatio*1.8;
+  camPos.lerp(camPos,camTarget,1-Math.exp(-cameraFollowRate*dt));
   camera.setPosition(camPos);
-  const targetFov=cameraMode==="cockpit"?76:64+speedRatio*5.5;
-  camera.camera.fov+=(targetFov-camera.camera.fov)*Math.min(1,dt*2.2);
-  // Aim just ahead of the vehicle, never behind it.
-  camera.lookAt(
-    p.x+Math.sin(heading*Math.PI/180)*(cameraMode==="cockpit"?12:3.5),
-    p.y+(cameraMode==="cockpit"?1.35:.95),
-    p.z-Math.cos(heading*Math.PI/180)*(cameraMode==="cockpit"?12:3.5)
+  const targetFov=cameraMode==="cockpit"?74:63+speedRatio*4.5;
+  camera.camera.fov+=(targetFov-camera.camera.fov)*(1-Math.exp(-2.4*dt));
+  // Smooth the look target separately so quick steering cannot whip the horizon.
+  cameraAimTarget.set(
+    p.x+headingSin*(cameraMode==="cockpit"?12:5.2),
+    p.y+(cameraMode==="cockpit"?1.35:1.05),
+    p.z-headingCos*(cameraMode==="cockpit"?12:5.2)
   );
+  smoothedCameraAim.lerp(smoothedCameraAim,cameraAimTarget,1-Math.exp(-(cameraMode==="cockpit"?12:7.2)*dt));
+  camera.lookAt(smoothedCameraAim);
 
   if (speedValue) speedValue.textContent = Math.round(Math.abs(speed) * 3.6).toString().padStart(3, "0");
   if (gearValue) gearValue.textContent = speed > 0.6 ? "D" : speed < -0.6 ? "R" : "N";
