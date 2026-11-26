@@ -1,6 +1,6 @@
 # KENNIX: INFINITE CITY
 
-An original browser-first 3D open-world driving and action game prototype built with PlayCanvas Engine and Vite.
+An original browser-first open-world driving and action game prototype built with PlayCanvas Engine and Vite. The agreed target is GTA V-style third-person gameplay with near-photorealistic visuals. The current city and vehicle geometry are temporary greybox placeholders and are being replaced; the game is not photorealistic yet.
 
 ## Offline gameplay included in code
 - Procedural NOVA CITY road grid and district blocks.
