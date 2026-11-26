@@ -1793,6 +1793,10 @@ camera.addComponent("camera", {
   farClip: 1000
 });
 app.root.addChild(camera);
+// Give the renderer a valid first view before the player presses Start. The
+// update loop is intentionally paused while the opening garage menu is shown.
+camera.setPosition(0, 5.2, 29);
+camera.lookAt(0, 0.9, 19);
 
 const keys = new Set();
 const held = new Set();
