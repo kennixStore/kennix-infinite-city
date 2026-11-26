@@ -2649,6 +2649,24 @@ function loadPhotorealisticPedestrians(){
       model.setLocalEulerAngles(0,180,0);
       model.setLocalScale(1,1,1);
       person.entity.addChild(model);
+      // Play the rigged GLB clips instead of leaving scanned characters frozen.
+      if(resource.animations?.length){
+        model.addComponent("anim",{activate:true});
+        const clipNames=[];
+        for(const animation of resource.animations){
+          const clip=animation.resource;
+          if(!clip)continue;
+          model.anim.assignAnimation(clip.name,clip);
+          clipNames.push(clip.name);
+        }
+        const wanted=person.activity?"idle":"walk";
+        const chosen=clipNames.find(name=>name.toLowerCase().includes(wanted))||clipNames[0];
+        if(chosen&&model.anim.baseLayer)model.anim.baseLayer.play(chosen);
+        else if(!chosen)console.warn("No usable animation clip:",info.name);
+      }else{
+        console.warn("Pedestrian model has no embedded animations:",info.name);
+      }
+      // Keep the real character; hide the temporary mannequin parts only after load.
       for(const child of person.entity.children){
         if(child!==model)child.enabled=false;
       }
