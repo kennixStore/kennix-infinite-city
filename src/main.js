@@ -985,7 +985,10 @@ for (let i = 0; i < 14; i++) {
   block("Roof feature", [x, height + 0.55, z], [width * 0.45, 1.1, 4], mats.metal);
 }
 
-// Street lamps and trees along both sidewalks.
+// Street lamps and provisional tree slots along both sidewalks.
+// The temporary primitive trees are replaced by detailed CC0 botanical models
+// once their mobile LOD assets finish loading.
+const streetTreeSlots=[];
 for (const side of [-1, 1]) {
   for (let i = 0; i < 8; i++) {
     const z = -65 + i * 18;
@@ -993,8 +996,9 @@ for (const side of [-1, 1]) {
     block("Lamp arm", [side * 7.1, 6.05, z], [1.1, 0.12, 0.12], mats.metal);
     block("Lamp head", [side * 6.65, 5.95, z], [0.65, 0.18, 0.35], mats.windowLit);
     const treeZ = z + 7;
-    block("Tree trunk", [side * 9.05, 1.1, treeZ], [0.35, 2.2, 0.35], mats.trunk);
-    block("Tree crown", [side * 9.05, 3.05, treeZ], [2.1, 2.5, 2.1], mats.tree, app.root, "sphere");
+    const trunk=block("Temporary tree trunk", [side * 9.05, 1.1, treeZ], [0.35, 2.2, 0.35], mats.trunk);
+    const crown=block("Temporary tree crown", [side * 9.05, 3.05, treeZ], [2.1, 2.5, 2.1], mats.tree, app.root, "sphere");
+    streetTreeSlots.push({x:side*9.05,z:treeZ,trunk,crown,index:streetTreeSlots.length});
   }
 }
 
@@ -3105,6 +3109,48 @@ function loadParkedVehicleModels(){
     });
   }
 }
+function loadCityNature(){
+  // Photoreal botanical assets, CC0 1.0, using compact mobile LOD2 meshes.
+  // Each tree replaces a temporary primitive tree only after its GLB loads.
+  const species=[
+    {name:"African Baobab",url:"https://tevy.dev/models/baobab-tree/v1/lod2.glb",scale:.62},
+    {name:"Mature Plane Tree",url:"https://tevy.dev/models/plane-tree/v1/lod2.glb",scale:.43},
+    {name:"Red Mangrove",url:"https://tevy.dev/models/mangrove-tree/v1/lod2.glb",scale:.78}
+  ];
+  const resources=new Map();
+  streetTreeSlots.forEach(slot=>{
+    const speciesInfo=species[slot.index%species.length];
+    if(!resources.has(speciesInfo.url)){
+      resources.set(speciesInfo.url,new Promise(resolve=>{
+        app.assets.loadFromUrl(speciesInfo.url,"container",(error,asset)=>{
+          if(error||!asset?.resource){
+            console.warn("KENNIX CC0 tree unavailable:",speciesInfo.name,error);
+            resolve(null);
+          }else resolve(asset.resource);
+        });
+      }));
+    }
+    resources.get(speciesInfo.url).then(resource=>{
+      if(!resource)return;
+      const tree=resource.instantiateRenderEntity();
+      tree.name="CC0 realistic street tree - "+speciesInfo.name;
+      app.root.addChild(tree);
+      tree.setPosition(slot.x,0,slot.z);
+      tree.setEulerAngles(0,(slot.index*47)%360,0);
+      tree.setLocalScale(speciesInfo.scale,speciesInfo.scale,speciesInfo.scale);
+      tree.findComponents("render").forEach(component=>{
+        component.castShadows=true;
+        component.receiveShadows=true;
+        component.meshInstances.forEach(instance=>{
+          instance.castShadow=true;
+          instance.receiveShadow=true;
+        });
+      });
+      slot.trunk.enabled=false;
+      slot.crown.enabled=false;
+    });
+  });
+}
 function loadCityArchitecture(){
   // CC0 1.0 models from tevy.dev. Pinned versions and mobile LODs.
   loadCityArchitectureAsset("CC0 stone facade module",
@@ -3185,6 +3231,7 @@ setTimeout(()=>{
 },10000);
 activateVehicleModel();
 loadImportedVehicleModels();
+loadCityNature();
 loadCityArchitecture();
 loadParkedVehicleModels();
 loadMovingTrafficModels();
