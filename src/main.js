@@ -12,14 +12,18 @@ const app = new pc.Application(canvas, {
 
 app.setCanvasFillMode(pc.FILLMODE_FILL_WINDOW);
 app.setCanvasResolution(pc.RESOLUTION_AUTO);
-app.scene.ambientLight = new pc.Color(0.43, 0.48, 0.58);
+// Keep the image crisp on modern phones without blindly rendering at extreme
+// device-pixel ratios that can overwhelm mobile GPUs.
+app.graphicsDevice.maxPixelRatio = Math.min(window.devicePixelRatio || 1, 1.5);
+app.scene.ambientLight = new pc.Color(0.36, 0.39, 0.45);
 app.scene.toneMapping = pc.TONEMAP_ACES;
 app.scene.gammaCorrection = pc.GAMMA_SRGB;
-// Atmospheric depth helps distant buildings and hills blend into the skyline.
+// Atmospheric depth separates near streets from the skyline while preserving
+// enough contrast to keep the first district readable.
 app.scene.fog = pc.FOG_LINEAR;
-app.scene.fogColor = new pc.Color(0.56, 0.68, 0.78);
-app.scene.fogStart = 155;
-app.scene.fogEnd = 620;
+app.scene.fogColor = new pc.Color(0.62, 0.72, 0.82);
+app.scene.fogStart = 210;
+app.scene.fogEnd = 760;
 
 const makeMat = (rgb, metalness = 0, roughness = 0.65) => {
   const m = new pc.StandardMaterial();
@@ -503,13 +507,29 @@ for (const side of [-1, 1]) {
 const sun = new pc.Entity("Afternoon sun");
 sun.addComponent("light", {
   type: "directional",
-  color: new pc.Color(1, 0.78, 0.58),
-  intensity: 1.15,
+  color: new pc.Color(1, 0.88, 0.74),
+  intensity: 1.3,
   castShadows: true,
-  shadowResolution: 1024
+  shadowResolution: 2048,
+  shadowType: pc.SHADOW_PCF3_32F,
+  shadowDistance: 190,
+  numCascades: 2,
+  cascadeBlend: 0.15
 });
 sun.setEulerAngles(48, 32, 0);
 app.root.addChild(sun);
+
+// A restrained cool fill light keeps shaded vehicle sides and building faces
+// readable without flattening the warm afternoon key light.
+const skyFill = new pc.Entity("Sky fill light");
+skyFill.addComponent("light", {
+  type: "directional",
+  color: new pc.Color(0.62, 0.74, 1),
+  intensity: 0.22,
+  castShadows: false
+});
+skyFill.setEulerAngles(205, -28, 0);
+app.root.addChild(skyFill);
 
 // Player vehicle: a temporary procedural sports-car model.
 const car = new pc.Entity("Player sports car");
