@@ -959,7 +959,7 @@ function loadSpecialTrafficModels(){
   // Pinned CC0 1.0 assets. Use a conventional road bus and plain delivery van,
   // avoiding the left-kerb bus layout and futuristic cyber-styled cargo van.
   bus:{url:"https://tevy.dev/models/city-bus/v1/lod1.glb",scale:1},
-  minibus:{url:"https://tevy.dev/models/delivery-van/v1/lod1.glb",scale:1},
+  minibus:{url:"https://tevy.dev/models/kei-van/v1/lod1.glb",scale:1},
   motorcycle:{url:"https://tevy.dev/models/motor-scooter/v1/lod1.glb",scale:1},
   taxi:{url:"https://tevy.dev/models/yellow-taxi/v1/lod1.glb",scale:1}
  };
