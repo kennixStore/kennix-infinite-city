@@ -247,3 +247,9 @@ footer span{letter-spacing:.16em}
 .orientation-icon{font-size:54px;line-height:1;color:#d8ad5b;transform:rotate(90deg)}
 .orientation-card strong{color:#f5e5c2;font-size:14px;letter-spacing:.16em}
 .orientation-card small{color:#aab4c1;font-size:12px;line-height:1.6}
+
+
+#runtime-notice{display:none;position:absolute;z-index:30;left:50%;top:50%;transform:translate(-50%,-50%);width:min(88%,420px);padding:18px 20px;border:1px solid rgba(216,173,91,.65);border-radius:12px;background:rgba(5,10,17,.96);box-shadow:0 14px 48px #000b;color:#f5f7fa;text-align:center;pointer-events:none}
+#runtime-notice.visible{display:grid;gap:10px}
+#runtime-notice strong{color:#e7c37d;font-size:13px;letter-spacing:.13em}
+#runtime-notice span{color:#c1cbd6;font-size:12px;line-height:1.55}
