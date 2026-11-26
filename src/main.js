@@ -2403,33 +2403,33 @@ function loadCityArchitectureAsset(name,url,placements){
   });
 }
 function loadCityArchitecture(){
-  // Modular limestone facade, CC0 1.0. LOD1 keeps the repeated street modules
-  // light enough for mobile while preserving windows, cornices and fire stairs.
-  loadCityArchitectureAsset(
-    "CC0 stone facade module",
+  // CC0 1.0 models from tevy.dev. Pinned versions and mobile LODs.
+  loadCityArchitectureAsset("CC0 stone facade module",
     "https://tevy.dev/models/facade-stone-module/v2/lod1.glb",
     [
       {x:-27.2,z:-175,rotation:90},{x:27.2,z:-175,rotation:-90},
       {x:-27.2,z:-105,rotation:90},{x:27.2,z:-105,rotation:-90},
       {x:-27.2,z:105,rotation:90},{x:27.2,z:105,rotation:-90}
-    ]
-  );
-  // Full apartment blocks sit inside the outer 60 m city blocks, not on roads.
-  // LOD1 is 20,050 triangles / 451 KB per building.
-  loadCityArchitectureAsset(
-    "CC0 detailed six-storey apartment block",
+    ]);
+  loadCityArchitectureAsset("CC0 detailed six-storey apartment block",
     "https://tevy.dev/models/apartment-block/v2/lod1.glb",
-    [
-      {x:-90,z:-175},{x:90,z:-175},
-      {x:-90,z:175},{x:90,z:175}
-    ]
-  );
-  // A recognisable large commercial building anchors the market-side district.
-  loadCityArchitectureAsset(
-    "CC0 supermarket building",
+    [{x:-90,z:-175},{x:90,z:-175},{x:-90,z:175},{x:90,z:175}]);
+  loadCityArchitectureAsset("CC0 supermarket building",
     "https://tevy.dev/models/supermarket-shell/v2/lod1.glb",
-    [{x:-90,z:-105,rotation:0}]
-  );
+    [{x:-90,z:-105,rotation:0}]);
+  // Smaller commercial buildings help break up the repeated tower silhouettes.
+  loadCityArchitectureAsset("CC0 three-storey corner shop block",
+    "https://tevy.dev/models/corner-shop-block/v2/lod1.glb",
+    [{x:150,z:-175,rotation:0},{x:150,z:105,rotation:180}]);
+  loadCityArchitectureAsset("CC0 glass office facade module",
+    "https://tevy.dev/models/facade-office-module/v1/lod1.glb",
+    [
+      {x:150,z:-105,rotation:90},{x:150,z:-105,y:16,rotation:90},
+      {x:150,z:-105,y:32,rotation:90}
+    ]);
+  loadCityArchitectureAsset("CC0 neighbourhood grocery shop",
+    "https://tevy.dev/models/village-shop/v2/lod1.glb",
+    [{x:-150,z:105,rotation:0}]);
 }
 
 app.start();
