@@ -2733,33 +2733,42 @@ app.on("update", dt => {
   // The brake input slows the car first, then engages reverse at low speed.
   if(forward&&fuel>0)fuel=Math.max(0,fuel-dt*(.018+Math.abs(speed)*.0009));
   if(Math.floor(fuel)!==lastFuelSaved){lastFuelSaved=Math.floor(fuel);try{localStorage.setItem("kxic-fuel",String(fuel))}catch{}}
+  const speedLimit=Math.max(18,selectedVehicle.maxSpeed*(1-damage/180)*(nitroActive?1.22:1));
   if(forward&&fuel>0){
     const engineCondition=1-damage*.0038;
-    speed += (speed < 0 ? 26 : selectedVehicle.acceleration*engineCondition*(nitroActive?1.75:1)) * dt;
+    // Progressive throttle: stronger pull from low speed, gentler near top speed.
+    const speedFraction=clamp(Math.max(0,speed)/speedLimit,0,1);
+    const accelerationFade=1-.58*speedFraction*speedFraction;
+    speed += (speed < 0 ? 22 : selectedVehicle.acceleration*engineCondition*accelerationFade*(nitroActive?1.65:1)) * dt;
   } else if (reverse) {
-    speed -= (speed > 0 ? 25*selectedVehicle.braking*(1-damage*.0025) : 7.5) * dt;
+    // Brake firmly while moving forward, then ease into reverse.
+    const brakingRate=speed>1?19*selectedVehicle.braking*(1-damage*.0025):6.2;
+    speed -= brakingRate * dt;
   } else {
-    speed *= Math.exp(-(handbrakeActive ? 1.7 : 0.72) * dt);
+    // Natural rolling resistance; handbrake remains deliberately stronger.
+    speed *= Math.exp(-(handbrakeActive ? 2.1 : 0.48) * dt);
   }
 
-  if (handbrakeActive && Math.abs(speed) > 2) speed *= Math.exp(-1.2 * dt);
-  speed = clamp(speed, -12, Math.max(18,selectedVehicle.maxSpeed*(1-damage/180)*(nitroActive?1.22:1)));
+  if (handbrakeActive && Math.abs(speed) > 2) speed *= Math.exp(-1.45 * dt);
+  speed = clamp(speed, -9, speedLimit);
   const longitudinalAcceleration = dt > 0 ? (speed-previousSpeed)/dt : 0;
   const targetBodyPitch = clamp(-longitudinalAcceleration*.16,-3,3);
   bodyPitch += (targetBodyPitch-bodyPitch)*Math.min(1,dt*5);
 
   const steerInput = steeringMode==="wheel" ? wheelSteeringInput : (left ? 1 : 0) - (right ? 1 : 0);
-  const targetSteering = steerInput * 30;
-  steeringAngle += (targetSteering - steeringAngle) * Math.min(1, dt * 7.5);
+  // Progressive steering response: smooth at speed, still manoeuvrable when parking.
+  const targetSteering = steerInput * 27;
+  steeringAngle += (targetSteering - steeringAngle) * (1-Math.exp(-dt*9));
 
-  const speedRatio = clamp(Math.abs(speed) / 24, 0, 1);
+  const speedRatio = clamp(Math.abs(speed) / 28, 0, 1);
   const directionSign = Math.sign(speed || 1);
-  const gripFactor = handbrakeActive ? 1.25 : selectedVehicle.grip*(1-damage*.0018);
-  heading -= steeringAngle * 0.88 * selectedVehicle.handling * (0.16 + speedRatio * 0.84) * gripFactor * dt * directionSign;
+  const gripFactor = handbrakeActive ? 1.18 : selectedVehicle.grip*(1-damage*.0018);
+  const highSpeedStability=1-.28*speedRatio;
+  heading -= steeringAngle * 0.82 * selectedVehicle.handling * (0.22 + speedRatio * 0.78) * gripFactor * highSpeedStability * dt * directionSign;
 
-  // Steering creates a little lateral movement; normal tyres quickly regain grip.
-  lateralSpeed += steerInput * speedRatio * (handbrakeActive ? 5.2 : 1.35) * directionSign * dt;
-  lateralSpeed *= Math.exp(-(handbrakeActive ? 1.15 : 6.2*selectedVehicle.grip) * dt);
+  // Small tyre slip under load, then progressive grip recovery.
+  lateralSpeed += steerInput * speedRatio * (handbrakeActive ? 4.4 : .82) * directionSign * dt;
+  lateralSpeed *= Math.exp(-(handbrakeActive ? 1.25 : 7.4*selectedVehicle.grip) * dt);
 
   const radians = heading * Math.PI / 180;
   const forwardX = Math.sin(radians);
