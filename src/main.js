@@ -1842,7 +1842,20 @@ function showGarage(title="INFINITE CITY",copy="Choose your ride, then enter the
 function hideGarage(){gameOverlay.classList.add("hidden");gamePaused=false}
 garageList.addEventListener("click",e=>{const b=e.target.closest("[data-vehicle]");if(!b)return;selectedVehicle=vehicleCatalog.find(v=>v.id===b.dataset.vehicle)||vehicleCatalog[0];setPlayerPaint(selectedVehicle.paint);refreshGarage()});
 gameOverlay.querySelector(".paint-list").addEventListener("click",e=>{const b=e.target.closest("[data-paint]");if(!b)return;setPlayerPaint(garagePaints[Number(b.dataset.paint)].rgb);gameOverlay.querySelectorAll(".paint-swatch").forEach(x=>x.classList.toggle("selected",x===b))});
-gameOverlay.querySelector("#start-drive").addEventListener("click",()=>{raceActive=false;raceGates.forEach(g=>g.enabled=false);hideGarage()});
+const orientationPrompt=document.createElement("div");
+orientationPrompt.className="orientation-prompt";
+orientationPrompt.innerHTML='<div class="orientation-card"><span class="orientation-icon">↻</span><strong>TURN YOUR PHONE SIDEWAYS</strong><small>KENNIX: INFINITE CITY is designed for landscape play.</small></div>';
+document.body.appendChild(orientationPrompt);
+function updateOrientationPrompt(){orientationPrompt.classList.toggle("visible",window.matchMedia("(orientation: portrait)").matches&&window.innerWidth<900)}
+window.addEventListener("resize",updateOrientationPrompt);
+window.addEventListener("orientationchange",updateOrientationPrompt);
+updateOrientationPrompt();
+async function requestLandscapeMode(){
+ try{if(!document.fullscreenElement&&document.documentElement.requestFullscreen)await document.documentElement.requestFullscreen()}catch(error){console.info("Fullscreen request was not available:",error)}
+ try{if(screen.orientation&&screen.orientation.lock)await screen.orientation.lock("landscape")}catch(error){console.info("Landscape lock was not permitted by this browser:",error)}
+ updateOrientationPrompt();
+}
+gameOverlay.querySelector("#start-drive").addEventListener("click",()=>{requestLandscapeMode();raceActive=false;raceGates.forEach(g=>g.enabled=false);hideGarage()});
 gameOverlay.querySelector("#start-race").addEventListener("click",()=>{raceActive=true;raceCheckpoint=0;raceStart=performance.now();raceGates.forEach((g,i)=>g.enabled=i===0);const q=car.getPosition();q.x=0;q.z=19;car.setPosition(q);speed=0;lateralSpeed=0;hideGarage()});
 gameOverlay.querySelector("#repair-car").addEventListener("click",()=>{damage=0;try{localStorage.setItem("kxic-damage","0")}catch{}speed=0;lateralSpeed=0;refreshVehicleDamage();refreshGarage()});
 
