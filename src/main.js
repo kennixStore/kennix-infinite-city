@@ -951,12 +951,14 @@ spawnSpecialTraffic("minibus",-5.25,202,-1,8.5);
 spawnSpecialTraffic("motorcycle",-1.15,-184,1,10.5);
 spawnSpecialTraffic("motorcycle",1.15,184,-1,10.2);
 spawnSpecialTraffic("motorcycle",-1.15,-236,1,9.8);
-spawnSpecialTraffic("motorcycle",1.15,236,-1,10.0);
+spawnSpecialTraffic("motorcycle",1.15,236,-1,10.0);\nspawnSpecialTraffic("taxi",-8.85,-214,1,8.1);\nspawnSpecialTraffic("taxi",8.85,214,-1,8.3);
 function loadSpecialTrafficModels(){
  const modelInfo={
-  bus:{url:"https://tevy.dev/models/city-bus/v1/lod1.glb",scale:1},
-  minibus:{url:"https://tevy.dev/models/kei-van/v1/lod1.glb",scale:1},
-  motorcycle:{url:"https://tevy.dev/models/sport-motorcycle/v1/lod1.glb",scale:1}
+  // Verified pinned CC0 1.0 assets; LOD1 balances detail and mobile download size.
+  bus:{url:"https://tevy.dev/models/non-step-city-bus/v1/lod1.glb",scale:1},
+  minibus:{url:"https://tevy.dev/models/cargo-hauler-van/v1/lod1.glb",scale:1},
+  motorcycle:{url:"https://tevy.dev/models/motor-scooter/v1/lod1.glb",scale:1},
+  taxi:{url:"https://tevy.dev/models/yellow-taxi/v1/lod1.glb",scale:1}
  };
  for(const item of specialTrafficRequests){
   const info=modelInfo[item.specialType];
