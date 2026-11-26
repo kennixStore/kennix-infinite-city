@@ -1,9 +1,18 @@
-KENNEY CAR KIT — CC0 1.0 UNIVERSAL
+VEHICLE MODELS — CC0 1.0 UNIVERSAL
 
-The vehicle models in this folder are from Kenney's Car Kit 3.1.
-They are dedicated to the public domain under the Creative Commons CC0 1.0 Universal license.
+The realistic vehicle models in this folder are sourced from the
+3DAssets.dev "Car Park and Road Vehicle Fleet" collection.
 
-You may copy, modify, distribute, and use these assets, including for commercial purposes, without asking permission or providing attribution.
+The collection is released under Creative Commons CC0 1.0 Universal.
+You may copy, modify, distribute, and use these models, including in
+commercial games, without requesting individual permission or providing
+attribution.
+
+Models included:
+- Grand touring coupe
+- Four-door saloon
+- Mid-size SUV
+- Mid-engine sports car
 
 License: https://creativecommons.org/publicdomain/zero/1.0/
-Source: https://kenney.nl/assets/car-kit
+Collection: https://3dassets.dev/packs/car-park-and-road-vehicle-fleet
