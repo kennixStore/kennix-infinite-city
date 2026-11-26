@@ -966,16 +966,29 @@ function loadSpecialTrafficModels(){
   motorcycle:{url:"https://tevy.dev/models/motor-scooter/v1/lod1.glb",scale:1},
   taxi:{url:"https://tevy.dev/models/yellow-taxi/v1/lod1.glb",scale:1}
  };
+ // Load each unique GLB only once, then instantiate it for every matching vehicle.
+ // This avoids repeated mobile downloads when several buses, taxis or bikes share a model.
+ const sharedLoads=new Map();
  for(const item of specialTrafficRequests){
   const info=modelInfo[item.specialType];
-  app.assets.loadFromUrl(info.url,"container",(error,asset)=>{
-   if(error||!asset?.resource){
-    console.warn("CC0 special traffic model unavailable:",item.specialType,error);
-    item.entity.destroy();
-    const index=traffic.indexOf(item);if(index>=0)traffic.splice(index,1);
+  if(!sharedLoads.has(info.url)){
+   sharedLoads.set(info.url,new Promise(resolve=>{
+    app.assets.loadFromUrl(info.url,"container",(error,asset)=>{
+     if(error||!asset?.resource){
+      console.warn("CC0 special traffic model unavailable:",item.specialType,error);
+      resolve(null);
+     }else resolve(asset.resource);
+    });
+   }));
+  }
+  sharedLoads.get(info.url).then(resource=>{
+   if(!resource){
+    // Keep the traffic entity alive if a remote model is unavailable; the
+    // game can continue rather than silently removing that road user.
     return;
    }
-   const model=asset.resource.instantiateRenderEntity();
+   if(!item.entity||item.entity._destroyed)return;
+   const model=resource.instantiateRenderEntity();
    model.name="CC0 "+item.specialType+" traffic model";
    item.entity.addChild(model);
    model.setLocalPosition(0,0,0);
