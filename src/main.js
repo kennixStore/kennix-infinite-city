@@ -923,22 +923,64 @@ createTrafficCar(212.55,-145,1,1,10.2,"x");
 createTrafficCar(207.45,145,-1,3,9,"x");
 
 // Pedestrian figures with simple looping walk cycles along the sidewalks.
-const skinMat = makeMat([0.55, 0.34, 0.22]);
-const clothingMats = [makeMat([0.12, 0.22, 0.48]), makeMat([0.48, 0.12, 0.09]), makeMat([0.12, 0.34, 0.2]), makeMat([0.34, 0.27, 0.16])];
-const pedestrians = [];
-function createPedestrian(x, z, outfit, facing = 0, walkDirection = 1, axis = "z", min = -72, max = 72) {
-  const person = new pc.Entity("Walking pedestrian");
-  person.setPosition(x, 0.12, z); person.setEulerAngles(0, facing, 0); app.root.addChild(person);
-  block("Pedestrian torso", [0, 0.98, 0], [0.48, 0.78, 0.28], clothingMats[outfit % clothingMats.length], person);
-  block("Pedestrian head", [0, 1.58, -0.015], [0.34, 0.36, 0.34], skinMat, person, "sphere");
-  const legs = []; const arms = [];
-  for (const side of [-1, 1]) {
-    legs.push(block("Pedestrian leg", [side * 0.13, 0.43, 0], [0.16, 0.62, 0.18], mats.dark, person));
-    arms.push(block("Pedestrian arm", [side * 0.31, 1.02, 0], [0.14, 0.58, 0.16], clothingMats[outfit % clothingMats.length], person));
-  }
-  const pedestrian={entity:person,legs,arms,phase:outfit*.9,direction:walkDirection,axis,min,max};
-  pedestrians.push(pedestrian);
-  return pedestrian;
+const skinTones=[
+ makeMat([.24,.105,.055],.02,.88),makeMat([.38,.18,.095],.02,.86),
+ makeMat([.55,.32,.19],.02,.86),makeMat([.68,.43,.29],.02,.86)
+];
+const clothingMats=[
+ makeMat([.08,.18,.34],.02,.82),makeMat([.48,.09,.065],.02,.84),
+ makeMat([.08,.29,.17],.02,.86),makeMat([.3,.22,.12],.02,.88),
+ makeMat([.52,.43,.24],.02,.88),makeMat([.22,.2,.28],.02,.84)
+];
+const trouserMats=[
+ makeMat([.045,.055,.075],.02,.9),makeMat([.1,.13,.18],.02,.88),
+ makeMat([.28,.2,.12],.02,.9)
+];
+const shoeMat=makeMat([.035,.038,.042],.05,.68);
+const hairMats=[makeMat([.025,.018,.014],.02,.96),makeMat([.09,.055,.03],.02,.9)];
+const pedestrianEyeMat=makeMat([.018,.012,.01],.02,.72);
+const pedestrians=[];
+function createPedestrian(x,z,outfit,facing=0,walkDirection=1,axis="z",min=-72,max=72){
+ const person=new pc.Entity("Street pedestrian character");
+ person.setPosition(x,.12,z);person.setEulerAngles(0,facing,0);app.root.addChild(person);
+ const skin=skinTones[(outfit*3+1)%skinTones.length];
+ const shirt=clothingMats[outfit%clothingMats.length];
+ const trousers=trouserMats[outfit%trouserMats.length];
+ // Layered body proportions: neck, shoulders, torso, forearms and lower legs.
+ block("Pedestrian neck",[0,1.43,0],[.19,.25,.19],skin,person,"cylinder");
+ block("Pedestrian shirt torso",[0,1.02,0],[.58,.82,.32],shirt,person);
+ block("Pedestrian shirt hem",[0,.64,0],[.59,.12,.33],shirt,person);
+ block("Pedestrian collar",[0,1.39,-.012],[.27,.12,.29],shirt,person);
+ const head=block("Pedestrian head",[0,1.68,-.015],[.34,.43,.33],skin,person,"sphere");
+ block("Pedestrian hair",[0,1.87,.005],[.35,.19,.34],hairMats[outfit%2],person,"sphere");
+ // Subtle facial features, oriented toward the character's forward (-Z) direction.
+ for(const side of [-1,1]){
+  block("Pedestrian eye",[side*.075,1.72,-.173],[.035,.045,.018],pedestrianEyeMat,person,"sphere");
+  block("Pedestrian ear",[side*.18,1.67,-.005],[.055,.09,.07],skin,person,"sphere");
+ }
+ block("Pedestrian nose",[0,1.67,-.205],[.055,.085,.055],skin,person,"sphere");
+ const legs=[],arms=[];
+ for(const side of [-1,1]){
+  const leg=block("Pedestrian upper leg",[side*.15,.42,0],[.19,.52,.21],trousers,person);
+  legs.push(leg);
+  block("Pedestrian lower leg",[side*.15,.16,-.015],[.16,.28,.18],trousers,person);
+  block("Pedestrian shoe",[side*.15,.055,-.075],[.2,.12,.34],shoeMat,person);
+  const arm=block("Pedestrian upper arm",[side*.36,1.04,0],[.17,.49,.19],shirt,person);
+  arms.push(arm);
+  block("Pedestrian forearm",[side*.37,.73,-.015],[.13,.28,.14],skin,person,"cylinder");
+  block("Pedestrian hand",[side*.37,.57,-.025],[.12,.14,.12],skin,person,"sphere");
+ }
+ // Rotate outfit/accessory mix across the crowd without expensive skinned meshes.
+ if(outfit%4===1){
+  block("Pedestrian shoulder bag",[.34,.94,.12],[.25,.38,.15],stallCrate,person);
+  block("Pedestrian bag strap",[.12,1.13,-.015],[.055,.56,.055],shoeMat,person).setLocalEulerAngles(0,0,-24);
+ }
+ if(outfit%5===2){
+  block("Pedestrian cap",[0,1.94,-.035],[.39,.09,.38],clothingMats[(outfit+2)%clothingMats.length],person);
+ }
+ const pedestrian={entity:person,legs,arms,phase:outfit*.9,direction:walkDirection,axis,min,max};
+ pedestrians.push(pedestrian);
+ return pedestrian;
 }
 createPedestrian(-9.1, -51, 0, 90, 1); createPedestrian(9.1, -35, 1, -90, -1);
 createPedestrian(-9.1, -5, 2, 90, 1); createPedestrian(9.1, 22, 3, -90, -1); createPedestrian(-9.1, 61, 1, 90, -1);
