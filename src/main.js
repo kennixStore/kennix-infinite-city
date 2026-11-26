@@ -99,6 +99,51 @@ applySurface(mats.asphalt,surfaceMaps.asphalt,2,72);
 applySurface(mats.concrete,surfaceMaps.concrete,2,64);
 applySurface(mats.ground,surfaceMaps.ground,22,36);
 
+// Small procedural normal maps give asphalt, concrete and facade materials
+// lighting response instead of relying on flat diffuse colour alone.
+function createDetailNormal(kind){
+ const size=128,canvas=document.createElement("canvas");canvas.width=size;canvas.height=size;
+ const ctx=canvas.getContext("2d"),img=ctx.createImageData(size,size),height=new Float32Array(size*size);
+ let seed=kind==="asphalt"?271:kind==="concrete"?619:887;
+ const rand=()=>{seed=(seed*1664525+1013904223)>>>0;return seed/4294967296;};
+ for(let i=0;i<height.length;i++){
+  const grain=rand()-.5;
+  height[i]=kind==="asphalt"?grain*.16:kind==="concrete"?grain*.1:grain*.035;
+ }
+ if(kind==="facade"){
+  for(let y=0;y<size;y++)for(let x=0;x<size;x++){
+   if(x%32<2||y%32<2)height[y*size+x]+=.16;
+  }
+ }
+ for(let y=0;y<size;y++)for(let x=0;x<size;x++){
+  const at=y*size+x,left=y*size+(x+size-1)%size,right=y*size+(x+1)%size;
+  const up=((y+size-1)%size)*size+x,down=((y+1)%size)*size+x;
+  const dx=(height[right]-height[left])*3.5,dy=(height[down]-height[up])*3.5;
+  const nx=-dx,ny=-dy,nz=1,len=Math.hypot(nx,ny,nz),o=at*4;
+  img.data[o]=Math.round((nx/len*.5+.5)*255);
+  img.data[o+1]=Math.round((ny/len*.5+.5)*255);
+  img.data[o+2]=Math.round((nz/len*.5+.5)*255);
+  img.data[o+3]=255;
+ }
+ ctx.putImageData(img,0,0);
+ const texture=new pc.Texture(app.graphicsDevice,{width:size,height:size,format:pc.PIXELFORMAT_R8_G8_B8_A8,mipmaps:true});
+ texture.name="KENNIX "+kind+" micro normal";texture.addressU=pc.ADDRESS_REPEAT;texture.addressV=pc.ADDRESS_REPEAT;texture.setSource(canvas);
+ return texture;
+}
+const detailNormals={
+ asphalt:createDetailNormal("asphalt"),
+ concrete:createDetailNormal("concrete"),
+ facade:createDetailNormal("facade")
+};
+function applyDetailNormal(material,texture,tiling= new pc.Vec2(1,1),strength=.35){
+ material.normalMap=texture;
+ material.normalMapTiling=tiling;
+ material.bumpiness=strength;
+ material.update();
+}
+applyDetailNormal(mats.asphalt,detailNormals.asphalt,new pc.Vec2(2,72),.28);
+applyDetailNormal(mats.concrete,detailNormals.concrete,new pc.Vec2(2,64),.2);
+
 function block(name, pos, size, mat, parent = app.root, shape = "box") {
   const e = new pc.Entity(name);
   e.addComponent("render", { type: shape, material: mat });
@@ -209,7 +254,10 @@ const districtPalettes=[
   makeMat([0.22,0.27,0.33]),makeMat([0.34,0.29,0.23]),
   makeMat([0.16,0.25,0.29]),makeMat([0.31,0.33,0.34])
 ];
-for(const material of districtPalettes)applySurface(material,surfaceMaps.facade,2,2);
+for(const material of districtPalettes){
+ applySurface(material,surfaceMaps.facade,2,2);
+ applyDetailNormal(material,detailNormals.facade,new pc.Vec2(2,2),.16);
+}
 const marketFabric=makeMat([0.68,0.28,0.09]);
 const industrialPaint=makeMat([0.34,0.37,0.39],.45,.4);
 // Buildings sit within the blocks, leaving the avenue grid clear for driving.
