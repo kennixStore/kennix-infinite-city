@@ -793,13 +793,13 @@ function createTrafficCar(laneX, startZ, direction, paintIndex, cruiseSpeed, axi
   block("Traffic bonnet", [0,.75,-1.12],[1.58,.12,1.12],paint,fallbackVisuals);
   block("Traffic cabin", [0, 0.83, 0.18], [1.38, 0.46, 1.62], mats.glass, fallbackVisuals);
   block("Traffic roof", [0,1.09,.18],[1.2,.1,1.08],paint,fallbackVisuals);
-  block("Traffic windscreen", [0,.91,-.67],[1.18,.32,.06],mats.glass,npc).setLocalEulerAngles(-18,0,0);
-  block("Traffic rear glass", [0,.91,.98],[1.16,.3,.06],mats.glass,npc).setLocalEulerAngles(18,0,0);
+  block("Traffic windscreen", [0,.91,-.67],[1.18,.32,.06],mats.glass,fallbackVisuals).setLocalEulerAngles(-18,0,0);
+  block("Traffic rear glass", [0,.91,.98],[1.16,.3,.06],mats.glass,fallbackVisuals).setLocalEulerAngles(18,0,0);
   const brakeLamps = [];
   const wheels = [];
   for (const side of [-1, 1]) {
     block("Traffic headlight", [side * 0.55, 0.52, -1.74], [0.26, 0.12, 0.06], mats.headlight, fallbackVisuals);
-    brakeLamps.push(block("Traffic tail brake light", [side * 0.55, 0.52, 1.74], [0.26, 0.12, 0.06], mats.red, npc));
+    brakeLamps.push(block("Traffic tail brake light", [side * 0.55, 0.52, 1.74], [0.26, 0.12, 0.06], mats.red, fallbackVisuals));
     for (const end of [-1, 1]) {
       const tyre = block("Traffic tyre", [side * 0.87, 0.25, end * 1.05], [0.22, 0.46, 0.58], mats.trim, fallbackVisuals, "cylinder");
       tyre.setLocalEulerAngles(0, 0, 90);
