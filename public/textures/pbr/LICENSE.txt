@@ -1,0 +1,14 @@
+PBR TEXTURES — CC0 1.0 UNIVERSAL
+
+These physically based rendering (PBR) texture maps are downloaded from
+ambientCG and are released under the Creative Commons CC0 1.0 Universal
+public-domain dedication. They may be used, modified, and redistributed,
+including in commercial projects, without requesting permission or providing
+attribution.
+
+Included materials:
+- Road015A (road surface): Color and OpenGL normal maps
+- Concrete049 (concrete surface): Color and OpenGL normal maps
+
+Source: https://ambientcg.com/
+License: https://creativecommons.org/publicdomain/zero/1.0/
