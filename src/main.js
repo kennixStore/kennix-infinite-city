@@ -2354,14 +2354,17 @@ app.on("update", dt => {
   // Smooth follow camera to reduce sudden movement on mobile.
   // Speed-sensitive chase framing opens the view at high speed without
   // making low-speed city driving feel distant or difficult to control.
-  const chaseDistance=13.2+speedRatio*2.8;
-  const chaseHeight=6.4+speedRatio*.9;
+  // Third-person framing closer to a modern open-world driving game:
+  // keep the vehicle prominent at city speeds, then pull back smoothly on
+  // faster roads so the player can read traffic and upcoming turns.
+  const chaseDistance=9.6+speedRatio*4.2;
+  const chaseHeight=4.2+speedRatio*1.25;
   const camTarget=cameraMode==="cockpit"
     ?new pc.Vec3(p.x+Math.sin(heading*Math.PI/180)*.55,p.y+1.48,p.z-Math.cos(heading*Math.PI/180)*.25)
     :new pc.Vec3(p.x-Math.sin(heading*Math.PI/180)*chaseDistance,p.y+chaseHeight,p.z+Math.cos(heading*Math.PI/180)*chaseDistance);
   const camPos=camera.getPosition();camPos.lerp(camPos,camTarget,1-Math.pow(.001,dt));camera.setPosition(camPos);
-  const targetFov=cameraMode==="cockpit"?76:68+speedRatio*5;
-  camera.camera.fov+=(targetFov-camera.camera.fov)*Math.min(1,dt*2.8);
+  const targetFov=cameraMode==="cockpit"?76:64+speedRatio*8;
+  camera.camera.fov+=(targetFov-camera.camera.fov)*Math.min(1,dt*2.2);
   camera.lookAt(p.x+Math.sin(heading*Math.PI/180)*(cameraMode==="cockpit"?12:-3.2),p.y+(cameraMode==="cockpit"?1.35:.7),p.z-Math.cos(heading*Math.PI/180)*(cameraMode==="cockpit"?12:-4.0));
 
   if (speedValue) speedValue.textContent = Math.round(Math.abs(speed) * 3.6).toString().padStart(3, "0");
