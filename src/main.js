@@ -538,6 +538,92 @@ for(const z of [-92,-72,-52,42,62,82]){
  }
 }
 
+// Nigerian-inspired roadside commerce and street infrastructure.
+// These are modular scene props, not branded real businesses.
+const kioskPaints=[
+ makeMat([.72,.34,.09],.18,.62),makeMat([.12,.28,.24],.16,.7),
+ makeMat([.72,.67,.52],.12,.76),makeMat([.42,.12,.1],.18,.62)
+];
+const kioskRoof=makeMat([.12,.15,.18],.12,.78);
+const signBoard=makeMat([.9,.72,.22],.18,.42);
+const stallCrate=makeMat([.34,.19,.09],.05,.9);
+function buildRoadsideKiosk(x,z,rotation=0,variant=0){
+ const root=new pc.Entity("Nigerian roadside provision kiosk");
+ app.root.addChild(root);root.setPosition(x,0,z);root.setEulerAngles(0,rotation,0);
+ const paint=kioskPaints[variant%kioskPaints.length];
+ block("Kiosk concrete plinth",[0,.12,0],[4.1,.24,3.1],mats.concrete,root);
+ block("Kiosk rear wall",[0,1.55,.98],[3.8,2.9,.16],paint,root);
+ block("Kiosk left wall",[-1.86,1.55,0],[.16,2.9,2.1],paint,root);
+ block("Kiosk right wall",[1.86,1.55,0],[.16,2.9,2.1],paint,root);
+ block("Kiosk service counter",[0,1.03,-.42],[3.72,.16,.62],stallCrate,root);
+ block("Kiosk awning",[0,3.12,-.28],[4.35,.18,2.55],kioskRoof,root);
+ block("Kiosk awning front trim",[0,2.98,-1.52],[4.35,.22,.12],signBoard,root);
+ block("Kiosk sign panel",[0,2.42,-1.12],[2.85,.55,.12],signBoard,root);
+ for(let n=0;n<4;n++){
+  block("Kiosk product shelf",[0,1.42+n*.27,-.94],[3.1,.07,.08],mats.metal,root);
+ }
+ for(let n=0;n<3;n++){
+  block("Kiosk stock crate",[ -1.05+n*1.05,.42,-1.03],[.82,.72,.62],stallCrate,root);
+ }
+ for(const side of [-1,1]){
+  block("Kiosk awning post",[side*1.92,1.55,-1.35],[.12,3.1,.12],mats.metal,root);
+ }
+ return root;
+}
+function buildMarketCanopy(x,z,rotation=0,colour=0){
+ const root=new pc.Entity("Open-air Nigerian market stall");
+ app.root.addChild(root);root.setPosition(x,0,z);root.setEulerAngles(0,rotation,0);
+ const fabric=kioskPaints[colour%kioskPaints.length];
+ block("Market stall counter",[0,.82,0],[4.8,1.55,2.1],stallCrate,root);
+ block("Market canopy fabric",[0,2.75,0],[5.4,.16,3.1],fabric,root);
+ for(const sx of [-2.5,2.5])for(const sz of [-1.35,1.35]){
+  block("Market canopy support",[sx,1.85,sz],[.1,3.7,.1],mats.metal,root);
+ }
+ for(let n=0;n<4;n++){
+  block("Market goods crate",[-1.65+n*1.1,1.68,-.15],[.72,.45,.7],kioskPaints[(colour+n)%kioskPaints.length],root);
+ }
+ block("Market stall fascia",[0,2.35,-1.48],[4.4,.42,.1],signBoard,root);
+ return root;
+}
+function buildStreetPowerPole(x,z){
+ const pole=new pc.Entity("Concrete electricity distribution pole");
+ app.root.addChild(pole);pole.setPosition(x,0,z);
+ block("Concrete utility pole",[0,5.8,0],[.34,11.6,.34],mats.concrete,pole);
+ block("Utility cross arm",[0,10.65,0],[2.6,.16,.18],mats.metal,pole);
+ for(const sx of [-.92,0,.92]){
+  block("Power line insulator",[sx,10.95,0],[.16,.5,.16],mats.white,pole);
+ }
+ block("Utility warning plate",[0,7.8,-.2],[.42,.72,.08],signalHousing,pole);
+ return pole;
+}
+for(const z of [-188,-118,118,188]){
+ buildRoadsideKiosk(-17.6,z,90,(Math.abs(z)/10)%4);
+ buildRoadsideKiosk(17.6,z,-90,(Math.abs(z)/20)%4);
+}
+buildMarketCanopy(27,12,0,0);
+buildMarketCanopy(34,18,0,1);
+buildMarketCanopy(27,24,0,3);
+for(const x of [-20,20]){
+ for(const z of [-200,-130,-60,60,130,200]) buildStreetPowerPole(x,z);
+}
+// Overhead distribution wires between poles, represented as thin dark spans.
+const cableMat=makeMat([.055,.06,.065],.35,.48);
+for(const x of [-20,20]){
+ for(let z=-165;z<=165;z+=70){
+  block("Overhead electricity cable",[x,10.82,z],[.055,.055,70],cableMat,app.root);
+ }
+}
+// Roadside drainage channels, concrete culvert mouths and painted kerbs.
+const drainMat=makeMat([.12,.14,.15],.12,.92);
+for(const z of [-188,-118,118,188]){
+ for(const side of [-1,1]){
+  block("Open roadside drainage channel",[side*12.1,.035,z],[.32,.12,22],drainMat);
+  for(let n=0;n<5;n++){
+   block("Drain channel grate",[side*12.1,.105,z-8.8+n*4.4],[.42,.035,.16],mats.metal);
+  }
+ }
+}
+
 // Palm-lined boulevards and leafy street trees add a more natural city scale.
 const palmLeafMaterials = [
   makeMat([0.035, 0.19, 0.095], 0, 0.86),
