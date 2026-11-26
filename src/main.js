@@ -1010,6 +1010,42 @@ createCrossingPedestrian(pedestrianCrossings[0],1,1);
 createCrossingPedestrian(pedestrianCrossings[0],2,-1);
 createCrossingPedestrian(pedestrianCrossings[1],3,1);
 
+// Ambient life: vendors, customers and passengers make the district feel occupied.
+const streetActivities=[];
+function addStreetActor(x,z,outfit,facing,role){
+ const actor=createPedestrian(x,z,outfit,facing,1,"z",z,z);
+ actor.activity=role;
+ actor.entity.name=role==="vendor"?"Market shopkeeper":role==="passenger"?"Waiting passenger":"Market customer";
+ actor.idlePhase=outfit*.7;
+ streetActivities.push(actor);
+ return actor;
+}
+function addShoppingBag(actor,side=1){
+ block("Customer shopping bag",[side*.43,.77,.16],[.28,.34,.2],stallCrate,actor.entity);
+ block("Shopping bag handle",[side*.43,.97,.16],[.16,.07,.07],mats.dark,actor.entity);
+}
+const marketVendorA=addStreetActor(24.2,10.4,2,90,"vendor");
+const marketCustomerA=addStreetActor(30.2,16.2,4,-90,"customer");addShoppingBag(marketCustomerA,1);
+const marketVendorB=addStreetActor(34.2,18.4,1,90,"vendor");
+const marketCustomerB=addStreetActor(28.5,24.2,3,-90,"customer");addShoppingBag(marketCustomerB,-1);
+const busPassengerA=addStreetActor(-11.2,-55,0,0,"passenger");
+const busPassengerB=addStreetActor(11.2,52,3,180,"passenger");
+// Produce baskets and stacked goods around the open-air stalls.
+for(const [x,z] of [[24.8,12.2],[31.8,18.2],[24.8,26.2]]){
+ for(let row=0;row<2;row++)for(let col=0;col<3;col++){
+  const goods=block("Market produce basket",[x+col*.48,1.05+row*.34,z],[.4,.28,.42],kioskPaints[(row+col)%kioskPaints.length]);
+  goods.setEulerAngles(0,(row*col*17)%30,0);
+ }
+}
+// A few people stand by the roadside shops as if browsing their shelves.
+const kioskBrowsers=[
+ addStreetActor(-20.2,-188,5,90,"customer"),
+ addStreetActor(20.2,-118,2,-90,"customer"),
+ addStreetActor(-20.2,118,4,90,"customer"),
+ addStreetActor(20.2,188,1,-90,"customer")
+];
+for(const actor of kioskBrowsers)addShoppingBag(actor,actor.entity.getPosition().x<0?1:-1);
+
 // City lighting: warm street lamps and a gradual day/night cycle.
 const streetLights=[];
 const streetLampMaterial=makeMat([.12,.14,.18],.5,.32);
@@ -2227,7 +2263,15 @@ app.on("update", dt => {
   for (const pedestrian of pedestrians) {
     const position = pedestrian.entity.getPosition();
     const nearPlayer = Math.abs(position.x - p.x) < 5.2 && Math.abs(position.z - p.z) < 8.5 && Math.abs(speed) > 3;
-    let walkRate=nearPlayer?0:0.48;
+    let walkRate=pedestrian.activity?0:(nearPlayer?0:0.48);
+    if(pedestrian.activity){
+      pedestrian.idlePhase=(pedestrian.idlePhase||0)+dt*1.7;
+      const gesture=Math.sin(pedestrian.idlePhase);
+      pedestrian.legs[0].setLocalEulerAngles(0,0,0);
+      pedestrian.legs[1].setLocalEulerAngles(0,0,0);
+      pedestrian.arms[0].setLocalEulerAngles(pedestrian.activity==="vendor"?-12+gesture*9:gesture*5,0,pedestrian.activity==="vendor"?-18:0);
+      pedestrian.arms[1].setLocalEulerAngles(pedestrian.activity==="vendor"?-8-gesture*8:gesture*5,0,pedestrian.activity==="vendor"?18:0);
+    }
     if(pedestrian.crossing){
       const crossing=pedestrian.crossing;
       const crossingTraffic=traffic.some(npc=>{
