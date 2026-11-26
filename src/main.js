@@ -795,12 +795,14 @@ function createTrafficCar(laneX, startZ, direction, paintIndex, cruiseSpeed, axi
   block("Traffic windscreen", [0,.91,-.67],[1.18,.32,.06],mats.glass,npc).setLocalEulerAngles(-18,0,0);
   block("Traffic rear glass", [0,.91,.98],[1.16,.3,.06],mats.glass,npc).setLocalEulerAngles(18,0,0);
   const brakeLamps = [];
+  const wheels = [];
   for (const side of [-1, 1]) {
     block("Traffic headlight", [side * 0.55, 0.52, -1.74], [0.26, 0.12, 0.06], mats.headlight, npc);
     brakeLamps.push(block("Traffic tail brake light", [side * 0.55, 0.52, 1.74], [0.26, 0.12, 0.06], mats.red, npc));
     for (const end of [-1, 1]) {
       const tyre = block("Traffic tyre", [side * 0.87, 0.25, end * 1.05], [0.22, 0.46, 0.58], mats.trim, npc, "cylinder");
       tyre.setLocalEulerAngles(0, 0, 90);
+      wheels.push(tyre);
       block("Traffic alloy hub",[side*.99,.25,end*1.05],[.25,.22,.22],mats.metal,npc,"cylinder").setLocalEulerAngles(0,0,90);
     }
   }
@@ -812,7 +814,7 @@ function createTrafficCar(laneX, startZ, direction, paintIndex, cruiseSpeed, axi
   const junctions=axis==="z"?districtRoads:[-120,-60,60,120];
   const upcoming=junctions.filter(value=>(value-travelStart)*direction>8).sort((a,b)=>Math.abs(a-travelStart)-Math.abs(b-travelStart));
   const plannedTurn=upcoming.length&&Math.random()<0.42?upcoming[0]:null;
-  traffic.push({entity:npc,direction,cruiseSpeed,currentSpeed:cruiseSpeed,hitCooldown:0,brakeLamps,braking:false,axis,turnAt:plannedTurn,turnDirection:Math.random()<0.5?1:-1,turns:0});
+  traffic.push({entity:npc,direction,cruiseSpeed,currentSpeed:cruiseSpeed,hitCooldown:0,brakeLamps,wheels,wheelSpin:0,braking:false,axis,turnAt:plannedTurn,turnDirection:Math.random()<0.5?1:-1,turns:0});
   npc.setEulerAngles(0,axis==="z"?(direction>0?180:0):(direction>0?90:-90),0);
 }
 createTrafficCar(-2.55, -57, 1, 0, 10);
@@ -2239,6 +2241,9 @@ app.on("update", dt => {
       }
     }
     npc.entity.setPosition(npcPos);
+    // Rotate each NPC tyre in proportion to its actual travel speed.
+    npc.wheelSpin=(npc.wheelSpin||0)+npc.currentSpeed*dt*2.6;
+    for(const wheel of npc.wheels||[]) wheel.setLocalEulerAngles(npc.wheelSpin,0,90);
 
     // Low-cost contact response: slow the player and push the cars apart briefly.
     const dx = npcPos.x - p.x;
