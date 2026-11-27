@@ -542,6 +542,46 @@ for(const x of [-120,-60,60,120]){
  }
 }
 
+// Breakable roadside props: light signposts and temporary roadwork barriers.
+const breakableStreetProps=[];
+const temporaryDebris=[];
+const signMetal=makeMat([.22,.25,.28],.55,.34);
+const signFace=makeMat([.92,.91,.82],.18,.4);
+const barrierOrange=makeMat([.92,.25,.045],.12,.42);
+function addBreakableSign(x,z,rotation=0){
+ const root=new pc.Entity("Breakable road sign");root.setPosition(x,0,z);root.setEulerAngles(0,rotation,0);app.root.addChild(root);
+ block("Sign post",[0,1.25,0],[.09,2.5,.09],signMetal,root);
+ block("Reflective road sign",[0,2.15,0],[.95,.72,.12],signFace,root);
+ block("Sign symbol",[0,2.15,-.071],[.34,.34,.025],barrierOrange,root);
+ breakableStreetProps.push({kind:"sign",root,x,z,broken:false,tilt:0,age:0,resetAfter:18});
+}
+function addBreakableBarrier(x,z,rotation=0){
+ const root=new pc.Entity("Breakable roadwork barrier");root.setPosition(x,0,z);root.setEulerAngles(0,rotation,0);app.root.addChild(root);
+ block("Barrier orange beam",[0,.72,0],[2.8,.72,.32],barrierOrange,root);
+ block("Barrier reflective stripe A",[-.7,.73,-.17],[.24,.68,.035],mats.white,root);
+ block("Barrier reflective stripe B",[.7,.73,-.17],[.24,.68,.035],mats.white,root);
+ for(const side of [-1,1])block("Barrier support",[side*1.05,.27,0],[.24,.54,.58],signMetal,root);
+ breakableStreetProps.push({kind:"barrier",root,x,z,broken:false,tilt:0,age:0,resetAfter:14});
+}
+for(const z of [-185,-95,5,105,195]){
+ addBreakableSign(-10.7,z,0);addBreakableSign(10.7,z,180);
+}
+for(const z of [-150,-30,90,210]){
+ addBreakableBarrier(-10.9,z,0);addBreakableBarrier(10.9,z,180);
+}
+function spawnPropDebris(prop){
+ const origin=prop.root.getPosition();
+ const count=prop.kind==="barrier"?5:3;
+ for(let i=0;i<count;i++){
+  const piece=block("Temporary impact debris",
+   [origin.x+(Math.random()-.5)*1.8,.22+Math.random()*.55,origin.z+(Math.random()-.5)*1.5],
+   [.16+Math.random()*.22,.12+Math.random()*.18,.14+Math.random()*.2],
+   prop.kind==="barrier"?barrierOrange:signMetal);
+  temporaryDebris.push({entity:piece,life:0,ttl:8+Math.random()*4});
+ }
+}
+
+
 const districtPalettes=[
   makeMat([0.39,0.43,0.47]),makeMat([0.43,0.38,0.32]),
   makeMat([0.31,0.40,0.43]),makeMat([0.43,0.45,0.45])
@@ -2857,6 +2897,19 @@ function isDown(...names) {
 
 app.on("update", dt => {
   const currentCarPosition=car.getPosition();
+  for(const prop of breakableStreetProps){
+    if(prop.broken){
+      prop.age+=dt;prop.tilt=Math.min(1,prop.tilt+dt*2.8);
+      prop.root.setEulerAngles(prop.kind==="sign"?prop.tilt*78:prop.tilt*48,0,prop.kind==="sign"?0:prop.tilt*18);
+      if(prop.age>prop.resetAfter&&Math.hypot(currentCarPosition.x-prop.x,currentCarPosition.z-prop.z)>45){
+        prop.broken=false;prop.age=0;prop.tilt=0;prop.root.setEulerAngles(0,0,0);
+      }
+    }
+  }
+  for(let i=temporaryDebris.length-1;i>=0;i--){
+    const debris=temporaryDebris[i];debris.life+=dt;
+    if(debris.life>debris.ttl){debris.entity.destroy();temporaryDebris.splice(i,1)}
+  }
   for(const lamp of streetLights){
     if(lamp.broken){
       lamp.tilt=Math.min(1,lamp.tilt+dt*1.8);
@@ -2965,7 +3018,18 @@ app.on("update", dt => {
     if(lamp.broken)continue;
     if(Math.hypot(boundedX-lamp.x,boundedZ-lamp.z)<vehicleRadius*.78){hitLamp=lamp;break;}
   }
+  let hitProp=null;
+  for(const prop of breakableStreetProps){
+    if(prop.broken)continue;
+    if(Math.hypot(boundedX-prop.x,boundedZ-prop.z)<vehicleRadius*.82){hitProp=prop;break;}
+  }
   const impactSpeed=Math.abs(speed);
+  if(hitProp&&impactSpeed>5.5){
+    hitProp.broken=true;hitProp.age=0;spawnPropDebris(hitProp);
+    speed*=hitProp.kind==="barrier"?.52:.62;lateralSpeed*=.35;
+    damage=clamp(damage+Math.min(8,impactSpeed*.16),0,100);
+    localStorage.setItem("kxic-damage",String(damage));refreshVehicleDamage();
+  }
   if(hitLamp&&impactSpeed>7.5){
     hitLamp.broken=true;hitLamp.resetTimer=0;hitLamp.glow.enabled=false;
     speed*=.38;lateralSpeed*=.25;
@@ -2973,8 +3037,9 @@ app.on("update", dt => {
     localStorage.setItem("kxic-damage",String(damage));refreshVehicleDamage();
   }
   const lampBlocked=Boolean(hitLamp&&!hitLamp.broken);
-  const canMoveX=!lampBlocked&&!collidesAt(boundedX,p.z)&&!hitsTree(boundedX,p.z);
-  const canMoveZ=!lampBlocked&&!collidesAt(canMoveX?boundedX:p.x,boundedZ)&&!hitsTree(canMoveX?boundedX:p.x,boundedZ);
+  const propBlocked=Boolean(hitProp&&!hitProp.broken);
+  const canMoveX=!lampBlocked&&!propBlocked&&!collidesAt(boundedX,p.z)&&!hitsTree(boundedX,p.z);
+  const canMoveZ=!lampBlocked&&!propBlocked&&!collidesAt(canMoveX?boundedX:p.x,boundedZ)&&!hitsTree(canMoveX?boundedX:p.x,boundedZ);
   if(canMoveX)p.x=boundedX;
   if(canMoveZ)p.z=boundedZ;
   if(!canMoveX||!canMoveZ){speed*=.22;lateralSpeed*=.18;}
