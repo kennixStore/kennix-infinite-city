@@ -2879,12 +2879,55 @@ openingScene.innerHTML=`<div class="opening-vignette"></div>
  </div>
  <div class="opening-cinematic-copy" id="opening-cinematic-copy" aria-live="polite"></div>`;
 document.body.appendChild(openingScene);
+const mainMenu=document.createElement("section");
+mainMenu.className="kx-main-menu hidden";
+mainMenu.innerHTML=`<div class="kx-menu-card">
+ <div class="opening-kicker">KENNIX GAME STUDIOS PRESENTS</div>
+ <h1>KENNIX <span>INFINITE CITY</span></h1>
+ <p id="kx-menu-caption">ONE CITY. ENDLESS POSSIBILITIES.</p>
+ <div class="kx-menu-actions" id="kx-menu-actions">
+  <button data-menu="start">START GAME</button>
+  <button data-menu="garage">GARAGE</button>
+  <button data-menu="settings">SETTINGS</button>
+ </div>
+ <small> NOVA CITY • EARLY ACCESS </small>
+ </div>`;
+document.body.appendChild(mainMenu);
+function showMainMenu(){
+ gameOverlay.classList.add("hidden");
+ mainMenu.classList.remove("hidden");
+ mainMenu.querySelector("#kx-menu-caption").textContent="ONE CITY. ENDLESS POSSIBILITIES.";
+ mainMenu.querySelector("#kx-menu-actions").innerHTML='<button data-menu="start">START GAME</button><button data-menu="garage">GARAGE</button><button data-menu="settings">SETTINGS</button>';
+}
+mainMenu.addEventListener("click",event=>{
+ const button=event.target.closest("[data-menu]");if(!button)return;
+ const action=button.dataset.menu;
+ const actions=mainMenu.querySelector("#kx-menu-actions");
+ if(action==="start"){
+  mainMenu.querySelector("#kx-menu-caption").textContent="CHOOSE YOUR EXPERIENCE";
+  actions.innerHTML='<button data-menu="explore">EXPLORE NOVA CITY</button><button data-menu="race">RACE</button><button data-menu="back">BACK</button>';
+ }else if(action==="garage"){
+  mainMenu.classList.add("hidden");showGarage("CITY GARAGE","Choose your vehicle and customise your ride.");
+  const back=document.createElement("button");back.id="return-main-menu";back.className="secondary-action";back.textContent="MAIN MENU";
+  gameOverlay.querySelector(".panel-actions").appendChild(back);
+  back.addEventListener("click",()=>{back.remove();showMainMenu()},{once:true});
+ }else if(action==="settings"){
+  mainMenu.querySelector("#kx-menu-caption").textContent="AUDIO SETTINGS";
+  actions.innerHTML='<button data-menu="sound">'+(audioEnabled?"SOUND: ON":"SOUND: OFF")+'</button><button data-menu="back">BACK</button>';
+ }else if(action==="sound"){
+  try{if(!audioEnabled)initialiseVehicleAudio();else{audioEnabled=false;stopMenuSoundscape();if(engineGain)engineGain.gain.setTargetAtTime(0,audioContext.currentTime,.08)}}
+  catch(error){mainMenu.querySelector("#kx-menu-caption").textContent=error.message||"Audio unavailable";}
+  actions.innerHTML='<button data-menu="sound">'+(audioEnabled?"SOUND: ON":"SOUND: OFF")+'</button><button data-menu="back">BACK</button>';
+ }else if(action==="back"){showMainMenu()}
+ else if(action==="explore"){mainMenu.classList.add("hidden");gameOverlay.querySelector("#start-drive").click()}
+ else if(action==="race"){mainMenu.classList.add("hidden");gameOverlay.querySelector("#start-race").click()}
+});
 let introAnimationFrame=0;
 function finishOpeningCinematic(){
  cancelAnimationFrame(introAnimationFrame);
  openingScene.classList.add("opening-hidden");
  stopMenuSoundscape();
- showGarage("KENNIX: INFINITE CITY","Choose your ride, then explore or race.");
+ showMainMenu();
  gamePaused=true;
 }
 function beginOpeningCinematic(){
