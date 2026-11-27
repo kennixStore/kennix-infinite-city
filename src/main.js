@@ -582,9 +582,15 @@ function spawnPropDebris(prop){
 }
 
 
+// Warm, varied city architecture: limestone, terracotta, sage, blue and sand.
 const districtPalettes=[
-  makeMat([0.39,0.43,0.47]),makeMat([0.43,0.38,0.32]),
-  makeMat([0.31,0.40,0.43]),makeMat([0.43,0.45,0.45])
+  makeMat([0.68,0.53,0.39]), // warm sandstone
+  makeMat([0.62,0.31,0.23]), // terracotta
+  makeMat([0.35,0.49,0.43]), // muted sage
+  makeMat([0.38,0.49,0.64]), // coastal blue
+  makeMat([0.72,0.66,0.53]), // pale cream
+  makeMat([0.55,0.40,0.58]), // muted plum
+  makeMat([0.58,0.57,0.43])  // olive stone
 ];
 for(const material of districtPalettes){
  applySurface(material,surfaceMaps.facade,2,2);
@@ -985,10 +991,12 @@ for (let i = 0; i < 18; i++) {
 
 // Buildings with road-facing windows, entrances and rooftop details.
 const facades = [
-  makeMat([0.24, 0.29, 0.34]),
-  makeMat([0.34, 0.31, 0.27]),
-  makeMat([0.18, 0.23, 0.29]),
-  makeMat([0.39, 0.4, 0.39])
+  makeMat([0.58, 0.43, 0.32]),
+  makeMat([0.45, 0.31, 0.26]),
+  makeMat([0.30, 0.43, 0.48]),
+  makeMat([0.49, 0.52, 0.42]),
+  makeMat([0.62, 0.53, 0.42]),
+  makeMat([0.39, 0.35, 0.48])
 ];
 for(const material of facades){
   applySurface(material,surfaceMaps.facade,2,2);
@@ -1008,7 +1016,7 @@ const landmarkGlass = makeMat([0.035,0.12,0.19],0.62,0.16);
 landmarkGlass.emissive = new pc.Color(0.008,0.018,0.03);
 landmarkGlass.update();
 const landmarkTrim = makeMat([0.055,0.075,0.095],0.72,0.22);
-const landmarkStone = makeMat([0.48,0.49,0.46],0.08,0.78);
+const landmarkStone = makeMat([0.62,0.54,0.42],0.08,0.78);
 const landmarkWarm = makeMat([0.92,0.57,0.22],0.18,0.3);
 landmarkWarm.emissive = new pc.Color(0.42,0.16,0.035);
 landmarkWarm.update();
