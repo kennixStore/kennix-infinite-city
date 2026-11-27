@@ -2874,10 +2874,10 @@ openingScene.innerHTML=`<div class="opening-vignette"></div>
   <div class="opening-kicker">PRESENTED BY KENNIX GAME STUDIOS</div>
   <div class="opening-logo">KENNIX</div><div class="opening-subtitle">INFINITE CITY</div>
   <div class="opening-rule"></div><p class="opening-city">NOVA CITY IS WAITING</p>
-  <button id="opening-begin" class="opening-button">TAP TO ENABLE SOUND</button>
-  <small>The cinematic starts automatically • Tap for sound</small>
+  <small>The cinematic starts automatically</small>
  </div>
- <div class="opening-cinematic-copy" id="opening-cinematic-copy" aria-live="polite"></div>`;
+ <div class="opening-cinematic-copy" id="opening-cinematic-copy" aria-live="polite"></div>
+ <button id="opening-audio-unlock" class="opening-audio-unlock">TAP FOR SOUND</button>`;
 document.body.appendChild(openingScene);
 const mainMenu=document.createElement("section");
 mainMenu.className="kx-main-menu hidden";
@@ -2925,9 +2925,9 @@ mainMenu.addEventListener("click",event=>{
 let introAnimationFrame=0;
 let introCars=[],introTrack=null,introAudioUnlocked=false;
 const introCarSpecs=[
- {name:"Hypercar",url:"https://vinish-models.pages.dev/sports-cars/hypercar.glb",x:-2.15,z:-18,scale:1},
- {name:"Track Day Coupe",url:"https://vinish-models.pages.dev/sports-cars/track-day-coupe.glb",x:0,z:-27,scale:1},
- {name:"Mid-Engine Sports Coupe",url:"https://vinish-models.pages.dev/sports-cars/mid-engine-sports-coupe.glb",x:2.15,z:-36,scale:1}
+ {name:"Hypercar",url:"https://tevy.dev/models/supercar/v2/lod1.glb",x:-2.15,z:-18,scale:1},
+ {name:"Track Day Coupe",url:"https://tevy.dev/models/muscle-car/v1/lod1.glb",x:0,z:-27,scale:1},
+ {name:"Mid-Engine Sports Coupe",url:"https://tevy.dev/models/family-sedan/v1/lod1.glb",x:2.15,z:-36,scale:1}
 ];
 function buildIntroTrack(){
  if(introTrack)return;
@@ -2984,7 +2984,7 @@ function loadIntroCars(){
    model.name=spec.name+" detailed GLB";
    model.setLocalScale(spec.scale,spec.scale,spec.scale);
    holder.addChild(model);
-   ["Wheel_FL","Wheel_FR","Wheel_RL","Wheel_RR"].forEach(n=>{const w=model.findByName(n);if(w)wheels.push(w)});
+   ["Wheel_FL","Wheel_FR","Wheel_RL","Wheel_RR","wheel_FL","wheel_FR","wheel_RL","wheel_RR"].forEach(n=>{const w=model.findByName(n);if(w)wheels.push(w)});
    model.findComponents("render").forEach(component=>{component.castShadows=true;component.receiveShadows=true;});
    introCars[index].model=model;
    introCars[index].wheels=wheels;
@@ -2998,7 +2998,7 @@ function unlockIntroAudio(){
   initialiseVehicleAudio();
   startMenuSoundscape();
   introAudioUnlocked=true;
-  const b=openingScene.querySelector("#opening-begin");
+  const b=openingScene.querySelector("#opening-audio-unlock");
   b.textContent="SOUND ON";
   b.disabled=true;
   window.setTimeout(()=>b.classList.add("audio-enabled"),900);
@@ -3067,7 +3067,7 @@ function beginOpeningCinematic(){
  }
  introAnimationFrame=requestAnimationFrame(frame);
 }
-openingScene.querySelector("#opening-begin").addEventListener("click",unlockIntroAudio);
+openingScene.querySelector("#opening-audio-unlock").addEventListener("click",unlockIntroAudio);
 window.setTimeout(beginOpeningCinematic,650);
 
 const steeringModeButton=controls.querySelector(".steering-mode");
