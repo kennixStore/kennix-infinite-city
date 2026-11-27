@@ -1,4 +1,4 @@
-name: Inspect KENNIX racing intro source
+name: Inspect KENNIX racing intro sources
 on:
   push:
     paths:
@@ -11,27 +11,32 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Install FFmpeg
+        run: sudo apt-get update && sudo apt-get install -y ffmpeg
+      - name: Download candidate clips
         run: |
-          sudo apt-get update
-          sudo apt-get install -y ffmpeg
-      - name: Download source clip
+          curl -L --fail --retry 3 "https://videos.pexels.com/video-files/35661513/15112178_1920_1080_120fps.mp4" -o drift-35661513.mp4
+          curl -L --fail --retry 3 "https://videos.pexels.com/video-files/35662086/15112526_1920_1080_120fps.mp4" -o drift-35662086.mp4
+          test "$(stat -c%s drift-35661513.mp4)" -gt 1000000
+          test "$(stat -c%s drift-35662086.mp4)" -gt 1000000
+      - name: Inspect both clips and make contact sheets
         run: |
-          curl -L --fail --retry 3 "https://videos.pexels.com/video-files/35661513/15112178_1920_1080_120fps.mp4" -o drift.mp4
-          test "$(stat -c%s drift.mp4)" -gt 1000000
-      - name: Inspect clip and make contact sheet
-        run: |
-          ffprobe -v error -show_entries format=duration,size:stream=codec_type,codec_name,width,height,r_frame_rate -of json drift.mp4 > metadata.json
           mkdir -p frames
-          for t in 1 3 5 7 9 11 13; do ffmpeg -ss "$t" -i drift.mp4 -frames:v 1 -vf "scale=640:-1" "frames/frame-$t.jpg" -y; done
-          ffmpeg -y -pattern_type glob -i 'frames/frame-*.jpg' -filter_complex "tile=2x4:padding=12:margin=12" -frames:v 1 contact-sheet.jpg
-          cat metadata.json
+          for f in drift-*.mp4; do
+            ffprobe -v error -show_entries format=duration,size:stream=codec_name,width,height,r_frame_rate -of json "$f" > "${f%.mp4}.json"
+            d=$(ffprobe -v error -show_entries format=duration -of csv=p=0 "$f")
+            for t in 1 3 5 7 9 11 13 15 17 19 21 23; do
+              if awk "BEGIN {exit !($t < $d)}"; then ffmpeg -ss "$t" -i "$f" -frames:v 1 -vf "scale=480:-1" "frames/${f%.mp4}-$t.jpg" -y 2>/dev/null || true; fi
+            done
+            ffmpeg -y -pattern_type glob -i "frames/${f%.mp4}-*.jpg" -filter_complex "tile=2x6:padding=12:margin=12" -frames:v 1 "${f%.mp4}-contact.jpg"
+          done
+          cat drift-*.json
       - name: Upload inspection evidence
         uses: actions/upload-artifact@v4
         with:
-          name: kennix-intro-source-inspection
+          name: kennix-intro-source-comparison
           path: |
-            drift.mp4
-            metadata.json
-            contact-sheet.jpg
+            drift-*.mp4
+            drift-*.json
+            *-contact.jpg
             frames/
           retention-days: 3
