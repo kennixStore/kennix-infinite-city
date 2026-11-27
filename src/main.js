@@ -1391,6 +1391,41 @@ createTrafficCar(67.45,145,-1,2,8.3,"x");
 createTrafficCar(212.55,-145,1,1,10.2,"x");
 createTrafficCar(207.45,145,-1,3,9,"x");
 
+// Authored CC0 road cars replace the primitive box traffic once loaded.
+function loadDetailedTrafficCars(){
+ const variants=[
+  "https://tevy.dev/models/family-sedan/v1/lod1.glb",
+  "https://tevy.dev/models/muscle-car/v1/lod1.glb",
+  "https://tevy.dev/models/suv/v1/lod1.glb"
+ ];
+ const cache=new Map();
+ traffic.forEach((item,index)=>{
+  const url=variants[index%variants.length];
+  if(!cache.has(url))cache.set(url,new Promise(resolve=>{
+   app.assets.loadFromUrl(url,"container",(error,asset)=>{
+    if(error||!asset?.resource){console.warn("Detailed CC0 traffic vehicle unavailable:",url,error);resolve(null);}
+    else resolve(asset.resource);
+   });
+  }));
+  cache.get(url).then(resource=>{
+   if(!resource||!item.entity||item.entity._destroyed)return;
+   const model=resource.instantiateRenderEntity({castShadows:true});
+   model.name="Detailed CC0 AI traffic vehicle";
+   model.setLocalScale(.78,.78,.78);
+   model.setLocalEulerAngles(0,item.axis==="z"?180:0,0);
+   item.entity.addChild(model);
+   model.findComponents("render").forEach(render=>{
+    render.castShadows=true;render.receiveShadows=true;
+    render.meshInstances.forEach(mesh=>{mesh.castShadow=true;mesh.receiveShadow=true;});
+   });
+   item.importedWheels=["wheel_FL","wheel_FR","wheel_RL","wheel_RR"].map(name=>model.findByName(name)).filter(Boolean);
+   item.importedTrafficModel=model;
+   if(item.fallbackVisuals)item.fallbackVisuals.enabled=false;
+  });
+ });
+}
+loadDetailedTrafficCars();
+
 // Additional real-scale traffic assets: CC0 models from tevy.dev.
 // These are detailed authored assets with PBR materials, not low-poly placeholders.
 // The renderer is 3D internally; the target presentation remains photorealistic.
@@ -1582,6 +1617,35 @@ for(const streetZ of [-210,-140,140,210]){
  createPedestrian(145,streetZ+9.1,3,-90,-1,"x",-155,155);
 }
 
+// Load one shared rigged CC0 pedestrian asset and instantiate it across the sidewalks.
+function loadRealisticPedestrians(){
+ app.assets.loadFromUrl("https://tevy.dev/models/casual-walker/v1/lod1.glb","container",(error,asset)=>{
+  if(error||!asset?.resource){console.warn("CC0 pedestrian character unavailable:",error);return;}
+  const clips=asset.resource.animations||[];
+  pedestrians.forEach(pedestrian=>{
+   const entity=pedestrian.entity;
+   if(!entity||entity._destroyed||pedestrian.importedModel)return;
+   const model=asset.resource.instantiateRenderEntity({castShadows:true});
+   model.name="CC0 animated pedestrian character";
+   model.setLocalPosition(0,0,0);model.setLocalScale(.94,.94,.94);
+   entity.addChild(model);
+   model.findComponents("render").forEach(render=>{
+    render.castShadows=true;render.receiveShadows=true;
+    render.meshInstances.forEach(mesh=>{mesh.castShadow=true;mesh.receiveShadow=true;});
+   });
+   if(clips.length){
+    model.addComponent("anim",{activate:true});
+    clips.forEach(clip=>model.anim.assignAnimation(clip.resource.name,clip.resource));
+    const names=clips.map(clip=>clip.resource.name);
+    const wanted=pedestrian.activity?names.find(name=>/idle/i.test(name)):names.find(name=>/walk/i.test(name));
+    model.anim.baseLayer.play(wanted||names[0]);
+   }
+   [...entity.children].forEach(child=>{if(child!==model)child.enabled=false;});
+   pedestrian.importedModel=model;
+  });
+ });
+}
+// Run after the full pedestrian population has been created below.
 // Marked pedestrian crossings and two crossing routes across north-south avenues.
 const pedestrianCrossings=[{x:-120,z:35},{x:60,z:-105}];
 for(const crossing of pedestrianCrossings){
@@ -1598,6 +1662,7 @@ function createCrossingPedestrian(crossing,outfit,direction){
 createCrossingPedestrian(pedestrianCrossings[0],1,1);
 createCrossingPedestrian(pedestrianCrossings[0],2,-1);
 createCrossingPedestrian(pedestrianCrossings[1],3,1);
+loadRealisticPedestrians();
 
 // Ambient life: vendors, customers and passengers make the district feel occupied.
 const streetActivities=[];
@@ -2131,11 +2196,12 @@ for(const v of vehicleCatalog) vehicleModels[v.id]=buildVehicleModel(v);
 
 // Optional realistic CC0 vehicle containers. The procedural models remain the safe
 // fallback until public/models/vehicles/manifest.json and its GLB files are present.
+// CC0 authored vehicle assets from tevy.dev. LOD1 balances visual detail and mobile cost.
 const importedVehicleFiles = {
- sport: "sport-coupe.glb",
- muscle: "sedan.glb",
- suv: "suv.glb",
- hyper: "mid-engine-sports.glb"
+ sport: "https://tevy.dev/models/family-sedan/v1/lod1.glb",
+ muscle: "https://tevy.dev/models/muscle-car/v1/lod1.glb",
+ suv: "https://tevy.dev/models/suv/v1/lod1.glb",
+ hyper: "https://tevy.dev/models/supercar/v2/lod1.glb"
 };
 let importedVehiclesReady = false;
 function activateVehicleModel(){
@@ -3109,6 +3175,8 @@ app.on("update", dt => {
     // Rotate each NPC tyre in proportion to its actual travel speed.
     npc.wheelSpin=(npc.wheelSpin||0)+npc.currentSpeed*dt*2.6;
     for(const wheel of npc.wheels||[]) wheel.setLocalEulerAngles(npc.wheelSpin,0,90);
+    if(npc.importedWheels?.length)npc.importedWheels.forEach(wheel=>wheel.rotateLocal(npc.currentSpeed*dt*110,0,0));
+    if(npc.importedTrafficModel)npc.importedTrafficModel.setLocalEulerAngles(0,npc.axis==="z"?180:0,0);
 
     // Low-cost contact response: slow the player and push the cars apart briefly.
     const dx = npcPos.x - p.x;
