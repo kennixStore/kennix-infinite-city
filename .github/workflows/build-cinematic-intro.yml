@@ -1,0 +1,84 @@
+name: Build and deploy KENNIX cinematic intro
+
+on:
+  push:
+    paths:
+      - ".github/workflows/build-cinematic-intro.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pages: write
+  id-token: write
+
+concurrency:
+  group: kennix-intro-release
+  cancel-in-progress: false
+
+jobs:
+  intro:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout game
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          token: ${{ secrets.GITHUB_TOKEN }}
+      - name: Install FFmpeg
+        run: sudo apt-get update && sudo apt-get install -y ffmpeg
+      - name: Download approved Pexels footage
+        run: |
+          mkdir -p public/intro
+          curl -L --fail --retry 3 -A "Mozilla/5.0" "https://www.pexels.com/download/video/14854561/" -o /tmp/pexels-source.mp4
+          test "$(stat -c%s /tmp/pexels-source.mp4)" -gt 5000000
+          ffprobe -v error -select_streams v:0 -show_entries stream=width,height -of csv=p=0 /tmp/pexels-source.mp4
+      - name: Edit cinematic 1080p intro with original engine audio
+        run: |
+          FONT=/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf
+          ffmpeg -hide_banner -y -i /tmp/pexels-source.mp4 -t 11.88 \
+            -vf "scale=1920:1080:force_original_aspect_ratio=increase,crop=1920:1080,eq=contrast=1.08:saturation=1.12:brightness=-0.015,vignette=PI/5,drawbox=x=112:y=420:w=7:h=238:color=0xd8ad5b@0.95:t=fill:enable='between(t,5.0,11.7)',drawtext=fontfile=$FONT:text='KENNIX':fontcolor=white:fontsize=104:x=145:y=430:alpha='if(lt(t,5.0),0,if(lt(t,5.8),(t-5.0)/0.8,if(lt(t,11.25),1,(11.88-t)/0.63)))':enable='between(t,5.0,11.88)',drawtext=fontfile=$FONT:text='INFINITE CITY':fontcolor=0xe4bd70:fontsize=34:letter_spacing=12:x=152:y=555:alpha='if(lt(t,5.4),0,if(lt(t,6.2),(t-5.4)/0.8,if(lt(t,11.25),1,(11.88-t)/0.63)))':enable='between(t,5.4,11.88)',fade=t=in:st=0:d=0.55,fade=t=out:st=11.25:d=0.63,format=yuv420p" \
+            -af "afade=t=in:st=0:d=0.45,afade=t=out:st=11.15:d=0.73,loudnorm=I=-16:TP=-1.5:LRA=11" \
+            -c:v libx264 -preset medium -crf 21 -profile:v high -level 4.1 \
+            -c:a aac -b:a 160k -ar 48000 -movflags +faststart \
+            public/intro/kennix-intro.mp4
+          test "$(stat -c%s public/intro/kennix-intro.mp4)" -gt 1000000
+          ffprobe -v error -show_entries format=duration,size:stream=codec_name,width,height -of json public/intro/kennix-intro.mp4
+      - name: Add footage source and licence record
+        run: |
+          cat > public/intro/credits.txt <<'EOF'
+          KENNIX INFINITE CITY INTRO — MEDIA RECORD
+          Footage: Pexels video #14854561
+          Source page: https://www.pexels.com/video/14854561/
+          Licence: Pexels License (free personal and commercial use; attribution not required)
+          Licence terms: https://www.pexels.com/license/
+          Audio: original engine/track audio embedded in the same Pexels source video.
+          Editing: cropped and colour graded to 1920x1080, KENNIX title treatment, fades, and audio normalisation.
+          Note: Pexels does not grant third-party trademark, privacy, publicity, or other rights. The footage was visually reviewed for prominent logos and identifiable people; no prominent brand marks or identifiable faces were apparent in the selected frames.
+          EOF
+      - name: Commit finished intro asset
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add public/intro/kennix-intro.mp4 public/intro/credits.txt
+          git commit -m "Add cinematic KENNIX Infinite City intro"
+          git push origin HEAD:main
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Install dependencies and validate game
+        run: |
+          npm install
+          npm run check
+          npm run build -- --base=/kennix-infinite-city/
+      - name: Configure GitHub Pages
+        uses: actions/configure-pages@v5
+        with:
+          enablement: true
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: dist
+      - name: Deploy game and intro
+        id: deployment
+        uses: actions/deploy-pages@v4
