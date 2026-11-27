@@ -70,10 +70,10 @@ const makeMat = (rgb, metalness = 0, roughness = 0.65) => {
 };
 
 const mats = {
-  ground: makeMat([0.19, 0.23, 0.22]),
-  asphalt: makeMat([0.68, 0.70, 0.72]),
-  concrete: makeMat([0.56, 0.57, 0.56]),
-  curb: makeMat([0.68, 0.68, 0.64]),
+  ground: makeMat([0.10, 0.16, 0.12]),
+  asphalt: makeMat([0.15, 0.17, 0.19]),
+  concrete: makeMat([0.38, 0.40, 0.39]),
+  curb: makeMat([0.52, 0.53, 0.49]),
   paint: makeMat([0.92, 0.78, 0.35]),
   white: makeMat([0.88, 0.88, 0.82]),
   glass: makeMat([0.055, 0.13, 0.2], 0.35, 0.2),
@@ -1922,12 +1922,12 @@ const raceGates = raceRoute.map((z,i)=>{
 
 const vehicleCatalog = [
  {id:"sport",name:"KX Sport",className:"SPORT",paint:[0.035,0.07,0.12],acceleration:12.5,maxSpeed:42,handling:1.0,braking:1.0,grip:1.0,owned:true},
- {id:"muscle",name:"Vortex GT",className:"MUSCLE",paint:[0.52,0.075,0.035],acceleration:13.8,maxSpeed:39,handling:0.88,braking:1.12,grip:.91,owned:true},
- {id:"suv",name:"Ranger X",className:"SUV",paint:[0.18,0.23,0.2],acceleration:9.2,maxSpeed:32,handling:0.78,braking:1.28,grip:1.18,owned:true},
- {id:"hyper",name:"Apex R",className:"HYPER",paint:[0.04,0.32,0.38],acceleration:16.5,maxSpeed:50,handling:1.12,braking:1.08,grip:1.06,owned:true}
+ {id:"muscle",name:"Vortex GT",className:"MUSCLE",paint:[0.52,0.075,0.035],acceleration:13.8,maxSpeed:39,handling:0.88,braking:1.12,grip:.91,owned:false},
+ {id:"suv",name:"Ranger X",className:"SUV",paint:[0.18,0.23,0.2],acceleration:9.2,maxSpeed:32,handling:0.78,braking:1.28,grip:1.18,owned:false},
+ {id:"hyper",name:"Apex R",className:"HYPER",paint:[0.04,0.32,0.38],acceleration:16.5,maxSpeed:50,handling:1.12,braking:1.08,grip:1.06,owned:false}
 ];
 const savedGarage=(()=>{try{return JSON.parse(localStorage.getItem("kxic-garage")||"{}")}catch{return {}}})();
-let selectedVehicle=vehicleCatalog.find(v=>v.id===savedGarage.vehicle)||vehicleCatalog[0];
+let selectedVehicle=vehicleCatalog.find(v=>v.id===savedGarage.vehicle&&v.owned)||vehicleCatalog[0];
 let selectedPaint=Array.isArray(savedGarage.paint)?savedGarage.paint:selectedVehicle.paint;
 let cameraMode="chase",gamePaused=true,damage=Math.max(0,Math.min(100,Number(localStorage.getItem("kxic-damage")||0))),raceActive=false,raceStart=0,raceCheckpoint=0,bestRace=Number(localStorage.getItem("kxic-best-race")||0),drivenDistance=Number(localStorage.getItem("kxic-distance")||0),playerXP=Number(localStorage.getItem("kxic-xp")||0),playerLevel=Math.max(1,Math.floor(playerXP/1000)+1);let lastDistanceSave=Math.floor(drivenDistance/10);
 const garagePaints=[{name:"Midnight",rgb:[.035,.07,.12]},{name:"Crimson",rgb:[.52,.045,.035]},{name:"Ocean",rgb:[.035,.22,.42]},{name:"Silver",rgb:[.48,.5,.52]},{name:"Gold",rgb:[.55,.34,.08]}];
@@ -2460,18 +2460,18 @@ controls.innerHTML = `
   </div>`;
 document.querySelector("#game-stage").appendChild(controls);
 const gameOverlay=document.createElement("section");gameOverlay.className="game-overlay";
-gameOverlay.innerHTML=`<div class="game-panel"><div class="panel-kicker">KENNIX GAME STUDIOS</div><h1 id="panel-title">INFINITE CITY</h1><p id="panel-copy">Choose your ride, then enter the city.</p><div id="garage-list" class="garage-list"></div><div class="paint-list">${garagePaints.map((p,i)=>`<button class="paint-swatch" data-paint="${i}" title="${p.name}" style="--swatch:rgb(${p.rgb.map(v=>Math.round(v*255)).join(",")})"></button>`).join("")}</div><div class="panel-stats" id="vehicle-stats"></div><div class="panel-actions"><button id="start-drive" class="primary-action">START DRIVING</button><button id="start-race" class="secondary-action">STREET SPRINT</button><button id="repair-car" class="secondary-action">REPAIR VEHICLE</button></div><small id="panel-note">Detailed CC0 vehicle models are loading; choose a car and enter the city or start a sprint.</small></div>`;
+gameOverlay.innerHTML=`<div class="game-panel"><div class="panel-kicker">KENNIX GAME STUDIOS</div><h1 id="panel-title">INFINITE CITY</h1><p id="panel-copy">Choose your ride, then enter the city.</p><div id="garage-list" class="garage-list"></div><div class="paint-list">${garagePaints.map((p,i)=>`<button class="paint-swatch" data-paint="${i}" title="${p.name}" style="--swatch:rgb(${p.rgb.map(v=>Math.round(v*255)).join(",")})"></button>`).join("")}</div><div class="panel-stats" id="vehicle-stats"></div><div class="panel-actions"><button id="start-drive" class="primary-action">EXPLORE NOVA CITY</button><button id="start-race" class="secondary-action">ENTER RACE MODE</button><button id="repair-car" class="secondary-action">REPAIR VEHICLE</button></div><small id="panel-note">Detailed CC0 vehicle models are loading; choose a car and enter the city or start a sprint.</small></div>`;
 document.querySelector("#game-stage").appendChild(gameOverlay);
 const panelTitle=gameOverlay.querySelector("#panel-title"),panelCopy=gameOverlay.querySelector("#panel-copy"),garageList=gameOverlay.querySelector("#garage-list"),vehicleStats=gameOverlay.querySelector("#vehicle-stats"),panelNote=gameOverlay.querySelector("#panel-note");
 function refreshGarage(){
  activateVehicleModel();
- garageList.innerHTML=vehicleCatalog.map(v=>`<button class="vehicle-option ${v.id===selectedVehicle.id?"selected":""}" data-vehicle="${v.id}"><strong>${v.name}</strong><span>${v.className}</span><small>AVAILABLE</small></button>`).join("");
+ garageList.innerHTML=vehicleCatalog.map(v=>`<button class="vehicle-option ${v.id===selectedVehicle.id?"selected":""} ${v.owned?"":"locked"}" data-vehicle="${v.id}" ${v.owned?"":"disabled"}><strong>${v.name}</strong><span>${v.className}</span><small>${v.owned?"OWNED":"LOCKED • EARN THROUGH RACING"}</small></button>`).join("");
  vehicleStats.textContent=`TOP SPEED ${Math.round(selectedVehicle.maxSpeed*3.6)} KM/H • ACCELERATION ${selectedVehicle.acceleration.toFixed(1)} • HANDLING ${Math.round(selectedVehicle.handling*100)}%`;
  gameOverlay.querySelector("#repair-car").textContent=damage?`REPAIR VEHICLE • ${damage}% DAMAGE`:"VEHICLE IN GOOD CONDITION";
 }
 function showGarage(title="INFINITE CITY",copy="Choose your ride, then enter the city."){gamePaused=true;gameOverlay.classList.remove("hidden");panelTitle.textContent=title;panelCopy.textContent=copy;refreshGarage()}
 function hideGarage(){gameOverlay.classList.add("hidden");gamePaused=false}
-garageList.addEventListener("click",e=>{const b=e.target.closest("[data-vehicle]");if(!b)return;selectedVehicle=vehicleCatalog.find(v=>v.id===b.dataset.vehicle)||vehicleCatalog[0];setPlayerPaint(selectedVehicle.paint);refreshGarage()});
+garageList.addEventListener("click",e=>{const b=e.target.closest("[data-vehicle]");if(!b||b.disabled)return;selectedVehicle=vehicleCatalog.find(v=>v.id===b.dataset.vehicle)||vehicleCatalog[0];setPlayerPaint(selectedVehicle.paint);refreshGarage()});
 gameOverlay.querySelector(".paint-list").addEventListener("click",e=>{const b=e.target.closest("[data-paint]");if(!b)return;setPlayerPaint(garagePaints[Number(b.dataset.paint)].rgb);gameOverlay.querySelectorAll(".paint-swatch").forEach(x=>x.classList.toggle("selected",x===b))});
 const orientationPrompt=document.createElement("div");
 orientationPrompt.className="orientation-prompt";
@@ -2810,6 +2810,7 @@ function completeStoryMission(){
 }
 const campaignButton=document.createElement("button");campaignButton.className="secondary-action";campaignButton.textContent="STORY CAMPAIGN";
 gameOverlay.querySelector(".panel-actions").appendChild(campaignButton);
+campaignButton.style.display="none";
 campaignButton.addEventListener("click",()=>{
  const saved=Number(localStorage.getItem("kxic-story-progress")||0);
  const next=Math.min(saved,storyMissions.length-1);
@@ -2820,7 +2821,36 @@ const missionTitleLabel=document.createElement("div");missionTitleLabel.classNam
 
 const raceStatusLabel=document.createElement("div");raceStatusLabel.className="race-status";raceStatusLabel.id="race-status";document.querySelector("#game-stage").appendChild(raceStatusLabel);
 const missionStatusLabel=document.createElement("div");missionStatusLabel.className="mission-status";missionStatusLabel.textContent=`LEVEL ${playerLevel} • ${playerXP} XP • CITY DRIVE ${Math.min(500,Math.floor(drivenDistance))}/500 M`;document.querySelector("#game-stage").appendChild(missionStatusLabel);
-setPlayerPaint(selectedPaint);refreshGarage();showGarage();
+setPlayerPaint(selectedPaint);refreshGarage();showGarage("KENNIX: INFINITE CITY","Welcome to Nova City. Choose how you want to play.");
+// First-launch experience: cinematic brand/city reveal, then a short playable
+// drive before the player reaches the Explore / Race mode selection.
+const openingScene=document.createElement("section");
+openingScene.className="opening-scene";
+openingScene.innerHTML=`<div class="opening-vignette"></div><div class="opening-copy"><div class="opening-kicker">PRESENTED BY KENNIX GAME STUDIOS</div><div class="opening-logo">KENNIX</div><div class="opening-subtitle">INFINITE CITY</div><div class="opening-rule"></div><p class="opening-city">NOVA CITY • THE STREETS ARE YOURS</p><button id="opening-begin" class="opening-button">BEGIN INTRODUCTION</button><small>Tap to skip the cinematic and take the wheel</small></div>`;
+document.querySelector("#game-stage").appendChild(openingScene);
+const openingButton=openingScene.querySelector("#opening-begin");
+let introDriveTimer=0;
+function beginPlayableIntro(){
+ openingScene.classList.add("opening-hidden");
+ gameOverlay.classList.add("hidden");
+ gamePaused=false;
+ raceActive=false;
+ raceGates.forEach(g=>g.enabled=false);
+ speed=0;lateralSpeed=0;
+ requestLandscapeMode();
+ try{if(!audioEnabled)initialiseVehicleAudio()}catch(error){console.info("Audio will remain available from the sound control:",error.message)}
+ const introTag=document.createElement("div");
+ introTag.className="intro-drive-tag";
+ introTag.textContent="NOVA CITY INTRO DRIVE • EXPLORE FOR A MOMENT";
+ document.querySelector("#game-stage").appendChild(introTag);
+ introDriveTimer=window.setTimeout(()=>{
+  introTag.remove();
+  speed=0;lateralSpeed=0;
+  showGarage("CHOOSE YOUR EXPERIENCE","Your introduction is complete. Explore Nova City freely or enter a race.");
+ },18000);
+}
+openingButton.addEventListener("click",beginPlayableIntro);
+window.setTimeout(()=>openingScene.classList.add("cinematic-ready"),6500);
 
 const steeringModeButton=controls.querySelector(".steering-mode");
 const steeringWheelControl=controls.querySelector(".steering-wheel-control");
