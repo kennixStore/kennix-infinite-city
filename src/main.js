@@ -1825,6 +1825,51 @@ for (const junctionZ of [-43, 39]) {
 }
 
 const raceRoute = [-15,-39,-64];
+
+// Authored CC0 AI opponents for the street sprint.
+const raceOpponents=[];
+const raceOpponentSpecs=[
+ {x:-2.65,speed:13.4,url:"https://tevy.dev/models/muscle-car/v1/lod1.glb",name:"AI Vortex"},
+ {x:2.65,speed:12.2,url:"https://tevy.dev/models/family-sedan/v1/lod1.glb",name:"AI Sedan"}
+];
+function loadRaceOpponents(){
+ raceOpponentSpecs.forEach((spec,index)=>{
+  if(raceOpponents[index]?.entity)return;
+  const entity=new pc.Entity(spec.name);app.root.addChild(entity);
+  const opponent={entity,spec,model:null,z:19+index*2.4,currentSpeed:0,finished:false,wheels:[]};
+  raceOpponents[index]=opponent;
+  entity.setPosition(spec.x,.06,opponent.z);entity.setEulerAngles(0,180,0);
+  app.assets.loadFromUrl(spec.url,"container",(error,asset)=>{
+   if(error||!asset?.resource){console.warn("Race opponent vehicle unavailable:",spec.url,error);return;}
+   const model=asset.resource.instantiateRenderEntity();
+   model.name=spec.name+" detailed model";model.setLocalScale(.78,.78,.78);entity.addChild(model);
+   model.findComponents("render").forEach(render=>{render.castShadows=true;render.receiveShadows=true;render.meshInstances.forEach(mesh=>{mesh.castShadow=true;mesh.receiveShadow=true;});});
+   opponent.model=model;
+   opponent.wheels=["wheel_FL","wheel_FR","wheel_RL","wheel_RR"].map(name=>model.findByName(name)).filter(Boolean);
+  });
+ });
+}
+function resetRaceOpponents(){
+ loadRaceOpponents();
+ raceOpponents.forEach((opponent,index)=>{
+  if(!opponent)return;
+  opponent.z=19+index*2.4;opponent.currentSpeed=0;opponent.finished=false;
+  opponent.entity.setPosition(opponent.spec.x,.06,opponent.z);opponent.entity.enabled=true;
+ });
+}
+function updateRaceOpponents(dt){
+ if(!raceActive)return;
+ raceOpponents.forEach(opponent=>{
+  if(!opponent||opponent.finished)return;
+  opponent.currentSpeed+=(opponent.spec.speed-opponent.currentSpeed)*Math.min(1,dt*1.15);
+  opponent.z-=opponent.currentSpeed*dt;
+  const x=opponent.spec.x+Math.sin((19-opponent.z)*.035)*.22;
+  opponent.entity.setPosition(x,.06,opponent.z);
+  opponent.wheels.forEach(wheel=>wheel.rotateLocal(opponent.currentSpeed*dt*105,0,0));
+  if(opponent.z<=raceRoute[raceRoute.length-1]-2)opponent.finished=true;
+ });
+}
+
 const raceGates = raceRoute.map((z,i)=>{
  const gate=new pc.Entity("Race checkpoint "+(i+1));app.root.addChild(gate);
  block("Checkpoint left post",[-5.1,2.1,0],[.22,4.2,.22],mats.paint,gate).setLocalPosition(-5.1,2.1,z);
@@ -2400,7 +2445,7 @@ async function requestLandscapeMode(){
  updateOrientationPrompt();
 }
 gameOverlay.querySelector("#start-drive").addEventListener("click",()=>{requestLandscapeMode();raceActive=false;raceGates.forEach(g=>g.enabled=false);hideGarage()});
-gameOverlay.querySelector("#start-race").addEventListener("click",()=>{requestLandscapeMode();raceActive=true;raceCheckpoint=0;raceStart=performance.now();raceGates.forEach((g,i)=>g.enabled=i===0);const q=car.getPosition();q.x=0;q.z=19;car.setPosition(q);speed=0;lateralSpeed=0;hideGarage()});
+gameOverlay.querySelector("#start-race").addEventListener("click",()=>{requestLandscapeMode();raceActive=true;raceCheckpoint=0;raceStart=performance.now();raceGates.forEach((g,i)=>g.enabled=i===0);const q=car.getPosition();q.x=0;q.z=19;car.setPosition(q);speed=0;lateralSpeed=0;resetRaceOpponents();hideGarage()});
 gameOverlay.querySelector("#repair-car").addEventListener("click",()=>{damage=0;try{localStorage.setItem("kxic-damage","0")}catch{}speed=0;lateralSpeed=0;refreshVehicleDamage();refreshGarage()});
 
 const fuelLabel=document.createElement("div");fuelLabel.className="fuel-status";fuelLabel.textContent="FUEL 100%";document.querySelector("#game-stage").appendChild(fuelLabel);
@@ -3251,6 +3296,7 @@ app.on("update", dt => {
 
   drivenDistance+=Math.abs(speed)*dt;const distanceBucket=Math.floor(drivenDistance/10);if(distanceBucket!==lastDistanceSave){lastDistanceSave=distanceBucket;try{localStorage.setItem("kxic-distance",String(Math.floor(drivenDistance)))}catch{}}
   missionStatusLabel.textContent=`LEVEL ${playerLevel} • ${playerXP} XP • `+(drivenDistance<500?`CITY DRIVE ${Math.min(500,Math.floor(drivenDistance))}/500 M`:"CITY DRIVE COMPLETE");
+   updateRaceOpponents(dt);
   if(raceActive){const target=raceRoute[raceCheckpoint];if(target!==undefined&&Math.abs(p.z-target)<2.4&&Math.abs(p.x)<5.8){raceGates[raceCheckpoint].enabled=false;raceCheckpoint++;if(raceCheckpoint<raceRoute.length)raceGates[raceCheckpoint].enabled=true;else{raceActive=false;const elapsed=(performance.now()-raceStart)/1000;if(!bestRace||elapsed<bestRace){bestRace=elapsed;localStorage.setItem("kxic-best-race",String(bestRace))}showGarage("SPRINT COMPLETE",`Time: ${elapsed.toFixed(2)}s • Best: ${bestRace.toFixed(2)}s`)}}}
   raceStatusLabel.textContent=raceActive?`STREET SPRINT • CHECKPOINT ${raceCheckpoint+1}/3 • ${((performance.now()-raceStart)/1000).toFixed(1)}s`:"";
   // Smooth follow camera to reduce sudden movement on mobile.
