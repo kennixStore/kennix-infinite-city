@@ -2652,7 +2652,40 @@ let miniMapElapsed = 0;
 
 
 let audioContext=null,engineOscillator=null,engineGain=null,engineFilter=null,hornOscillator=null,hornGain=null,nitroOscillator=null,nitroGain=null,audioEnabled=false;
+let cityAmbienceOsc=null,cityAmbienceGain=null,menuMusicA=null,menuMusicB=null,menuMusicGain=null;
 let simulatedGear=1,gearShiftFlash=0;
+function startMenuSoundscape(){
+ if(!audioContext||!audioEnabled)return;
+ if(!cityAmbienceOsc){
+  cityAmbienceOsc=audioContext.createOscillator();cityAmbienceOsc.type="triangle";cityAmbienceOsc.frequency.value=58;
+  const low=audioContext.createBiquadFilter();low.type="lowpass";low.frequency.value=115;
+  cityAmbienceGain=audioContext.createGain();cityAmbienceGain.gain.value=0;
+  cityAmbienceOsc.connect(low);low.connect(cityAmbienceGain);cityAmbienceGain.connect(audioContext.destination);cityAmbienceOsc.start();
+  menuMusicA=audioContext.createOscillator();menuMusicA.type="sine";menuMusicA.frequency.value=110;
+  menuMusicB=audioContext.createOscillator();menuMusicB.type="sine";menuMusicB.frequency.value=164.81;
+  menuMusicGain=audioContext.createGain();menuMusicGain.gain.value=0;
+  menuMusicA.connect(menuMusicGain);menuMusicB.connect(menuMusicGain);menuMusicGain.connect(audioContext.destination);
+  menuMusicA.start();menuMusicB.start();
+ }
+ const now=audioContext.currentTime;
+ cityAmbienceGain.gain.setTargetAtTime(.012,now,.8);
+ menuMusicGain.gain.setTargetAtTime(.006,now,1.2);
+}
+function stopMenuSoundscape(){
+ if(!audioContext)return;
+ const now=audioContext.currentTime;
+ if(cityAmbienceGain)cityAmbienceGain.gain.setTargetAtTime(0,now,.35);
+ if(menuMusicGain)menuMusicGain.gain.setTargetAtTime(0,now,.35);
+}
+function playAudioCue(frequency=90,duration=.8,wave="sawtooth",volume=.055){
+ if(!audioContext||!audioEnabled)return;
+ const osc=audioContext.createOscillator(),gain=audioContext.createGain();
+ osc.type=wave;osc.frequency.setValueAtTime(frequency,audioContext.currentTime);
+ osc.frequency.exponentialRampToValueAtTime(Math.max(24,frequency*.58),audioContext.currentTime+duration);
+ gain.gain.setValueAtTime(volume,audioContext.currentTime);
+ gain.gain.exponentialRampToValueAtTime(.0001,audioContext.currentTime+duration);
+ osc.connect(gain);gain.connect(audioContext.destination);osc.start();osc.stop(audioContext.currentTime+duration+.03);
+}
 function initialiseVehicleAudio(){
  const AudioEngine=window.AudioContext||window.webkitAudioContext;
  if(!AudioEngine)throw new Error("This browser does not support game audio.");
@@ -2673,6 +2706,7 @@ function initialiseVehicleAudio(){
  if(audioContext.state==="suspended")audioContext.resume();
  audioEnabled=true;
  utilityBar.querySelector("#audio-toggle").textContent="SOUND: ON";
+ startMenuSoundscape();
 }
 function setHorn(active){
  if(!audioEnabled||!hornGain||!audioContext)return;
@@ -2680,7 +2714,7 @@ function setHorn(active){
 }
 utilityBar.querySelector("#audio-toggle").addEventListener("click",()=>{
  try{
-  if(audioEnabled){audioEnabled=false;engineGain.gain.setTargetAtTime(0,audioContext.currentTime,.08);if(nitroGain)nitroGain.gain.setTargetAtTime(0,audioContext.currentTime,.05);setHorn(false);utilityBar.querySelector("#audio-toggle").textContent="SOUND: OFF"}
+  if(audioEnabled){audioEnabled=false;engineGain.gain.setTargetAtTime(0,audioContext.currentTime,.08);if(nitroGain)nitroGain.gain.setTargetAtTime(0,audioContext.currentTime,.05);setHorn(false);stopMenuSoundscape();utilityBar.querySelector("#audio-toggle").textContent="SOUND: OFF"}
   else initialiseVehicleAudio();
  }catch(error){onlineStatus.textContent=error.message}
 });
@@ -2831,36 +2865,69 @@ const missionTitleLabel=document.createElement("div");missionTitleLabel.classNam
 
 const raceStatusLabel=document.createElement("div");raceStatusLabel.className="race-status";raceStatusLabel.id="race-status";document.querySelector("#game-stage").appendChild(raceStatusLabel);
 const missionStatusLabel=document.createElement("div");missionStatusLabel.className="mission-status";missionStatusLabel.textContent=`LEVEL ${playerLevel} • ${playerXP} XP • CITY DRIVE ${Math.min(500,Math.floor(drivenDistance))}/500 M`;document.querySelector("#game-stage").appendChild(missionStatusLabel);
-setPlayerPaint(selectedPaint);refreshGarage();showGarage("KENNIX: INFINITE CITY","Welcome to Nova City. Choose how you want to play.");
-// First-launch experience: cinematic brand/city reveal, then a short playable
-// drive before the player reaches the Explore / Race mode selection.
+setPlayerPaint(selectedPaint);refreshGarage();showGarage("KENNIX: INFINITE CITY","Welcome to Nova City.");
+// Cinematic-only first launch, placed above every game layer.
 const openingScene=document.createElement("section");
 openingScene.className="opening-scene";
-openingScene.innerHTML=`<div class="opening-vignette"></div><div class="opening-copy"><div class="opening-kicker">PRESENTED BY KENNIX GAME STUDIOS</div><div class="opening-logo">KENNIX</div><div class="opening-subtitle">INFINITE CITY</div><div class="opening-rule"></div><p class="opening-city">NOVA CITY • THE STREETS ARE YOURS</p><button id="opening-begin" class="opening-button">BEGIN INTRODUCTION</button><small>Tap to skip the cinematic and take the wheel</small></div>`;
-document.querySelector("#game-stage").appendChild(openingScene);
-const openingButton=openingScene.querySelector("#opening-begin");
-let introDriveTimer=0;
-function beginPlayableIntro(){
+openingScene.innerHTML=`<div class="opening-vignette"></div>
+ <div class="opening-copy" id="opening-welcome">
+  <div class="opening-kicker">PRESENTED BY KENNIX GAME STUDIOS</div>
+  <div class="opening-logo">KENNIX</div><div class="opening-subtitle">INFINITE CITY</div>
+  <div class="opening-rule"></div><p class="opening-city">NOVA CITY IS WAITING</p>
+  <button id="opening-begin" class="opening-button">TAP TO START</button>
+  <small>Sound starts after your tap</small>
+ </div>
+ <div class="opening-cinematic-copy" id="opening-cinematic-copy" aria-live="polite"></div>`;
+document.body.appendChild(openingScene);
+let introAnimationFrame=0;
+function finishOpeningCinematic(){
+ cancelAnimationFrame(introAnimationFrame);
  openingScene.classList.add("opening-hidden");
- gameOverlay.classList.add("hidden");
- gamePaused=false;
- raceActive=false;
- raceGates.forEach(g=>g.enabled=false);
- speed=0;lateralSpeed=0;
- requestLandscapeMode();
- try{if(!audioEnabled)initialiseVehicleAudio()}catch(error){console.info("Audio will remain available from the sound control:",error.message)}
- const introTag=document.createElement("div");
- introTag.className="intro-drive-tag";
- introTag.textContent="NOVA CITY INTRO DRIVE • EXPLORE FOR A MOMENT";
- document.querySelector("#game-stage").appendChild(introTag);
- introDriveTimer=window.setTimeout(()=>{
-  introTag.remove();
-  speed=0;lateralSpeed=0;
-  showGarage("CHOOSE YOUR EXPERIENCE","Your introduction is complete. Explore Nova City freely or enter a race.");
- },18000);
+ stopMenuSoundscape();
+ showGarage("KENNIX: INFINITE CITY","Choose your ride, then explore or race.");
+ gamePaused=true;
 }
-openingButton.addEventListener("click",beginPlayableIntro);
-window.setTimeout(()=>openingScene.classList.add("cinematic-ready"),6500);
+function beginOpeningCinematic(){
+ const button=openingScene.querySelector("#opening-begin");
+ if(button.disabled)return;
+ button.disabled=true;
+ try{initialiseVehicleAudio();startMenuSoundscape();}catch(error){openingScene.querySelector("#opening-cinematic-copy").textContent="Audio unavailable in this browser. Enable sound in Settings.";}
+ requestLandscapeMode();
+ const welcome=openingScene.querySelector("#opening-welcome");
+ const caption=openingScene.querySelector("#opening-cinematic-copy");
+ welcome.classList.add("opening-copy-away");
+ caption.textContent="A NEW CITY. A NEW DRIVE.";
+ const start=performance.now();
+ const from=new pc.Vec3(-62,82,-142),mid=new pc.Vec3(18,46,-72),near=new pc.Vec3(7,12,39);
+ const aimA=new pc.Vec3(0,2,-5),aimB=new pc.Vec3(0,1,20);
+ function frame(now){
+  const t=Math.min(1,(now-start)/11800);
+  const smooth=v=>v*v*(3-2*v);
+  if(t<.54){
+   const q=smooth(t/.54);
+   camera.setPosition(from.clone().lerp(from,mid,q));
+   camera.lookAt(aimA);
+   caption.textContent=t<.24?"WELCOME TO NOVA CITY":"THE STREETS ARE YOURS";
+  }else{
+   const q=smooth((t-.54)/.46);
+   camera.setPosition(mid.clone().lerp(mid,near,q));
+   camera.lookAt(aimB);
+   caption.textContent=t<.78?"MEET YOUR FIRST RIDE":"ENGINE READY";
+  }
+  if(t>=.9&&!openingScene.dataset.ignition){
+   openingScene.dataset.ignition="1";
+   playAudioCue(72,1.5,"sawtooth",.075);
+  }
+  if(t<1)introAnimationFrame=requestAnimationFrame(frame);
+  else{
+   caption.textContent="KENNIX: INFINITE CITY";
+   openingScene.classList.add("opening-title-hold");
+   window.setTimeout(finishOpeningCinematic,1500);
+  }
+ }
+ introAnimationFrame=requestAnimationFrame(frame);
+}
+openingScene.querySelector("#opening-begin").addEventListener("click",beginOpeningCinematic);
 
 const steeringModeButton=controls.querySelector(".steering-mode");
 const steeringWheelControl=controls.querySelector(".steering-wheel-control");
