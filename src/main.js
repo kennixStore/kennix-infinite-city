@@ -582,15 +582,20 @@ function spawnPropDebris(prop){
 }
 
 
-// Warm, varied city architecture: limestone, terracotta, sage, blue and sand.
+// Rich, varied city architecture: every block gets a deliberate colour family.
 const districtPalettes=[
-  makeMat([0.68,0.53,0.39]), // warm sandstone
-  makeMat([0.62,0.31,0.23]), // terracotta
-  makeMat([0.35,0.49,0.43]), // muted sage
-  makeMat([0.38,0.49,0.64]), // coastal blue
-  makeMat([0.72,0.66,0.53]), // pale cream
-  makeMat([0.55,0.40,0.58]), // muted plum
-  makeMat([0.58,0.57,0.43])  // olive stone
+  makeMat([0.76,0.59,0.42]), // honey sandstone
+  makeMat([0.68,0.34,0.25]), // warm terracotta
+  makeMat([0.39,0.56,0.46]), // garden sage
+  makeMat([0.36,0.53,0.70]), // coastal blue
+  makeMat([0.84,0.77,0.63]), // ivory limestone
+  makeMat([0.61,0.45,0.64]), // muted plum
+  makeMat([0.64,0.62,0.43]), // olive stone
+  makeMat([0.78,0.48,0.29]), // burnt amber
+  makeMat([0.48,0.61,0.66]), // blue-grey
+  makeMat([0.72,0.55,0.55]), // dusty rose
+  makeMat([0.54,0.48,0.38]), // warm taupe
+  makeMat([0.88,0.82,0.70])  // pale cream
 ];
 for(const material of districtPalettes){
  applySurface(material,surfaceMaps.facade,2,2);
@@ -602,8 +607,8 @@ for(const material of districtPalettes){
  material.clearCoatGloss = .48;
  material.update();
 }
-const marketFabric=makeMat([0.68,0.28,0.09]);
-const industrialPaint=makeMat([0.34,0.37,0.39],.45,.4);
+const marketFabric=makeMat([0.78,0.35,0.16]); // warm market awnings
+const industrialPaint=makeMat([0.48,0.55,0.58],.22,.62); // painted blue-grey industrial metal
 // International-metropolis architecture pass.
 // Each plot now uses a distinct building massing instead of one repeated box.
 // Imported CC0 buildings replace these procedural fallbacks only after they load.
@@ -620,8 +625,9 @@ function buildDistrictBuilding(row,col,x,z,w,h,depth){
  const root=new pc.Entity("NOVA international district building");
  root.setPosition(x,0,z);
  app.root.addChild(root);
- const base=districtPalettes[(row+col)%districtPalettes.length];
- const accent=districtPalettes[(row+col+1)%districtPalettes.length];
+ const paletteIndex=(row*5+col*3+(row%2)*2)%districtPalettes.length;
+ const base=districtPalettes[paletteIndex];
+ const accent=districtPalettes[(paletteIndex+3+(col%2))%districtPalettes.length];
  const towerH=Math.max(18,h-5);
  const floors=Math.max(5,Math.floor(towerH/3.25));
 
@@ -977,9 +983,11 @@ buildCloudBank(180, 110, 300, 1.2);
 
 // Distant skyline silhouettes make the district feel larger than the test road.
 const skylineMats = [
-  makeMat([0.12, 0.17, 0.23]),
-  makeMat([0.16, 0.19, 0.24]),
-  makeMat([0.2, 0.21, 0.24])
+  makeMat([0.38, 0.49, 0.58]),
+  makeMat([0.55, 0.46, 0.38]),
+  makeMat([0.47, 0.56, 0.49]),
+  makeMat([0.62, 0.54, 0.48]),
+  makeMat([0.43, 0.52, 0.66])
 ];
 for (let i = 0; i < 18; i++) {
   const side = i % 2 === 0 ? -1 : 1;
@@ -991,12 +999,14 @@ for (let i = 0; i < 18; i++) {
 
 // Buildings with road-facing windows, entrances and rooftop details.
 const facades = [
-  makeMat([0.58, 0.43, 0.32]),
-  makeMat([0.45, 0.31, 0.26]),
-  makeMat([0.30, 0.43, 0.48]),
-  makeMat([0.49, 0.52, 0.42]),
-  makeMat([0.62, 0.53, 0.42]),
-  makeMat([0.39, 0.35, 0.48])
+  makeMat([0.72, 0.55, 0.39]), // sandstone
+  makeMat([0.68, 0.34, 0.25]), // terracotta
+  makeMat([0.37, 0.54, 0.62]), // coastal blue
+  makeMat([0.45, 0.59, 0.47]), // sage
+  makeMat([0.82, 0.75, 0.62]), // cream
+  makeMat([0.61, 0.45, 0.62]), // plum
+  makeMat([0.76, 0.49, 0.30]), // amber
+  makeMat([0.66, 0.61, 0.43])  // olive
 ];
 for(const material of facades){
   applySurface(material,surfaceMaps.facade,2,2);
