@@ -2890,7 +2890,7 @@ mainMenu.innerHTML=`<div class="kx-menu-card">
   <button data-menu="garage">GARAGE</button>
   <button data-menu="settings">SETTINGS</button>
  </div>
- <small> ORIGINAL OPEN-WORLD RACING EXPERIENCE </small>
+ <small> ORIGINAL OPEN-WORLD RACING EXPERIENCE</small><small class="kx-asset-credit">Vehicle models: tevy.dev • CC0</small>
  </div>`;
 document.body.appendChild(mainMenu);
 function showMainMenu(){
@@ -3009,6 +3009,7 @@ function unlockIntroAudio(){
 function finishOpeningCinematic(){
  cancelAnimationFrame(introAnimationFrame);
  if(introTrack)introTrack.enabled=false;
+ camera.camera.clearColor=new pc.Color(.23,.34,.49);
  openingScene.classList.add("opening-hidden");
  stopMenuSoundscape();
  showMainMenu();
