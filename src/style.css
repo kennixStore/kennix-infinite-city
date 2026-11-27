@@ -369,3 +369,30 @@ html,body,#game-shell{width:100%;height:100%;min-height:0;margin:0;overflow:hidd
  .steering-mode{height:21px!important}
  .hud-speed{bottom:max(8px,env(safe-area-inset-bottom))!important}
 }
+
+
+/* Racing HUD layout: controls sit safely above the phone's bottom edge. */
+.touch-controls{
+ position:fixed!important;left:max(18px,env(safe-area-inset-left))!important;
+ right:max(18px,env(safe-area-inset-right))!important;
+ bottom:max(28px,calc(env(safe-area-inset-bottom) + 20px))!important;
+ width:auto!important;display:flex!important;justify-content:space-between!important;
+ align-items:flex-end!important;gap:12px!important;overflow:visible!important;
+ padding:0!important;z-index:30!important;pointer-events:none!important
+}
+.steering-panel,.pedals{pointer-events:auto!important;flex:0 0 auto!important}
+.steering-panel{align-items:flex-start!important;gap:5px!important}
+.steering-mode{height:25px!important;padding:0 10px!important;font-size:9px!important;opacity:1!important}
+.steering-arrows{display:flex!important;gap:8px!important}
+.steering-arrows[hidden]{display:none!important}
+.steering-arrows button{width:58px!important;height:54px!important;font-size:22px!important}
+.pedals{display:flex!important;align-items:flex-end!important;gap:9px!important}
+.pedals button{width:64px!important;height:58px!important;font-size:10px!important}
+.pedals button[data-control="handbrake"],.pedals button[data-control="nitro"],.pedals button[data-control^="signal"],.pedals button[data-control="hazards"]{display:none!important}
+.hud-speed{position:fixed!important;right:max(18px,env(safe-area-inset-right))!important;bottom:max(104px,calc(env(safe-area-inset-bottom) + 96px))!important;z-index:20!important}
+@media (orientation:landscape) and (max-height:520px){
+ .touch-controls{bottom:max(22px,calc(env(safe-area-inset-bottom) + 14px))!important;left:14px!important;right:14px!important}
+ .steering-arrows button{width:50px!important;height:48px!important}
+ .pedals button{width:56px!important;height:50px!important}
+ .hud-speed{bottom:max(88px,calc(env(safe-area-inset-bottom) + 80px))!important}
+}
