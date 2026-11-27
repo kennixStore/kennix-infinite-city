@@ -36,11 +36,22 @@ const app = new pc.Application(canvas, {
   touch: new pc.TouchDevice(canvas)
 });
 
-app.setCanvasFillMode(pc.FILLMODE_FILL_WINDOW);
+// Size the WebGL canvas to the actual game stage, not the browser's
+// outer window. This avoids half-screen rendering after device rotation.
+const gameStage = document.querySelector("#game-stage");
+app.setCanvasFillMode(pc.FILLMODE_NONE);
 app.setCanvasResolution(pc.RESOLUTION_AUTO);
-// Keep the image crisp on modern phones without blindly rendering at extreme
-// device-pixel ratios that can overwhelm mobile GPUs.
 app.graphicsDevice.maxPixelRatio = Math.min(window.devicePixelRatio || 1, 1.5);
+function resizeGameCanvas(){
+  const width=Math.max(1,Math.floor(gameStage.getBoundingClientRect().width));
+  const height=Math.max(1,Math.floor(gameStage.getBoundingClientRect().height));
+  app.resizeCanvas(width,height);
+}
+const gameStageObserver=new ResizeObserver(resizeGameCanvas);
+gameStageObserver.observe(gameStage);
+window.addEventListener("resize",resizeGameCanvas,{passive:true});
+window.addEventListener("orientationchange",()=>setTimeout(resizeGameCanvas,180),{passive:true});
+requestAnimationFrame(resizeGameCanvas);
 app.scene.ambientLight = new pc.Color(0.36, 0.39, 0.45);
 // PlayCanvas 2.x stores fog parameters in a read-only FogParams object.
 // Configure its fields rather than assigning the old Engine 1 scene setters.
@@ -2775,22 +2786,27 @@ app.on("update", dt => {
   const targetBodyPitch = clamp(-longitudinalAcceleration*.16,-3,3);
   bodyPitch += (targetBodyPitch-bodyPitch)*Math.min(1,dt*5);
 
-  // Positive input means steer right; negative input means steer left.
+  // Road-wheel angle controls yaw around the wheelbase; normal turns do not
+  // translate the car sideways like a pushed object.
   const steerInput = steeringMode==="wheel" ? wheelSteeringInput : (right ? 1 : 0) - (left ? 1 : 0);
-  // Progressive steering response: smooth at speed, still manoeuvrable when parking.
-  const targetSteering = steerInput * 34;
-  steeringAngle += (targetSteering - steeringAngle) * (1-Math.exp(-dt*12));
-
   const speedRatio = clamp(Math.abs(speed) / 30, 0, 1);
   const directionSign = Math.sign(speed || 1);
-  const gripFactor = handbrakeActive ? 1.12 : selectedVehicle.grip*(1-damage*.0018);
-  const highSpeedStability=1-.32*speedRatio;
-  // More useful steering at low speeds, with stability building as speed rises.
-  heading += steeringAngle * 0.94 * selectedVehicle.handling * (0.42 + speedRatio * 0.58) * gripFactor * highSpeedStability * dt * directionSign;
+  const maxSteer = 34 * (1 - .48 * speedRatio);
+  const targetSteering = steerInput * maxSteer;
+  steeringAngle += (targetSteering - steeringAngle) * (1-Math.exp(-dt*9));
+  const gripFactor = handbrakeActive ? .82 : selectedVehicle.grip*(1-damage*.0018);
+  const wheelAngleRadians=steeringAngle*Math.PI/180;
+  const wheelbase=2.75;
+  const yawRate=(speed*.42/wheelbase)*Math.tan(wheelAngleRadians)*180/Math.PI;
+  heading += yawRate * gripFactor * directionSign * dt;
 
-  // Small tyre slip under load, then progressive grip recovery.
-  lateralSpeed += steerInput * speedRatio * (handbrakeActive ? 4.4 : .82) * directionSign * dt;
-  lateralSpeed *= Math.exp(-(handbrakeActive ? 1.25 : 7.4*selectedVehicle.grip) * dt);
+  // Rear slip is reserved for handbrake turns; ordinary cornering follows
+  // the direction the front tyres are pointing.
+  if(handbrakeActive && Math.abs(speed)>5){
+    lateralSpeed += steerInput * speedRatio * .9 * directionSign * dt;
+  }else{
+    lateralSpeed *= Math.exp(-12*selectedVehicle.grip*dt);
+  }
 
   const radians = heading * Math.PI / 180;
   const forwardX = Math.sin(radians);
@@ -2888,7 +2904,8 @@ app.on("update", dt => {
   activeVehicleWheels.forEach((wheel,index)=>{
     const isFront=index<2;
     const isLeft=index%2===0;
-    const steer=isFront ? steeringAngle*.55*(activeSteeringWheelImported?-1:1) : 0;
+    const roadWheelAngle=isFront ? steeringAngle*(.88-.42*speedRatio) : 0;
+    const steer=roadWheelAngle*(activeSteeringWheelImported?-1:1);
     // Chassis pitch and cornering load each suspension corner independently.
     const pitchLoad=bodyPitch*(isFront?-1:1)*.012;
     const cornerLoad=steeringAngle*speedRatio*(isLeft?1:-1)*.0009;
