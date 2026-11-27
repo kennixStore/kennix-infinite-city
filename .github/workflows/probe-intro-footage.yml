@@ -1,0 +1,90 @@
+name: Probe free intro footage
+
+on:
+  push:
+    paths:
+      - ".github/workflows/probe-intro-footage.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  inspect:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Install FFmpeg
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y ffmpeg
+      - name: Fetch and inspect candidate footage
+        shell: bash
+        run: |
+          mkdir -p probe
+          cat > probe.py <<'PY'
+          import html, re, requests, subprocess, pathlib, json
+          from urllib.parse import urlparse
+          candidates = [
+            ("race_scenic", "https://www.pexels.com/video/exciting-car-race-on-scenic-track-33968285/"),
+            ("drift_track", "https://www.pexels.com/video/thrilling-car-drifting-race-at-outdoor-venue-35662147/"),
+            ("road_race", "https://www.pexels.com/video/exciting-car-race-on-country-roads-36223351/"),
+            ("night_drift", "https://www.pexels.com/video/cinematic-car-culture-drift-cars-in-motion-30418731/"),
+          ]
+          s = requests.Session()
+          s.headers.update({"User-Agent":"Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 Chrome/131.0 Safari/537.36","Accept-Language":"en-US,en;q=0.9"})
+          report=[]
+          for name, page in candidates:
+            row={"name":name,"page":page}
+            try:
+              r=s.get(page,timeout=45)
+              row["page_status"]=r.status_code
+              body=html.unescape(r.text).replace("\\/", "/")
+              links=list(dict.fromkeys(re.findall(r'https?://videos\\.pexels\\.com/video-files/[^\\s"\\'<>]+?\\.mp4(?:\\?[^\\s"\\'<>]*)?',body)))
+              # Some pages expose only their download endpoint. Follow it to discover the file redirect.
+              if not links:
+                vid=re.search(r'/video/[^/]+/(\\d+)/?',page)
+                if vid:
+                  d=s.get(f"https://www.pexels.com/download/video/{vid.group(1)}/",allow_redirects=False,timeout=30)
+                  row["download_status"]=d.status_code
+                  row["download_location"]=d.headers.get("Location","")
+                  if d.headers.get("Location","").split("?")[0].endswith(".mp4"):
+                    links=[d.headers["Location"]]
+              row["candidate_links"]=links[:6]
+              usable=None
+              for link in links:
+                try:
+                  v=s.get(link,stream=True,timeout=60)
+                  ctype=v.headers.get("Content-Type","")
+                  if v.status_code==200 and ("video" in ctype or "octet-stream" in ctype):
+                    target=pathlib.Path("probe")/f"{name}.mp4"
+                    size=0
+                    with target.open("wb") as f:
+                      for chunk in v.iter_content(1024*1024):
+                        if chunk:
+                          size+=len(chunk); f.write(chunk)
+                    v.close()
+                    if size>100000:
+                      usable={"url":link,"bytes":size,"content_type":ctype}
+                      meta=subprocess.run(["ffprobe","-v","error","-show_entries","format=duration,size:stream=codec_name,width,height,r_frame_rate","-of","json",str(target)],capture_output=True,text=True)
+                      usable["ffprobe"]=json.loads(meta.stdout) if meta.returncode==0 else meta.stderr
+                      thumb=pathlib.Path("probe")/f"{name}.jpg"
+                      subprocess.run(["ffmpeg","-y","-ss","2","-i",str(target),"-frames:v","1","-q:v","2",str(thumb)],capture_output=True)
+                      usable["thumbnail"]=str(thumb) if thumb.exists() else None
+                      break
+                    target.unlink(missing_ok=True)
+                except Exception as e:
+                  row.setdefault("download_errors",[]).append(str(e))
+              row["usable"]=usable
+            except Exception as e:
+              row["error"]=str(e)
+            report.append(row)
+            print(json.dumps(row,indent=2))
+          pathlib.Path("probe/report.json").write_text(json.dumps(report,indent=2))
+          PY
+          python probe.py
+      - name: Upload inspection report and sample frames
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: intro-footage-probe
+          path: probe/
+          if-no-files-found: warn
