@@ -1921,7 +1921,7 @@ const raceGates = raceRoute.map((z,i)=>{
 });
 
 const vehicleCatalog = [
- {id:"sport",name:"KX Sport",className:"SPORT",paint:[0.035,0.07,0.12],acceleration:12.5,maxSpeed:42,handling:1.0,braking:1.0,grip:1.0,owned:true},
+ {id:"sport",name:"KX Sport",className:"SPORT",paint:[0.92,0.93,0.95],acceleration:12.5,maxSpeed:42,handling:1.0,braking:1.0,grip:1.0,owned:true},
  {id:"muscle",name:"Vortex GT",className:"MUSCLE",paint:[0.52,0.075,0.035],acceleration:13.8,maxSpeed:39,handling:0.88,braking:1.12,grip:.91,owned:false},
  {id:"suv",name:"Ranger X",className:"SUV",paint:[0.18,0.23,0.2],acceleration:9.2,maxSpeed:32,handling:0.78,braking:1.28,grip:1.18,owned:false},
  {id:"hyper",name:"Apex R",className:"HYPER",paint:[0.04,0.32,0.38],acceleration:16.5,maxSpeed:50,handling:1.12,braking:1.08,grip:1.06,owned:false}
@@ -1931,8 +1931,10 @@ const savedUnlocks=(()=>{try{return JSON.parse(localStorage.getItem("kxic-unlock
 vehicleCatalog.forEach(v=>{v.owned=savedUnlocks.includes(v.id)||v.id==="sport"});
 let selectedVehicle=vehicleCatalog.find(v=>v.id===savedGarage.vehicle&&v.owned)||vehicleCatalog[0];
 let selectedPaint=Array.isArray(savedGarage.paint)?savedGarage.paint:selectedVehicle.paint;
+// Migrate the original near-black starter paint to the new pearl-white default.
+if(selectedVehicle.id==="sport"&&selectedPaint.length===3&&selectedPaint[0]<.08&&selectedPaint[1]<.12&&selectedPaint[2]<.18){selectedPaint=[.92,.93,.95];}
 let cameraMode="chase",gamePaused=true,damage=Math.max(0,Math.min(100,Number(localStorage.getItem("kxic-damage")||0))),raceActive=false,raceStart=0,raceCheckpoint=0,bestRace=Number(localStorage.getItem("kxic-best-race")||0),drivenDistance=Number(localStorage.getItem("kxic-distance")||0),playerXP=Number(localStorage.getItem("kxic-xp")||0),playerLevel=Math.max(1,Math.floor(playerXP/1000)+1);let lastDistanceSave=Math.floor(drivenDistance/10);
-const garagePaints=[{name:"Midnight",rgb:[.035,.07,.12]},{name:"Crimson",rgb:[.52,.045,.035]},{name:"Ocean",rgb:[.035,.22,.42]},{name:"Silver",rgb:[.48,.5,.52]},{name:"Gold",rgb:[.55,.34,.08]}];
+const garagePaints=[{name:"Pearl White",rgb:[.92,.93,.95]},{name:"Midnight",rgb:[.035,.07,.12]},{name:"Crimson",rgb:[.52,.045,.035]},{name:"Ocean",rgb:[.035,.22,.42]},{name:"Silver",rgb:[.48,.5,.52]},{name:"Gold",rgb:[.55,.34,.08]}];
 function saveGarage(){localStorage.setItem("kxic-garage",JSON.stringify({vehicle:selectedVehicle.id,paint:selectedPaint}))}
 function updateVehicleUnlocks(){
  const thresholds={muscle:500,suv:1500,hyper:3000};
