@@ -5,8 +5,8 @@ import { joinCityRoom } from "./multiplayer.js";
 
 const canvas = document.querySelector("#application");
 
-// Prerecorded cinematic opening. Muted autoplay is allowed on mobile browsers;
-// sound is enabled only after the player's explicit tap.
+// Prerecorded cinematic opening. Start muted where autoplay is permitted;
+// the single sound button also starts playback if the browser blocks autoplay.
 const introOverlay=document.querySelector("#intro-overlay");
 const introVideo=document.querySelector("#intro-video");
 const introSoundButton=document.querySelector("#intro-sound");
@@ -25,12 +25,12 @@ if(introOverlay&&introVideo){
   introSoundButton?.addEventListener("click",async()=>{
     try{
       introVideo.muted=false;
-      await introVideo.play();
+      if(introVideo.paused) await introVideo.play();
       introSoundButton.textContent="SOUND ON";
       introSoundButton.classList.add("sound-enabled");
     }catch(error){
       introVideo.muted=true;
-      introSoundButton.textContent="TAP TO ENABLE";
+      introSoundButton.textContent="TAP TO PLAY";
     }
   });
   introVideo.addEventListener("ended",closeIntro,{once:true});
@@ -40,10 +40,7 @@ if(introOverlay&&introVideo){
   },{once:true});
   window.addEventListener("keydown",event=>{if(event.key==="Escape"&&introOverlay.isConnected)closeIntro()});
   introVideo.play().catch(()=>{
-    introSoundButton.textContent="PLAY INTRO";
-    introSoundButton.addEventListener("click",async()=>{
-      try{await introVideo.play();introSoundButton.textContent="ENABLE SOUND"}catch{}
-    },{once:true});
+    introSoundButton.textContent="PLAY WITH SOUND";
   });
 }
 // On-device diagnostics: surface WebGL/runtime failures directly in the game
