@@ -553,7 +553,7 @@ function addBreakableSign(x,z,rotation=0){
  block("Sign post",[0,1.25,0],[.09,2.5,.09],signMetal,root);
  block("Reflective road sign",[0,2.15,0],[.95,.72,.12],signFace,root);
  block("Sign symbol",[0,2.15,-.071],[.34,.34,.025],barrierOrange,root);
- breakableStreetProps.push({kind:"sign",root,x,z,broken:false,tilt:0,age:0,resetAfter:18});
+ breakableStreetProps.push({kind:"sign",root,x,z,baseYaw:rotation,broken:false,tilt:0,roll:0,angularVelocity:0,fallDirection:1,age:0,resetAfter:18});
 }
 function addBreakableBarrier(x,z,rotation=0){
  const root=new pc.Entity("Breakable roadwork barrier");root.setPosition(x,0,z);root.setEulerAngles(0,rotation,0);app.root.addChild(root);
@@ -561,7 +561,7 @@ function addBreakableBarrier(x,z,rotation=0){
  block("Barrier reflective stripe A",[-.7,.73,-.17],[.24,.68,.035],mats.white,root);
  block("Barrier reflective stripe B",[.7,.73,-.17],[.24,.68,.035],mats.white,root);
  for(const side of [-1,1])block("Barrier support",[side*1.05,.27,0],[.24,.54,.58],signMetal,root);
- breakableStreetProps.push({kind:"barrier",root,x,z,broken:false,tilt:0,age:0,resetAfter:14});
+ breakableStreetProps.push({kind:"barrier",root,x,z,baseYaw:rotation,broken:false,tilt:0,roll:0,angularVelocity:0,fallDirection:1,age:0,resetAfter:14});
 }
 for(const z of [-185,-95,5,105,195]){
  addBreakableSign(-10.7,z,0);addBreakableSign(10.7,z,180);
@@ -577,7 +577,7 @@ function spawnPropDebris(prop){
    [origin.x+(Math.random()-.5)*1.8,.22+Math.random()*.55,origin.z+(Math.random()-.5)*1.5],
    [.16+Math.random()*.22,.12+Math.random()*.18,.14+Math.random()*.2],
    prop.kind==="barrier"?barrierOrange:signMetal);
-  temporaryDebris.push({entity:piece,life:0,ttl:8+Math.random()*4});
+  temporaryDebris.push({entity:piece,life:0,ttl:8+Math.random()*4,vx:(Math.random()-.5)*3,vy:1.4+Math.random()*2.2,vz:(Math.random()-.5)*3,spin:(Math.random()-.5)*260});
  }
 }
 
@@ -2899,15 +2899,27 @@ app.on("update", dt => {
   const currentCarPosition=car.getPosition();
   for(const prop of breakableStreetProps){
     if(prop.broken){
-      prop.age+=dt;prop.tilt=Math.min(1,prop.tilt+dt*2.8);
-      prop.root.setEulerAngles(prop.kind==="sign"?prop.tilt*78:prop.tilt*48,0,prop.kind==="sign"?0:prop.tilt*18);
+      prop.age+=dt;
+      // Angular momentum carries the prop over; gravity and damping settle it
+      // naturally instead of snapping instantly to a fixed angle.
+      prop.angularVelocity=Math.max(0,prop.angularVelocity-210*dt);
+      prop.tilt=Math.min(prop.kind==="sign"?82:58,prop.tilt+prop.angularVelocity*dt*prop.fallDirection);
+      prop.root.setEulerAngles(prop.tilt,prop.baseYaw,prop.kind==="barrier"?prop.tilt*.12:0);
       if(prop.age>prop.resetAfter&&Math.hypot(currentCarPosition.x-prop.x,currentCarPosition.z-prop.z)>45){
-        prop.broken=false;prop.age=0;prop.tilt=0;prop.root.setEulerAngles(0,0,0);
+        prop.broken=false;prop.age=0;prop.tilt=0;prop.roll=0;prop.angularVelocity=0;
+        prop.root.setEulerAngles(0,prop.baseYaw,0);
       }
     }
   }
   for(let i=temporaryDebris.length-1;i>=0;i--){
     const debris=temporaryDebris[i];debris.life+=dt;
+    const pos=debris.entity.getPosition();
+    debris.vy-=9.8*dt;
+    pos.x+=debris.vx*dt;pos.y+=debris.vy*dt;pos.z+=debris.vz*dt;
+    if(pos.y<.12){pos.y=.12;debris.vy=Math.abs(debris.vy)*.28;debris.vx*=.68;debris.vz*=.68}
+    debris.entity.setPosition(pos);
+    const angles=debris.entity.getEulerAngles();
+    debris.entity.setEulerAngles(angles.x+debris.spin*dt,angles.y+debris.spin*.6*dt,angles.z+debris.spin*.4*dt);
     if(debris.life>debris.ttl){debris.entity.destroy();temporaryDebris.splice(i,1)}
   }
   for(const lamp of streetLights){
@@ -3025,7 +3037,11 @@ app.on("update", dt => {
   }
   const impactSpeed=Math.abs(speed);
   if(hitProp&&impactSpeed>5.5){
-    hitProp.broken=true;hitProp.age=0;spawnPropDebris(hitProp);
+    hitProp.broken=true;hitProp.age=0;
+    const impactDx=hitProp.x-p.x,impactDz=hitProp.z-p.z;
+    hitProp.fallDirection=(impactDx*Math.cos(heading*Math.PI/180)+impactDz*Math.sin(heading*Math.PI/180))>=0?1:-1;
+    hitProp.angularVelocity=(hitProp.kind==="sign"?150:105)*clamp(impactSpeed/22,.35,1.7);
+    spawnPropDebris(hitProp);
     speed*=hitProp.kind==="barrier"?.52:.62;lateralSpeed*=.35;
     damage=clamp(damage+Math.min(8,impactSpeed*.16),0,100);
     localStorage.setItem("kxic-damage",String(damage));refreshVehicleDamage();
