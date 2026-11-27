@@ -473,3 +473,8 @@ html,body,#game-shell{width:100%;height:100%;min-height:0;margin:0;overflow:hidd
 }
 .kx-menu-actions button:not(:first-child){background:rgba(18,31,43,.92);color:#f1dfb9;border-color:#ffffff42}
 .kx-menu-card small{display:block;margin-top:24px;color:#8796a2;font:700 8px system-ui;letter-spacing:.25em}
+
+/* Persistent sound unlock for autoplay cinematic (mobile browsers require a tap). */
+.opening-audio-unlock{position:fixed;z-index:100003;bottom:max(18px,env(safe-area-inset-bottom));left:50%;transform:translateX(-50%);padding:11px 18px;border:1px solid rgba(225,195,132,.75);border-radius:5px;background:rgba(5,12,19,.82);color:#f3dfb4;font:800 10px system-ui;letter-spacing:.18em;backdrop-filter:blur(8px)}
+.opening-audio-unlock.audio-enabled{opacity:.45}
+.opening-audio-unlock:disabled{cursor:default}
