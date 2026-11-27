@@ -1622,6 +1622,7 @@ function loadRealisticPedestrians(){
  app.assets.loadFromUrl("https://tevy.dev/models/casual-walker/v1/lod1.glb","container",(error,asset)=>{
   if(error||!asset?.resource){console.warn("CC0 pedestrian character unavailable:",error);return;}
   const clips=asset.resource.animations||[];
+  if(!clips.length){console.warn("CC0 pedestrian GLB has no animation clips");return;}
   pedestrians.forEach(pedestrian=>{
    const entity=pedestrian.entity;
    if(!entity||entity._destroyed||pedestrian.importedModel)return;
@@ -1633,13 +1634,11 @@ function loadRealisticPedestrians(){
     render.castShadows=true;render.receiveShadows=true;
     render.meshInstances.forEach(mesh=>{mesh.castShadow=true;mesh.receiveShadow=true;});
    });
-   if(clips.length){
-    model.addComponent("anim",{activate:true});
-    clips.forEach(clip=>model.anim.assignAnimation(clip.resource.name,clip.resource));
-    const names=clips.map(clip=>clip.resource.name);
-    const wanted=pedestrian.activity?names.find(name=>/idle/i.test(name)):names.find(name=>/walk/i.test(name));
-    model.anim.baseLayer.play(wanted||names[0]);
-   }
+   model.addComponent("anim",{activate:true});
+   clips.forEach(clip=>model.anim.assignAnimation(clip.resource.name,clip.resource));
+   const names=clips.map(clip=>clip.resource.name);
+   const wanted=pedestrian.activity?names.find(name=>/idle/i.test(name)):names.find(name=>/walk/i.test(name));
+   model.anim.baseLayer.play(wanted||names[0]);
    [...entity.children].forEach(child=>{if(child!==model)child.enabled=false;});
    pedestrian.importedModel=model;
   });
@@ -1662,7 +1661,6 @@ function createCrossingPedestrian(crossing,outfit,direction){
 createCrossingPedestrian(pedestrianCrossings[0],1,1);
 createCrossingPedestrian(pedestrianCrossings[0],2,-1);
 createCrossingPedestrian(pedestrianCrossings[1],3,1);
-loadRealisticPedestrians();
 
 // Ambient life: vendors, customers and passengers make the district feel occupied.
 const streetActivities=[];
@@ -1684,6 +1682,7 @@ const marketVendorB=addStreetActor(34.2,18.4,1,90,"vendor");
 const marketCustomerB=addStreetActor(28.5,24.2,3,-90,"customer");addShoppingBag(marketCustomerB,-1);
 const busPassengerA=addStreetActor(-11.2,-55,0,0,"passenger");
 const busPassengerB=addStreetActor(11.2,52,3,180,"passenger");
+loadRealisticPedestrians();
 // Produce baskets and stacked goods around the open-air stalls.
 for(const [x,z] of [[24.8,12.2],[31.8,18.2],[24.8,26.2]]){
  for(let row=0;row<2;row++)for(let col=0;col<3;col++){
