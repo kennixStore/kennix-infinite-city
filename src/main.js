@@ -4,6 +4,48 @@ import { backendConfigured, createPlayerAccount, signInPlayer, signOutPlayer, ge
 import { joinCityRoom } from "./multiplayer.js";
 
 const canvas = document.querySelector("#application");
+
+// Prerecorded cinematic opening. Muted autoplay is allowed on mobile browsers;
+// sound is enabled only after the player's explicit tap.
+const introOverlay=document.querySelector("#intro-overlay");
+const introVideo=document.querySelector("#intro-video");
+const introSoundButton=document.querySelector("#intro-sound");
+const introSkipButton=document.querySelector("#intro-skip");
+if(introOverlay&&introVideo){
+  introVideo.src=import.meta.env.BASE_URL+"intro/kennix-intro.mp4";
+  introVideo.muted=true;
+  introVideo.volume=.82;
+  const closeIntro=()=>{
+    if(introOverlay.classList.contains("is-closing"))return;
+    introOverlay.classList.add("is-closing");
+    introVideo.pause();
+    setTimeout(()=>introOverlay.remove(),650);
+  };
+  introSkipButton?.addEventListener("click",closeIntro);
+  introSoundButton?.addEventListener("click",async()=>{
+    try{
+      introVideo.muted=false;
+      await introVideo.play();
+      introSoundButton.textContent="SOUND ON";
+      introSoundButton.classList.add("sound-enabled");
+    }catch(error){
+      introVideo.muted=true;
+      introSoundButton.textContent="TAP TO ENABLE";
+    }
+  });
+  introVideo.addEventListener("ended",closeIntro,{once:true});
+  introVideo.addEventListener("error",()=>{
+    console.warn("KENNIX intro video could not be loaded; continuing to the game.");
+    closeIntro();
+  },{once:true});
+  window.addEventListener("keydown",event=>{if(event.key==="Escape"&&introOverlay.isConnected)closeIntro()});
+  introVideo.play().catch(()=>{
+    introSoundButton.textContent="PLAY INTRO";
+    introSoundButton.addEventListener("click",async()=>{
+      try{await introVideo.play();introSoundButton.textContent="ENABLE SOUND"}catch{}
+    },{once:true});
+  });
+}
 // On-device diagnostics: surface WebGL/runtime failures directly in the game
 // instead of leaving players with an unexplained empty canvas.
 const runtimeNotice=document.createElement("div");
