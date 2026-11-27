@@ -52,7 +52,7 @@ gameStageObserver.observe(gameStage);
 window.addEventListener("resize",resizeGameCanvas,{passive:true});
 window.addEventListener("orientationchange",()=>setTimeout(resizeGameCanvas,180),{passive:true});
 requestAnimationFrame(resizeGameCanvas);
-app.scene.ambientLight = new pc.Color(0.36, 0.39, 0.45);
+app.scene.ambientLight = new pc.Color(0.52, 0.55, 0.59);
 // PlayCanvas 2.x stores fog parameters in a read-only FogParams object.
 // Configure its fields rather than assigning the old Engine 1 scene setters.
 app.scene.fog.type = pc.FOG_LINEAR;
@@ -71,8 +71,8 @@ const makeMat = (rgb, metalness = 0, roughness = 0.65) => {
 
 const mats = {
   ground: makeMat([0.19, 0.23, 0.22]),
-  asphalt: makeMat([0.075, 0.085, 0.095]),
-  concrete: makeMat([0.43, 0.45, 0.46]),
+  asphalt: makeMat([0.68, 0.70, 0.72]),
+  concrete: makeMat([0.56, 0.57, 0.56]),
   curb: makeMat([0.68, 0.68, 0.64]),
   paint: makeMat([0.92, 0.78, 0.35]),
   white: makeMat([0.88, 0.88, 0.82]),
@@ -541,8 +541,8 @@ for(const x of [-120,-60,60,120]){
 }
 
 const districtPalettes=[
-  makeMat([0.22,0.27,0.33]),makeMat([0.34,0.29,0.23]),
-  makeMat([0.16,0.25,0.29]),makeMat([0.31,0.33,0.34])
+  makeMat([0.39,0.43,0.47]),makeMat([0.43,0.38,0.32]),
+  makeMat([0.31,0.40,0.43]),makeMat([0.43,0.45,0.45])
 ];
 for(const material of districtPalettes){
  applySurface(material,surfaceMaps.facade,2,2);
@@ -711,7 +711,7 @@ for(let i=0;i<2;i++){
  block("Industrial smokestack",[x,12,z],[3.2,24,3.2],industrialPaint,app.root,"cylinder");
  block("Smokestack rim",[x,24.1,z],[3.8,.5,3.8],mats.dark,app.root,"cylinder");
 }
-block("Industrial warehouse",[ -135,7,215],[32,14,25],industrialPaint);
+block("Industrial warehouse",[ -135,7,215],[32,14,25],industrialPaint);\nregisterBuildingCollider(-135,215,32,25);
 for(let bay=0;bay<3;bay++){
  const x=-147+bay*12;
  block("Warehouse loading door",[x,3.4,202.35],[7,6.8,.2],mats.dark);
@@ -2820,7 +2820,7 @@ app.on("update", dt => {
 
   // Static building footprint collision. Resolve axes independently so the
   // vehicle stops at walls but can still slide along them.
-  const vehicleRadius=1.65;
+  const vehicleRadius=2.55;
   const collidesAt=(x,z)=>{
     for(const box of solidBuildingColliders){
       const nearestX=clamp(x,box.minX,box.maxX);
