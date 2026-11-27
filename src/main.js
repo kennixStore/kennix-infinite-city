@@ -1644,7 +1644,7 @@ function createPedestrian(x,z,outfit,facing=0,walkDirection=1,axis="z",min=-72,m
  if(outfit%5===2){
   block("Pedestrian cap",[0,1.94,-.035],[.39,.09,.38],clothingMats[(outfit+2)%clothingMats.length],person);
  }
- const pedestrian={entity:person,legs,arms,phase:outfit*.9,direction:walkDirection,axis,min,max};
+ const pedestrian={entity:person,legs,arms,phase:outfit*.9,direction:walkDirection,axis,min,max,spawnPosition:new pc.Vec3(x,.12,z),spawnYaw:facing,hitState:"walking",hitTimer:0,respawnTimer:0,hitYaw:0,fallPitch:78,hitSide:1};
  pedestrians.push(pedestrian);
  return pedestrian;
 }
@@ -3396,6 +3396,61 @@ app.on("update", dt => {
   const pedestrianSignalSafe=(Math.floor(signalTimer/8)%2)===1; // north-south vehicle signals are red.
   for (const pedestrian of pedestrians) {
     const position = pedestrian.entity.getPosition();
+
+    // Non-graphic vehicle impact response: the pedestrian falls, stays down
+    // briefly, disappears, then safely returns to the original sidewalk.
+    if(pedestrian.hitState==="falling"){
+      pedestrian.hitTimer+=dt;
+      const t=clamp(pedestrian.hitTimer/.42,0,1);
+      const eased=1-Math.pow(1-t,3);
+      pedestrian.entity.setEulerAngles(
+        pedestrian.fallPitch*eased,
+        pedestrian.hitYaw,
+        pedestrian.hitSide*12*eased
+      );
+      if(t>=1){pedestrian.hitState="down";pedestrian.hitTimer=0;}
+      continue;
+    }
+    if(pedestrian.hitState==="down"){
+      pedestrian.hitTimer+=dt;
+      if(pedestrian.hitTimer>=1.35){
+        pedestrian.entity.enabled=false;
+        pedestrian.hitState="hidden";
+        pedestrian.respawnTimer=10;
+      }
+      continue;
+    }
+    if(pedestrian.hitState==="hidden"){
+      pedestrian.respawnTimer-=dt;
+      if(pedestrian.respawnTimer<=0){
+        pedestrian.entity.enabled=true;
+        pedestrian.entity.setPosition(pedestrian.spawnPosition);
+        pedestrian.entity.setEulerAngles(0,pedestrian.spawnYaw,0);
+        pedestrian.hitState="walking";
+        pedestrian.hitTimer=0;
+        pedestrian.phase=0;
+        if(pedestrian.crossing){pedestrian.crossing.waiting=true;pedestrian.crossing.waitTimer=0;}
+      }
+      continue;
+    }
+
+    // Check the front/rear contact zone against the moving player car.
+    // The response is intentionally non-graphic: no blood or injury detail.
+    const travelSign=speed>=0?1:-1;
+    const travelX=forwardX*travelSign,travelZ=forwardZ*travelSign;
+    const relativeX=position.x-p.x,relativeZ=position.z-p.z;
+    const hitAlong=relativeX*travelX+relativeZ*travelZ;
+    const hitAcross=relativeX*rightX+relativeZ*rightZ;
+    if(Math.abs(speed)>7.2&&hitAlong>-1.65&&hitAlong<2.9&&Math.abs(hitAcross)<1.42){
+      pedestrian.hitState="falling";
+      pedestrian.hitTimer=0;
+      pedestrian.hitYaw=-heading;
+      pedestrian.fallPitch=speed>=0?78:-78;
+      pedestrian.hitSide=hitAcross>=0?1:-1;
+      pedestrian.entity.setEulerAngles(0,pedestrian.hitYaw,0);
+      continue;
+    }
+
     const nearPlayer = Math.abs(position.x - p.x) < 5.2 && Math.abs(position.z - p.z) < 8.5 && Math.abs(speed) > 3;
     let walkRate=pedestrian.activity?0:(nearPlayer?0:0.48);
     if(pedestrian.activity){
