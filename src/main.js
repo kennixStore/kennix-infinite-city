@@ -14,7 +14,7 @@ const introSkipButton=document.querySelector("#intro-skip");
 if(introOverlay&&introVideo){
   introVideo.src=import.meta.env.BASE_URL+"intro/kennix-intro.mp4";
   introVideo.muted=true;
-  introVideo.volume=.82;
+  introVideo.volume=1;
   const closeIntro=()=>{
     if(introOverlay.classList.contains("is-closing"))return;
     introOverlay.classList.add("is-closing");
@@ -2710,7 +2710,7 @@ function drawMiniMap() {
 let miniMapElapsed = 0;
 
 
-let audioContext=null,engineOscillator=null,engineGain=null,engineFilter=null,hornOscillator=null,hornGain=null,nitroOscillator=null,nitroGain=null,audioEnabled=false;
+let audioContext=null,masterGain=null,engineOscillator=null,engineGain=null,engineFilter=null,hornOscillator=null,hornGain=null,nitroOscillator=null,nitroGain=null,audioEnabled=false;
 let cityAmbienceOsc=null,cityAmbienceGain=null,menuMusicA=null,menuMusicB=null,menuMusicGain=null;
 let simulatedGear=1,gearShiftFlash=0;
 function startMenuSoundscape(){
@@ -2719,16 +2719,16 @@ function startMenuSoundscape(){
   cityAmbienceOsc=audioContext.createOscillator();cityAmbienceOsc.type="triangle";cityAmbienceOsc.frequency.value=58;
   const low=audioContext.createBiquadFilter();low.type="lowpass";low.frequency.value=115;
   cityAmbienceGain=audioContext.createGain();cityAmbienceGain.gain.value=0;
-  cityAmbienceOsc.connect(low);low.connect(cityAmbienceGain);cityAmbienceGain.connect(audioContext.destination);cityAmbienceOsc.start();
+  cityAmbienceOsc.connect(low);low.connect(cityAmbienceGain);cityAmbienceGain.connect(masterGain||audioContext.destination);cityAmbienceOsc.start();
   menuMusicA=audioContext.createOscillator();menuMusicA.type="sine";menuMusicA.frequency.value=110;
   menuMusicB=audioContext.createOscillator();menuMusicB.type="sine";menuMusicB.frequency.value=164.81;
   menuMusicGain=audioContext.createGain();menuMusicGain.gain.value=0;
-  menuMusicA.connect(menuMusicGain);menuMusicB.connect(menuMusicGain);menuMusicGain.connect(audioContext.destination);
+  menuMusicA.connect(menuMusicGain);menuMusicB.connect(menuMusicGain);menuMusicGain.connect(masterGain||audioContext.destination);
   menuMusicA.start();menuMusicB.start();
  }
  const now=audioContext.currentTime;
- cityAmbienceGain.gain.setTargetAtTime(.012,now,.8);
- menuMusicGain.gain.setTargetAtTime(.006,now,1.2);
+ cityAmbienceGain.gain.setTargetAtTime(.024,now,.8);
+ menuMusicGain.gain.setTargetAtTime(.012,now,1.2);
 }
 function stopMenuSoundscape(){
  if(!audioContext)return;
@@ -2736,31 +2736,32 @@ function stopMenuSoundscape(){
  if(cityAmbienceGain)cityAmbienceGain.gain.setTargetAtTime(0,now,.35);
  if(menuMusicGain)menuMusicGain.gain.setTargetAtTime(0,now,.35);
 }
-function playAudioCue(frequency=90,duration=.8,wave="sawtooth",volume=.055){
+function playAudioCue(frequency=90,duration=.8,wave="sawtooth",volume=.09){
  if(!audioContext||!audioEnabled)return;
  const osc=audioContext.createOscillator(),gain=audioContext.createGain();
  osc.type=wave;osc.frequency.setValueAtTime(frequency,audioContext.currentTime);
  osc.frequency.exponentialRampToValueAtTime(Math.max(24,frequency*.58),audioContext.currentTime+duration);
  gain.gain.setValueAtTime(volume,audioContext.currentTime);
  gain.gain.exponentialRampToValueAtTime(.0001,audioContext.currentTime+duration);
- osc.connect(gain);gain.connect(audioContext.destination);osc.start();osc.stop(audioContext.currentTime+duration+.03);
+ osc.connect(gain);gain.connect(masterGain||audioContext.destination);osc.start();osc.stop(audioContext.currentTime+duration+.03);
 }
 function initialiseVehicleAudio(){
  const AudioEngine=window.AudioContext||window.webkitAudioContext;
  if(!AudioEngine)throw new Error("This browser does not support game audio.");
  if(!audioContext){
   audioContext=new AudioEngine();
+  masterGain=audioContext.createGain();masterGain.gain.value=1.8;masterGain.connect(audioContext.destination);
   engineOscillator=audioContext.createOscillator();engineOscillator.type="sawtooth";
   engineFilter=audioContext.createBiquadFilter();engineFilter.type="lowpass";engineFilter.frequency.value=520;
   engineGain=audioContext.createGain();engineGain.gain.value=0;
-  engineOscillator.connect(engineFilter);engineFilter.connect(engineGain);engineGain.connect(audioContext.destination);engineOscillator.start();
+  engineOscillator.connect(engineFilter);engineFilter.connect(engineGain);engineGain.connect(masterGain||audioContext.destination);engineOscillator.start();
   hornOscillator=audioContext.createOscillator();hornOscillator.type="square";
   hornGain=audioContext.createGain();hornGain.gain.value=0;
-  hornOscillator.connect(hornGain);hornGain.connect(audioContext.destination);hornOscillator.frequency.value=440;hornOscillator.start();
+  hornOscillator.connect(hornGain);hornGain.connect(masterGain||audioContext.destination);hornOscillator.frequency.value=440;hornOscillator.start();
   nitroOscillator=audioContext.createOscillator();nitroOscillator.type="sawtooth";
   nitroGain=audioContext.createGain();nitroGain.gain.value=0;
   const nitroFilter=audioContext.createBiquadFilter();nitroFilter.type="lowpass";nitroFilter.frequency.value=680;
-  nitroOscillator.connect(nitroFilter);nitroFilter.connect(nitroGain);nitroGain.connect(audioContext.destination);nitroOscillator.start();
+  nitroOscillator.connect(nitroFilter);nitroFilter.connect(nitroGain);nitroGain.connect(masterGain||audioContext.destination);nitroOscillator.start();
  }
  if(audioContext.state==="suspended")audioContext.resume();
  audioEnabled=true;
@@ -2769,7 +2770,7 @@ function initialiseVehicleAudio(){
 }
 function setHorn(active){
  if(!audioEnabled||!hornGain||!audioContext)return;
- hornGain.gain.setTargetAtTime(active ? 0.035 : 0,audioContext.currentTime,.035);
+ hornGain.gain.setTargetAtTime(active ? 0.075 : 0,audioContext.currentTime,.035);
 }
 utilityBar.querySelector("#audio-toggle").addEventListener("click",()=>{
  try{
@@ -3398,9 +3399,9 @@ app.on("update", dt => {
    gearShiftFlash=Math.max(0,gearShiftFlash-dt);
    const revFrequency=engineBase+gearLoad*(selectedVehicle.id==="hyper"?66:54)+(forward?selectedVehicle.acceleration*.8:0);
    engineOscillator.frequency.setTargetAtTime(revFrequency*(gearShiftFlash>0?.78:1),audioContext.currentTime,.055);
-   if(nitroOscillator&&nitroGain){nitroOscillator.frequency.setTargetAtTime(85+Math.abs(speed)*2.8,audioContext.currentTime,.05);nitroGain.gain.setTargetAtTime(nitroActive?.012:0,audioContext.currentTime,.08);}
+   if(nitroOscillator&&nitroGain){nitroOscillator.frequency.setTargetAtTime(85+Math.abs(speed)*2.8,audioContext.currentTime,.05);nitroGain.gain.setTargetAtTime(nitroActive?.03:0,audioContext.currentTime,.08);}
    engineFilter.frequency.setTargetAtTime(260+Math.abs(speed)*24,audioContext.currentTime,.1);
-   engineGain.gain.setTargetAtTime((gamePaused?0:.018+Math.abs(speed)/Math.max(1,selectedVehicle.maxSpeed)*.035)*throttleLoad,audioContext.currentTime,.1);
+   engineGain.gain.setTargetAtTime((gamePaused?0:.045+Math.abs(speed)/Math.max(1,selectedVehicle.maxSpeed)*.085)*throttleLoad,audioContext.currentTime,.1);
   }
   activeVehicleExhaustFlames.forEach((flame,index)=>{
     flame.enabled=nitroActive;
