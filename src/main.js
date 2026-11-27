@@ -2874,8 +2874,8 @@ openingScene.innerHTML=`<div class="opening-vignette"></div>
   <div class="opening-kicker">PRESENTED BY KENNIX GAME STUDIOS</div>
   <div class="opening-logo">KENNIX</div><div class="opening-subtitle">INFINITE CITY</div>
   <div class="opening-rule"></div><p class="opening-city">NOVA CITY IS WAITING</p>
-  <button id="opening-begin" class="opening-button">TAP TO START</button>
-  <small>Sound starts after your tap</small>
+  <button id="opening-begin" class="opening-button">TAP TO ENABLE SOUND</button>
+  <small>The cinematic starts automatically • Tap for sound</small>
  </div>
  <div class="opening-cinematic-copy" id="opening-cinematic-copy" aria-live="polite"></div>`;
 document.body.appendChild(openingScene);
@@ -2890,7 +2890,7 @@ mainMenu.innerHTML=`<div class="kx-menu-card">
   <button data-menu="garage">GARAGE</button>
   <button data-menu="settings">SETTINGS</button>
  </div>
- <small> NOVA CITY • EARLY ACCESS </small>
+ <small> ORIGINAL OPEN-WORLD RACING EXPERIENCE </small>
  </div>`;
 document.body.appendChild(mainMenu);
 function showMainMenu(){
@@ -2923,6 +2923,89 @@ mainMenu.addEventListener("click",event=>{
  else if(action==="race"){mainMenu.classList.add("hidden");gameOverlay.querySelector("#start-race").click()}
 });
 let introAnimationFrame=0;
+let introCars=[],introTrack=null,introAudioUnlocked=false;
+const introCarSpecs=[
+ {name:"Hypercar",url:"https://vinish-models.pages.dev/sports-cars/hypercar.glb",x:-2.15,z:-18,scale:1},
+ {name:"Track Day Coupe",url:"https://vinish-models.pages.dev/sports-cars/track-day-coupe.glb",x:0,z:-27,scale:1},
+ {name:"Mid-Engine Sports Coupe",url:"https://vinish-models.pages.dev/sports-cars/mid-engine-sports-coupe.glb",x:2.15,z:-36,scale:1}
+];
+function buildIntroTrack(){
+ if(introTrack)return;
+ introTrack=new pc.Entity("KENNIX cinematic race set");
+ app.root.addChild(introTrack);
+ const roadMat=makeMat([.035,.045,.06],.12,.34);
+ const stripeMat=makeMat([.88,.88,.82],.05,.4);
+ const barrierMat=makeMat([.16,.19,.23],.48,.28);
+ const road=new pc.Entity("Cinematic race asphalt");
+ road.addComponent("render",{type:"box",material:roadMat});
+ road.setLocalScale(13,.24,150);road.setPosition(0,-.22,20);introTrack.addChild(road);
+ for(let side of [-1,1]){
+  const rail=new pc.Entity("Cinematic safety barrier");rail.addComponent("render",{type:"box",material:barrierMat});
+  rail.setLocalScale(.32,1.05,150);rail.setPosition(side*6.45,.38,20);introTrack.addChild(rail);
+  for(let z=-48;z<91;z+=12){
+   const marker=new pc.Entity("Track edge marker");marker.addComponent("render",{type:"box",material:stripeMat});
+   marker.setLocalScale(.12,.018,3.2);marker.setPosition(side*5.95,-.085,z);introTrack.addChild(marker);
+  }
+ }
+ for(let z=-45;z<90;z+=13){
+  const dash=new pc.Entity("Track centre dash");dash.addComponent("render",{type:"box",material:stripeMat});
+  dash.setLocalScale(.13,.02,5.5);dash.setPosition(0,-.085,z);introTrack.addChild(dash);
+ }
+ // Cinematic floodlights and dark trackside silhouettes establish a real race venue.
+ const poleMat=makeMat([.12,.15,.19],.65,.25);
+ for(let side of [-1,1])for(let z=-35;z<86;z+=28){
+  const pole=new pc.Entity("Track floodlight mast");pole.addComponent("render",{type:"cylinder",material:poleMat});
+  pole.setLocalScale(.12,8,.12);pole.setPosition(side*8,3.8,z);introTrack.addChild(pole);
+  const arm=new pc.Entity("Track floodlight arm");arm.addComponent("render",{type:"box",material:poleMat});
+  arm.setLocalScale(2.3,.12,.18);arm.setPosition(side*7,7.7,z);introTrack.addChild(arm);
+  const lamp=new pc.Entity("Track floodlight");lamp.addComponent("light",{type:"spot",color:new pc.Color(.72,.82,1),intensity:2,range:38,innerConeAngle:28,outerConeAngle:52});
+  lamp.setPosition(side*6.2,7.45,z);lamp.setEulerAngles(side===-1?18:-18,side===-1?90:-90,0);introTrack.addChild(lamp);
+ }
+ const startLine=new pc.Entity("Start finish line");startLine.addComponent("render",{type:"box",material:stripeMat});
+ startLine.setLocalScale(12,.025,.55);startLine.setPosition(0,-.07,-8);introTrack.addChild(startLine);
+ introTrack.enabled=true;
+}
+function loadIntroCars(){
+ buildIntroTrack();
+ if(introCars.length)return;
+ introCarSpecs.forEach((spec,index)=>{
+  const holder=new pc.Entity("Intro "+spec.name);
+  introTrack.addChild(holder);holder.setPosition(spec.x,.02,spec.z);
+  const wheels=[];
+  app.assets.loadFromUrl(spec.url,"container",(error,asset)=>{
+   if(error||!asset?.resource){
+    console.warn("KENNIX intro car model failed to load:",spec.name,error);
+    const fallback=new pc.Entity(spec.name+" loading fallback");
+    const body=new pc.Entity("Fallback body");body.addComponent("render",{type:"box",material:mats.body});body.setLocalScale(1.9,.55,4.1);body.setPosition(0,.68,0);fallback.addChild(body);
+    const cabin=new pc.Entity("Fallback cabin");cabin.addComponent("render",{type:"box",material:mats.glass});cabin.setLocalScale(1.45,.55,1.9);cabin.setPosition(0,1.15,-.15);fallback.addChild(cabin);
+    holder.addChild(fallback);return;
+   }
+   const model=asset.resource.instantiateRenderEntity({castShadows:true});
+   model.name=spec.name+" detailed GLB";
+   model.setLocalScale(spec.scale,spec.scale,spec.scale);
+   holder.addChild(model);
+   ["Wheel_FL","Wheel_FR","Wheel_RL","Wheel_RR"].forEach(n=>{const w=model.findByName(n);if(w)wheels.push(w)});
+   model.findComponents("render").forEach(component=>{component.castShadows=true;component.receiveShadows=true;});
+   introCars[index].model=model;
+   introCars[index].wheels=wheels;
+   introCars[index].loaded=true;
+  });
+  introCars[index]={holder,model:null,wheels,loaded:false,baseZ:spec.z,index};
+ });
+}
+function unlockIntroAudio(){
+ try{
+  initialiseVehicleAudio();
+  startMenuSoundscape();
+  introAudioUnlocked=true;
+  const b=openingScene.querySelector("#opening-begin");
+  b.textContent="SOUND ON";
+  b.disabled=true;
+  window.setTimeout(()=>b.classList.add("audio-enabled"),900);
+ }catch(error){
+  openingScene.querySelector("#opening-cinematic-copy").textContent="Sound unavailable. You can enable it in Settings.";
+ }
+}
 function finishOpeningCinematic(){
  cancelAnimationFrame(introAnimationFrame);
  openingScene.classList.add("opening-hidden");
@@ -2932,45 +3015,60 @@ function finishOpeningCinematic(){
 }
 function beginOpeningCinematic(){
  const button=openingScene.querySelector("#opening-begin");
- if(button.disabled)return;
- button.disabled=true;
- try{initialiseVehicleAudio();startMenuSoundscape();}catch(error){openingScene.querySelector("#opening-cinematic-copy").textContent="Audio unavailable in this browser. Enable sound in Settings.";}
+ if(openingScene.dataset.playing==="1")return;
+ openingScene.dataset.playing="1";
  requestLandscapeMode();
+ buildIntroTrack();
+ loadIntroCars();
  const welcome=openingScene.querySelector("#opening-welcome");
  const caption=openingScene.querySelector("#opening-cinematic-copy");
  welcome.classList.add("opening-copy-away");
- caption.textContent="A NEW CITY. A NEW DRIVE.";
+ caption.textContent="THE GRID IS READY";
  const start=performance.now();
- const from=new pc.Vec3(-62,82,-142),mid=new pc.Vec3(18,46,-72),near=new pc.Vec3(7,12,39);
- const aimA=new pc.Vec3(0,2,-5),aimB=new pc.Vec3(0,1,20);
+ const duration=15000;
+ const startCamera=new pc.Vec3(15,12,-40);
+ const raceCamera=new pc.Vec3(8,5,4);
+ const heroCamera=new pc.Vec3(5.5,3.2,30);
+ camera.camera.clearColor=new pc.Color(.012,.018,.028);
+ camera.setPosition(startCamera);camera.lookAt(0,0,0);
  function frame(now){
-  const t=Math.min(1,(now-start)/11800);
+  const t=Math.min(1,(now-start)/duration);
   const smooth=v=>v*v*(3-2*v);
-  if(t<.54){
-   const q=smooth(t/.54);
-   camera.setPosition(from.clone().lerp(from,mid,q));
-   camera.lookAt(aimA);
-   caption.textContent=t<.24?"WELCOME TO NOVA CITY":"THE STREETS ARE YOURS";
+  const q=smooth(t);
+  // Cars accelerate down the closed circuit, then the camera sweeps to the lead car.
+  introCars.forEach((car,i)=>{
+   const speed=t<.58?1:0.35;
+   car.holder.setPosition(car.holder.getPosition().x,.02,car.baseZ+q*78*speed+i*1.5);
+   if(car.wheels)car.wheels.forEach(w=>{w.rotateLocal(12,0,0)});
+  });
+  if(t<.35){
+   camera.setPosition(startCamera.clone().lerp(startCamera,raceCamera,smooth(t/.35)));
+   camera.lookAt(0,.8,Math.max(-5,t*24));
+   caption.textContent=t<.16?"ENGINES READY":"LIGHTS OUT";
+  }else if(t<.72){
+   const p=smooth((t-.35)/.37);
+   camera.setPosition(raceCamera.clone().lerp(raceCamera,new pc.Vec3(-7,4,20),p));
+   camera.lookAt(0,.8,22+p*12);
+   caption.textContent="FULL THROTTLE";
   }else{
-   const q=smooth((t-.54)/.46);
-   camera.setPosition(mid.clone().lerp(mid,near,q));
-   camera.lookAt(aimB);
-   caption.textContent=t<.78?"MEET YOUR FIRST RIDE":"ENGINE READY";
+   const p=smooth((t-.72)/.28);
+   camera.setPosition(new pc.Vec3(-7,4,20).lerp(new pc.Vec3(-7,4,20),heroCamera,p));
+   camera.lookAt(0,.8,42);
+   caption.textContent="BUILT FOR THE DRIVE";
   }
-  if(t>=.9&&!openingScene.dataset.ignition){
-   openingScene.dataset.ignition="1";
-   playAudioCue(72,1.5,"sawtooth",.075);
-  }
+  if(t>.12&&!openingScene.dataset.rev1){openingScene.dataset.rev1="1";if(audioEnabled)playAudioCue(92,1.1,"sawtooth",.08);}
+  if(t>.52&&!openingScene.dataset.rev2){openingScene.dataset.rev2="1";if(audioEnabled)playAudioCue(128,.8,"sawtooth",.06);}
   if(t<1)introAnimationFrame=requestAnimationFrame(frame);
   else{
    caption.textContent="KENNIX: INFINITE CITY";
    openingScene.classList.add("opening-title-hold");
-   window.setTimeout(finishOpeningCinematic,1500);
+   window.setTimeout(finishOpeningCinematic,1900);
   }
  }
  introAnimationFrame=requestAnimationFrame(frame);
 }
-openingScene.querySelector("#opening-begin").addEventListener("click",beginOpeningCinematic);
+openingScene.querySelector("#opening-begin").addEventListener("click",unlockIntroAudio);
+window.setTimeout(beginOpeningCinematic,650);
 
 const steeringModeButton=controls.querySelector(".steering-mode");
 const steeringWheelControl=controls.querySelector(".steering-wheel-control");
