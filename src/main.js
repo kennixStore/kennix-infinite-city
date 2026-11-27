@@ -1742,7 +1742,7 @@ const marketVendorB=addStreetActor(34.2,18.4,1,90,"vendor");
 const marketCustomerB=addStreetActor(28.5,24.2,3,-90,"customer");addShoppingBag(marketCustomerB,-1);
 const busPassengerA=addStreetActor(-11.2,-55,0,0,"passenger");
 const busPassengerB=addStreetActor(11.2,52,3,180,"passenger");
-loadRealisticPedestrians();
+// The varied four-model CC0 character loader runs at startup below.
 // Produce baskets and stacked goods around the open-air stalls.
 for(const [x,z] of [[24.8,12.2],[31.8,18.2],[24.8,26.2]]){
  for(let row=0;row<2;row++)for(let col=0;col<3;col++){
@@ -3805,8 +3805,8 @@ function loadPhotorealisticPedestrians(){
       }));
     }
     resources.get(info.url).then(resource=>{
-      if(!resource||!person.entity||person.entity._destroyed)return;
-      const model=resource.instantiateRenderEntity();
+      if(!resource||!person.entity||person.entity._destroyed||person.importedModel)return;
+      const model=resource.instantiateRenderEntity({castShadows:true});
       model.name="CC0 realistic pedestrian - "+info.name;
       model.setLocalPosition(0,0,0);
       model.setLocalEulerAngles(0,180,0);
@@ -3833,6 +3833,7 @@ function loadPhotorealisticPedestrians(){
       for(const child of person.entity.children){
         if(child!==model)child.enabled=false;
       }
+      person.importedModel=model;
       person.realisticModel=model;
     });
   });
