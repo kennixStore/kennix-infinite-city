@@ -21,6 +21,9 @@ jobs:
           curl -L --fail --retry 3 -A "Mozilla/5.0" "https://www.pexels.com/download/video/10739084/" -o pexels-10739084.mp4
           curl -L --fail --retry 3 -A "Mozilla/5.0" "https://www.pexels.com/download/video/14854561/" -o pexels-14854561.mp4
           curl -L --fail --retry 3 -A "Mozilla/5.0" "https://www.pexels.com/download/video/35662147/" -o pexels-35662147.mp4
+          curl -L --fail --retry 3 -A "Mozilla/5.0" "https://www.pexels.com/download/video/37149608/" -o pexels-37149608.mp4
+          curl -L --fail --retry 3 -A "Mozilla/5.0" "https://www.pexels.com/download/video/36223937/" -o pexels-36223937.mp4
+          curl -L --fail --retry 3 -A "Mozilla/5.0" "https://www.pexels.com/download/video/3088697/" -o pexels-3088697.mp4
           for f in pexels-*.mp4; do
             test "$(stat -c%s "$f")" -gt 1000000
             ffprobe -v error -show_entries format=duration,size:stream=codec_name,width,height,r_frame_rate -of json "$f" > "${f%.mp4}.json"
