@@ -452,6 +452,7 @@ const tactileMat=makeMat([.78,.62,.32],0,.88);
 const planterMat=makeMat([.16,.2,.19],.12,.78);
 const foliageMat=makeMat([.075,.23,.13],0,.9);
 const benchWood=makeMat([.34,.2,.12],.04,.76);
+const destructibleTreeColliders=[];
 const streetLampGlow=makeMat([1,.72,.36],.08,.3);
 streetLampGlow.emissive=new pc.Color(.9,.48,.18);
 streetLampGlow.emissiveIntensity=.8;
@@ -475,6 +476,7 @@ function addSidewalkFurniture(x,z,rotation=0){
  block("Planter soil",[2.35,.49,0],[1.18,.08,1.18],mats.ground,root);
  block("Planter tree trunk",[2.35,1.35,0],[.2,1.7,.2],mats.trunk,root);
  block("Planter tree crown",[2.35,2.55,0],[1.45,1.55,1.45],foliageMat,root,"sphere");
+ destructibleTreeColliders.push({x:x+2.35,z,radius:.95});
  // Waste bin and a short protective bollard.
  block("Street litter bin",[ -2.15,.48,0],[.48,.92,.48],mats.dark,root);
  block("Bin lid",[-2.15,.96,0],[.54,.1,.54],mats.metal,root);
@@ -1710,7 +1712,7 @@ function buildStreetLight(x,z,side=1){
  block("Streetlight arm",[side*.85,6.25,0],[1.8,.14,.14],streetLampMaterial,pole);
  const bulb=block("Streetlight bulb",[side*1.65,6.12,0],[.38,.16,.38],lampGlowMaterial,pole,"sphere");
  const glow=new pc.Entity("Streetlight illumination");glow.addComponent("light",{type:"omni",color:new pc.Color(1,.72,.42),intensity:0,range:17,falloffMode:1});glow.setPosition(x+side*1.65,5.9,z);app.root.addChild(glow);
- streetLights.push({bulb,glow});
+ streetLights.push({root:pole,bulb,glow,x,z,side,broken:false,resetTimer:0,tilt:0});
 }
 for(const z of [-220,-170,-120,-70,-20,30,80,130,180,230]){
  buildStreetLight(-8.8,z,1);buildStreetLight(8.8,z,-1);
@@ -2854,6 +2856,18 @@ function isDown(...names) {
 }
 
 app.on("update", dt => {
+  const currentCarPosition=car.getPosition();
+  for(const lamp of streetLights){
+    if(lamp.broken){
+      lamp.tilt=Math.min(1,lamp.tilt+dt*1.8);
+      lamp.root.setEulerAngles(0,0,lamp.side*lamp.tilt*82);
+      lamp.resetTimer+=dt;
+      if(lamp.resetTimer>3&&Math.hypot(currentCarPosition.x-lamp.x,currentCarPosition.z-lamp.z)>85){
+        lamp.broken=false;lamp.tilt=0;lamp.resetTimer=0;
+        lamp.root.setEulerAngles(0,0,0);lamp.glow.enabled=true;
+      }
+    }
+  }
   if(gamePaused)return;
   const posForStation=car.getPosition();
   const station=fuelStations.find(item=>Math.hypot(posForStation.x-item.x,posForStation.z-item.z)<15);
@@ -2942,8 +2956,25 @@ app.on("update", dt => {
     return false;
   };
   const boundedX=clamp(nextX,-158,158),boundedZ=clamp(nextZ,-258,258);
-  const canMoveX=!collidesAt(boundedX,p.z);
-  const canMoveZ=!collidesAt(canMoveX?boundedX:p.x,boundedZ);
+  const hitsTree=(x,z)=>destructibleTreeColliders.some(tree=>{
+    const dx=x-tree.x,dz=z-tree.z;
+    return dx*dx+dz*dz<(tree.radius+vehicleRadius*.45)**2;
+  });
+  let hitLamp=null;
+  for(const lamp of streetLights){
+    if(lamp.broken)continue;
+    if(Math.hypot(boundedX-lamp.x,boundedZ-lamp.z)<vehicleRadius*.78){hitLamp=lamp;break;}
+  }
+  const impactSpeed=Math.abs(speed);
+  if(hitLamp&&impactSpeed>7.5){
+    hitLamp.broken=true;hitLamp.resetTimer=0;hitLamp.glow.enabled=false;
+    speed*=.38;lateralSpeed*=.25;
+    damage=clamp(damage+Math.min(12,impactSpeed*.28),0,100);
+    localStorage.setItem("kxic-damage",String(damage));refreshVehicleDamage();
+  }
+  const lampBlocked=Boolean(hitLamp&&!hitLamp.broken);
+  const canMoveX=!lampBlocked&&!collidesAt(boundedX,p.z)&&!hitsTree(boundedX,p.z);
+  const canMoveZ=!lampBlocked&&!collidesAt(canMoveX?boundedX:p.x,boundedZ)&&!hitsTree(canMoveX?boundedX:p.x,boundedZ);
   if(canMoveX)p.x=boundedX;
   if(canMoveZ)p.z=boundedZ;
   if(!canMoveX||!canMoveZ){speed*=.22;lateralSpeed*=.18;}
