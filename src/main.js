@@ -108,7 +108,7 @@ mats.windowLit.update();
 function createSurfaceTexture(kind) {
   const canvas=document.createElement("canvas");canvas.width=256;canvas.height=256;
   const ctx=canvas.getContext("2d");
-  const base=kind==="asphalt"?"#292e34":kind==="concrete"?"#777a78":kind==="ground"?"#343d35":"#77736d";
+  const base=kind==="asphalt"?"#454a50":kind==="concrete"?"#777a78":kind==="ground"?"#343d35":"#77736d";
   ctx.fillStyle=base;ctx.fillRect(0,0,256,256);
   let seed=kind==="asphalt"?173:kind==="concrete"?419:kind==="ground"?733:991;
   const rand=()=>{seed=(seed*1664525+1013904223)>>>0;return seed/4294967296;};
@@ -711,7 +711,8 @@ for(let i=0;i<2;i++){
  block("Industrial smokestack",[x,12,z],[3.2,24,3.2],industrialPaint,app.root,"cylinder");
  block("Smokestack rim",[x,24.1,z],[3.8,.5,3.8],mats.dark,app.root,"cylinder");
 }
-block("Industrial warehouse",[ -135,7,215],[32,14,25],industrialPaint);\nregisterBuildingCollider(-135,215,32,25);
+block("Industrial warehouse",[ -135,7,215],[32,14,25],industrialPaint);
+registerBuildingCollider(-135,215,32,25);
 for(let bay=0;bay<3;bay++){
  const x=-147+bay*12;
  block("Warehouse loading door",[x,3.4,202.35],[7,6.8,.2],mats.dark);
