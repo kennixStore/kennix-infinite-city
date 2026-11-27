@@ -1927,11 +1927,21 @@ const vehicleCatalog = [
  {id:"hyper",name:"Apex R",className:"HYPER",paint:[0.04,0.32,0.38],acceleration:16.5,maxSpeed:50,handling:1.12,braking:1.08,grip:1.06,owned:false}
 ];
 const savedGarage=(()=>{try{return JSON.parse(localStorage.getItem("kxic-garage")||"{}")}catch{return {}}})();
+const savedUnlocks=(()=>{try{return JSON.parse(localStorage.getItem("kxic-unlocked")||'["sport"]')}catch{return ["sport"]}})();
+vehicleCatalog.forEach(v=>{v.owned=savedUnlocks.includes(v.id)||v.id==="sport"});
 let selectedVehicle=vehicleCatalog.find(v=>v.id===savedGarage.vehicle&&v.owned)||vehicleCatalog[0];
 let selectedPaint=Array.isArray(savedGarage.paint)?savedGarage.paint:selectedVehicle.paint;
 let cameraMode="chase",gamePaused=true,damage=Math.max(0,Math.min(100,Number(localStorage.getItem("kxic-damage")||0))),raceActive=false,raceStart=0,raceCheckpoint=0,bestRace=Number(localStorage.getItem("kxic-best-race")||0),drivenDistance=Number(localStorage.getItem("kxic-distance")||0),playerXP=Number(localStorage.getItem("kxic-xp")||0),playerLevel=Math.max(1,Math.floor(playerXP/1000)+1);let lastDistanceSave=Math.floor(drivenDistance/10);
 const garagePaints=[{name:"Midnight",rgb:[.035,.07,.12]},{name:"Crimson",rgb:[.52,.045,.035]},{name:"Ocean",rgb:[.035,.22,.42]},{name:"Silver",rgb:[.48,.5,.52]},{name:"Gold",rgb:[.55,.34,.08]}];
 function saveGarage(){localStorage.setItem("kxic-garage",JSON.stringify({vehicle:selectedVehicle.id,paint:selectedPaint}))}
+function updateVehicleUnlocks(){
+ const thresholds={muscle:500,suv:1500,hyper:3000};
+ vehicleCatalog.forEach(vehicle=>{
+  const threshold=thresholds[vehicle.id];
+  if(threshold&&playerXP>=threshold)vehicle.owned=true;
+ });
+ try{localStorage.setItem("kxic-unlocked",JSON.stringify(vehicleCatalog.filter(v=>v.owned).map(v=>v.id)))}catch{}
+}
 
 const vehicleModels = {};
 let activeVehicleWheels = [];
@@ -2465,7 +2475,7 @@ document.querySelector("#game-stage").appendChild(gameOverlay);
 const panelTitle=gameOverlay.querySelector("#panel-title"),panelCopy=gameOverlay.querySelector("#panel-copy"),garageList=gameOverlay.querySelector("#garage-list"),vehicleStats=gameOverlay.querySelector("#vehicle-stats"),panelNote=gameOverlay.querySelector("#panel-note");
 function refreshGarage(){
  activateVehicleModel();
- garageList.innerHTML=vehicleCatalog.map(v=>`<button class="vehicle-option ${v.id===selectedVehicle.id?"selected":""} ${v.owned?"":"locked"}" data-vehicle="${v.id}" ${v.owned?"":"disabled"}><strong>${v.name}</strong><span>${v.className}</span><small>${v.owned?"OWNED":"LOCKED • EARN THROUGH RACING"}</small></button>`).join("");
+ garageList.innerHTML=vehicleCatalog.map(v=>`<button class="vehicle-option ${v.id===selectedVehicle.id?"selected":""} ${v.owned?"":"locked"}" data-vehicle="${v.id}" ${v.owned?"":"disabled"}><strong>${v.name}</strong><span>${v.className}</span><small>${v.owned?"OWNED":`LOCKED • ${({muscle:500,suv:1500,hyper:3000}[v.id]||0)} XP`}</small></button>`).join("");
  vehicleStats.textContent=`TOP SPEED ${Math.round(selectedVehicle.maxSpeed*3.6)} KM/H • ACCELERATION ${selectedVehicle.acceleration.toFixed(1)} • HANDLING ${Math.round(selectedVehicle.handling*100)}%`;
  gameOverlay.querySelector("#repair-car").textContent=damage?`REPAIR VEHICLE • ${damage}% DAMAGE`:"VEHICLE IN GOOD CONDITION";
 }
@@ -3439,7 +3449,7 @@ app.on("update", dt => {
   drivenDistance+=Math.abs(speed)*dt;const distanceBucket=Math.floor(drivenDistance/10);if(distanceBucket!==lastDistanceSave){lastDistanceSave=distanceBucket;try{localStorage.setItem("kxic-distance",String(Math.floor(drivenDistance)))}catch{}}
   missionStatusLabel.textContent=`LEVEL ${playerLevel} • ${playerXP} XP • `+(drivenDistance<500?`CITY DRIVE ${Math.min(500,Math.floor(drivenDistance))}/500 M`:"CITY DRIVE COMPLETE");
    updateRaceOpponents(dt);
-  if(raceActive){const target=raceRoute[raceCheckpoint];if(target!==undefined&&Math.abs(p.z-target)<2.4&&Math.abs(p.x)<5.8){raceGates[raceCheckpoint].enabled=false;raceCheckpoint++;if(raceCheckpoint<raceRoute.length)raceGates[raceCheckpoint].enabled=true;else{raceActive=false;const elapsed=(performance.now()-raceStart)/1000;if(!bestRace||elapsed<bestRace){bestRace=elapsed;localStorage.setItem("kxic-best-race",String(bestRace))}showGarage("SPRINT COMPLETE",`Time: ${elapsed.toFixed(2)}s • Best: ${bestRace.toFixed(2)}s`)}}}
+  if(raceActive){const target=raceRoute[raceCheckpoint];if(target!==undefined&&Math.abs(p.z-target)<2.4&&Math.abs(p.x)<5.8){raceGates[raceCheckpoint].enabled=false;raceCheckpoint++;if(raceCheckpoint<raceRoute.length)raceGates[raceCheckpoint].enabled=true;else{raceActive=false;const elapsed=(performance.now()-raceStart)/1000;playerXP+=300;playerLevel=Math.max(1,Math.floor(playerXP/1000)+1);try{localStorage.setItem("kxic-xp",String(playerXP))}catch{}updateVehicleUnlocks();if(!bestRace||elapsed<bestRace){bestRace=elapsed;localStorage.setItem("kxic-best-race",String(bestRace))}showGarage("SPRINT COMPLETE",`Time: ${elapsed.toFixed(2)}s • +300 XP • ${playerXP} XP total`)}}}
   raceStatusLabel.textContent=raceActive?`STREET SPRINT • CHECKPOINT ${raceCheckpoint+1}/3 • ${((performance.now()-raceStart)/1000).toFixed(1)}s`:"";
   // Smooth follow camera to reduce sudden movement on mobile.
   // Speed-sensitive chase framing opens the view at high speed without
