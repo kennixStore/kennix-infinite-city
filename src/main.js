@@ -3008,6 +3008,7 @@ function unlockIntroAudio(){
 }
 function finishOpeningCinematic(){
  cancelAnimationFrame(introAnimationFrame);
+ if(introTrack)introTrack.enabled=false;
  openingScene.classList.add("opening-hidden");
  stopMenuSoundscape();
  showMainMenu();
@@ -3037,9 +3038,9 @@ function beginOpeningCinematic(){
   const q=smooth(t);
   // Cars accelerate down the closed circuit, then the camera sweeps to the lead car.
   introCars.forEach((car,i)=>{
-   const speed=t<.58?1:0.35;
-   car.holder.setPosition(car.holder.getPosition().x,.02,car.baseZ+q*78*speed+i*1.5);
-   if(car.wheels)car.wheels.forEach(w=>{w.rotateLocal(12,0,0)});
+   const travel=t<.58?smooth(t/.58)*58:58+smooth((t-.58)/.42)*12;
+   car.holder.setPosition(car.holder.getPosition().x,.02,car.baseZ+travel+i*1.5);
+   if(car.wheels)car.wheels.forEach(w=>{w.rotateLocal(5,0,0)});
   });
   if(t<.35){
    camera.setPosition(startCamera.clone().lerp(startCamera,raceCamera,smooth(t/.35)));
